@@ -2,7 +2,7 @@
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 [project]
-name = "scLift"
+name = "sciv"
 version = "0.0.1"
 authors = [
     { name = "Zhengmin Yu", email = "yuzmbio@163.com" },
@@ -51,3 +51,4 @@ classifiers = [
 ]
 [project.urls]
 gitee = "https://gitee.com/ykenan_yingying/scLift"
+gitee = "https://github.com/YuZhengM/sciv"
