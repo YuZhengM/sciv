@@ -39,13 +39,13 @@ source ~/.bashrc
 > test
 
 ```shell
-pip3 install -r requirements.txt -i http://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com
-pip3 install sciv -i https://test.pypi.org/simple/
+pip install -r requirements.txt -i http://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com
+pip install sciv -i https://test.pypi.org/simple/
 ```
 
 > production
 
 ```shell
-pip3 install sciv
+pip install sciv
 
 ```
