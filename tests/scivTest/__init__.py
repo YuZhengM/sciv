@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
 
-import scLift
+import sciv
 
 if __name__ == '__main__':
 
@@ -17,20 +17,20 @@ if __name__ == '__main__':
     variant_base_path = "/path/data/variant"
 
     # set log information
-    scLift.ul.is_form_log_file = True
-    scLift.ul.log_file_path = log_path
+    sciv.ul.is_form_log_file = True
+    sciv.ul.log_file_path = log_path
 
     # set cache path
-    scLift.ul.project_cache_path = cache_path
+    sciv.ul.project_cache_path = cache_path
 
     # read variant information
-    variants, trait_info = scLift.fl.read_variants(base_path=variant_base_path)
+    variants, trait_info = sciv.fl.read_variants(base_path=variant_base_path)
 
     # scATAC-seq data
-    sc_atac = scLift.fl.read_sc_atac(resource=sc_atac_base_path)
+    sc_atac = sciv.fl.read_sc_atac(resource=sc_atac_base_path)
 
     # run
-    trs = scLift.ml.core(
+    trs = sciv.ml.core(
         adata=sc_atac,
         variants=variants,
         trait_info=trait_info,
