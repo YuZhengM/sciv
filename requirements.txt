@@ -18,8 +18,8 @@ statannotations==0.6.0
 magic-impute==3.0.0
 leidenalg==0.10.2
 scvi-tools==1.2.0
-ykenan_file==0.2.8
-ykenan_log==0.2.5
+yzm_file==0.0.2
+yzm_log==0.0.2
 snapatac2>=2.5.3
 harmonypy==0.0.10
 gseapy==1.1.3

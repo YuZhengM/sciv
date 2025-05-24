@@ -16,8 +16,8 @@ from pandas import DataFrame
 from scipy import sparse
 from tqdm import tqdm
 
-from ykenan_file import StaticMethod
-from ykenan_log import Logger
+from yzm_file import StaticMethod
+from yzm_log import Logger
 
 from .. import util as ul
 from ._constant_ import dense_data, sparse_data, sparse_matrix, matrix_data, number, collection, project_name
