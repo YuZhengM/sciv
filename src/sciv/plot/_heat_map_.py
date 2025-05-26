@@ -69,6 +69,7 @@ def heatmap_annotation(
     category_height: Optional[float] = 2.5,
     x_name: Optional[str] = None,
     y_name: Optional[str] = None,
+    row_score_name: str = "association_score",
     cmap: str = "Oranges",
     is_sort: bool = True,
     show: bool = True,
@@ -77,6 +78,7 @@ def heatmap_annotation(
 ) -> None:
     """
     Generate a heatmap with row and column annotations.
+    :param row_score_name:
     :param category_height:
     :param selected_anno_label_height:
     :param anno_label_height:
@@ -219,7 +221,7 @@ def heatmap_annotation(
 
         # noinspection PyTypeChecker
         row_ha_right = HeatmapAnnotation(
-            RelevanceLevel=anno_barplot(row_anno[["relevance_level"]], legend=True, height=level_bar_height, **dict(edgecolor='none')) if "relevance_level" in row_anno.columns else None,
+            AssociationScore=anno_barplot(row_anno[[row_score_name]], legend=True, height=level_bar_height, **dict(edgecolor='none')) if row_score_name in row_anno.columns else None,
             selected=anno_label(df_rows, relpos=relpos, frac=frac, height=selected_anno_label_height) if anno_specific_labels is not None else None,
             axis=0,
             verbose=0,
@@ -268,7 +270,7 @@ def heatmap_annotation(
             data=df,
             top_annotation=col_ha if col_name is not None else None,
             left_annotation=row_ha if row_name is not None else None,
-            right_annotation=row_ha_right if anno_specific_labels is not None or "relevance_level" in row_anno.columns else None,
+            right_annotation=row_ha_right if anno_specific_labels is not None or row_score_name in row_anno.columns else None,
             label=label,
             row_cluster_method=cluster_method,
             row_cluster_metric=cluster_metric,

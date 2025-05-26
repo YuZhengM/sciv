@@ -1,9 +1,9 @@
 # -*- coding: UTF-8 -*-
 
-from ._core_ import core, relevance_level, knock
+from ._core_ import core, association_score, knock
 
 __all__ = [
     "core",
-    "relevance_level",
+    "association_score",
     "knock"
 ]

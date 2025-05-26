@@ -847,8 +847,9 @@ def core(
     return trs
 
 
-def relevance_level(
+def association_score(
     adata: AnnData,
+    score_name: str = "association_score",
     layer: str = "trs_source",
     axis: Literal[0, 1] = 0
 ) -> None:
@@ -862,11 +863,11 @@ def relevance_level(
     relevance_value = trs_source.sum(axis=axis) / trs_count_sum
 
     if axis == 0:
-        adata.var["relevance_level"] = np.array(relevance_value).flatten() * adata.shape[1]
-        ul.log(__name__).info("View this related result `adata.var[\"relevance_level\"]`.")
+        adata.var[score_name] = np.array(relevance_value).flatten() * adata.shape[1]
+        ul.log(__name__).info(f"View this related result `adata.var[{score_name}]`.")
     elif axis == 1:
-        adata.obs["relevance_level"] = np.array(relevance_value).flatten() * adata.shape[0]
-        ul.log(__name__).info("View this related result `adata.obs[\"relevance_level\"]`.")
+        adata.obs[score_name] = np.array(relevance_value).flatten() * adata.shape[0]
+        ul.log(__name__).info(f"View this related result `adata.obs[{score_name}]`.")
     else:
         ul.log(__name__).error("The `axis` parameter supports only 0 and 1.")
         raise ValueError("The `axis` parameter supports only 0 and 1.")
@@ -878,7 +879,7 @@ def relevance_level(
         ranks[index] = rank
 
     adata.var["rank"] = ranks
-    adata.uns["relevance_level"] = {
+    adata.uns["association_score"] = {
         "layer": layer,
         "axis": axis,
         "causal_variant_sets_count": len(ranks)
