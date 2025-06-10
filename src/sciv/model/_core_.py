@@ -872,7 +872,7 @@ def association_score(
         ul.log(__name__).error("The `axis` parameter supports only 0 and 1.")
         raise ValueError("The `axis` parameter supports only 0 and 1.")
 
-    sorted_indices = np.argsort(relevance_value)
+    sorted_indices = np.argsort(relevance_value)[::,]
     ranks = np.zeros_like(relevance_value).tolist()
 
     for rank, index in enumerate(sorted_indices, start=1):

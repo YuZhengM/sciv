@@ -11,7 +11,7 @@ import seaborn as sns
 
 from .. import util as ul
 from ..preprocessing import adata_map_df
-from ..util import path, plot_color_types
+from ..util import path, plot_color_types, collection
 
 __name__: str = "plot_line"
 
@@ -35,7 +35,7 @@ def stability_line(
     colors: list = None,
     line_width: float = 1.5,
     x_name_rotation: float = 65,
-    x_ticks: int = None,
+    x_ticks: Optional[Union[int, collection]] = None,
     y_limit: Tuple[float, float] = (0, 1),
     output: Optional[path] = None,
     is_str: bool = True,
