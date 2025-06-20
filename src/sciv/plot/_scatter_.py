@@ -363,7 +363,7 @@ def volcano_base(
         if title is not None:
             plt.title(title)
 
-        sns.set(style="ticks")
+        sns.set_theme(style="ticks")
         sns.set_palette(sns.color_palette(palette))
         sns.scatterplot(data=df, x=x, y=y, hue=hue, s=size, ax=ax)
         ax.set_ylim(y_min, max(df[y]) * 1.1)

@@ -39,7 +39,7 @@ def kde(
         if title is not None:
             plt.title(title)
 
-        sns.set(style="whitegrid")
+        sns.set_theme(style="whitegrid")
 
         # Random sampling
         if axis == -1:
