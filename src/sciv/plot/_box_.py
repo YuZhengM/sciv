@@ -45,9 +45,7 @@ def box_base(
 
         if value not in df_columns:
             ul.log(__name__).error(f"The `value` ({value}) parameter must be in the `df` parameter data column name ({df_columns})")
-            raise ValueError(
-                f"The `value` ({value}) parameter must be in the `df` parameter data column name ({df_columns})"
-            )
+            raise ValueError(f"The `value` ({value}) parameter must be in the `df` parameter data column name ({df_columns})")
 
         fig, ax = plt.subplots(figsize=(width, height))
         # noinspection DuplicatedCode
@@ -197,17 +195,11 @@ def box_trait(
         )
 
     # noinspection DuplicatedCode
-    trait_list = list(set(data['id']))
+    trait_list = list(set(data[trait_column_name]))
     # judge trait
     if trait_name != "All" and trait_name not in trait_list:
-        ul.log(__name__).error(
-            f"The {trait_name} trait/disease is not in the trait/disease list {trait_list}, "
-            f"Suggest modifying the {trait_column_name} parameter information"
-        )
-        raise ValueError(
-            f"The {trait_name} trait/disease is not in the trait/disease list {trait_list}, "
-            f"Suggest modifying the {trait_column_name} parameter information"
-        )
+        ul.log(__name__).error(f"The {trait_name} trait/disease is not in the trait/disease list {trait_list}.")
+        raise ValueError(f"The {trait_name} trait/disease is not in the trait/disease list {trait_list}.")
 
     # plot
     if trait_name == "All":

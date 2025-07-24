@@ -215,7 +215,7 @@ def pie_trait(
         trait_score = atac_cell_df_[atac_cell_df_[trait_column_name] == trait_]
         # Sort gene scores from small to large
         pie_label(
-            df=trait_score[["id", clusters, value]],
+            df=trait_score[[trait_column_name, clusters, value]],
             map_cluster=trait_cluster_map[trait_],
             value=value,
             clusters=clusters,
@@ -232,17 +232,11 @@ def pie_trait(
         )
 
     # noinspection DuplicatedCode
-    trait_list = list(set(data['id']))
+    trait_list = list(set(data[trait_column_name]))
     # judge trait
     if trait_name != "All" and trait_name not in trait_list:
-        ul.log(__name__).error(
-            f"The {trait_name} trait/disease is not in the trait/disease list {trait_list}, "
-            f"Suggest modifying the {trait_column_name} parameter information"
-        )
-        raise ValueError(
-            f"The {trait_name} trait/disease is not in the trait/disease list {trait_list}, "
-            f"Suggest modifying the {trait_column_name} parameter information"
-        )
+        ul.log(__name__).error(f"The {trait_name} trait/disease is not in the trait/disease list {trait_list}.")
+        raise ValueError(f"The {trait_name} trait/disease is not in the trait/disease list {trait_list}.")
 
     # plot
     if trait_name == "All":

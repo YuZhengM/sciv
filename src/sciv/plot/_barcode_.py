@@ -152,17 +152,11 @@ def barcode_trait(
         )
 
     # noinspection DuplicatedCode
-    trait_list = list(set(data['id']))
+    trait_list = list(set(data[trait_column_name]))
     # judge trait
     if trait_name != "All" and trait_name not in trait_list:
-        ul.log(__name__).error(
-            f"The {trait_name} trait/disease is not in the trait/disease list {trait_list}, "
-            f"Suggest modifying the {trait_column_name} parameter information"
-        )
-        raise ValueError(
-            f"The {trait_name} trait/disease is not in the trait/disease list {trait_list}, "
-            f"Suggest modifying the {trait_column_name} parameter information"
-        )
+        ul.log(__name__).error(f"The {trait_name} trait/disease is not in the trait/disease list {trait_list}.")
+        raise ValueError(f"The {trait_name} trait/disease is not in the trait/disease list {trait_list}.")
 
     # plot
     if trait_name == "All":

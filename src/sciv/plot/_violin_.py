@@ -24,6 +24,7 @@ def violin_base(
     width: float = 2,
     height: float = 2,
     bottom: float = 0.3,
+    rotation: float = 65,
     line_width: float = 0.5,
     title: str = None,
     is_sort: bool = True,
@@ -95,12 +96,16 @@ def violin_base(
 
         # set coordinate
         # noinspection DuplicatedCode
-        ax.set_xticklabels(labels=y_names, rotation=65, fontsize=15)
+        ax.set_xticklabels(labels=y_names, rotation=rotation)
+        ax.spines['top'].set_linewidth(line_width)
+        ax.spines['bottom'].set_linewidth(line_width)
+        ax.spines['left'].set_linewidth(line_width)
+        ax.spines['right'].set_linewidth(line_width)
 
         if x_name is not None:
-            plt.xlabel(x_name, fontsize=15)
+            plt.xlabel(x_name)
 
-        plt.ylabel(y_name, fontsize=15)
+        plt.ylabel(y_name)
 
         if output is not None:
             output_pdf = output if output.endswith(".pdf") else f"{output}.pdf"
@@ -125,6 +130,7 @@ def violin_trait(
     palette: Tuple = None,
     width: float = 2,
     height: float = 2,
+    rotation: float = 65,
     line_width: float = 0.1,
     bottom: float = 0.3,
     is_sort: bool = True,
@@ -139,6 +145,7 @@ def violin_trait(
     :param is_sort:
     :param order_names:
     :param bottom:
+    :param rotation:
     :param line_width:
     :param height:
     :param x_name:
@@ -178,26 +185,21 @@ def violin_trait(
             height=height,
             bottom=bottom,
             is_sort=is_sort,
+            rotation=rotation,
             order_names=order_names,
             line_width=line_width,
             clusters=clusters,
             title=f"{title} {trait_}" if title is not None else title,
-            output=os.path.join(output, f"cell_{trait_}_score_box.pdf") if output is not None else None,
+            output=os.path.join(output, f"cell_{trait_}_score_violin.pdf") if output is not None else None,
             show=show
         )
 
     # noinspection DuplicatedCode
-    trait_list = list(set(data['id']))
+    trait_list = list(set(data[trait_column_name]))
     # judge trait
     if trait_name != "All" and trait_name not in trait_list:
-        ul.log(__name__).error(
-            f"The {trait_name} trait/disease is not in the trait/disease list {trait_list}, "
-            f"Suggest modifying the {trait_column_name} parameter information"
-        )
-        raise ValueError(
-            f"The {trait_name} trait/disease is not in the trait/disease list {trait_list}, "
-            f"Suggest modifying the {trait_column_name} parameter information"
-        )
+        ul.log(__name__).error(f"The {trait_name} trait/disease is not in the trait/disease list {trait_list}.")
+        raise ValueError(f"The {trait_name} trait/disease is not in the trait/disease list {trait_list}.")
 
     # plot
     if trait_name == "All":
