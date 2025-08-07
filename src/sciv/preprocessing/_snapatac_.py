@@ -93,6 +93,17 @@ def _process_sc_atac_(
         if isinstance(fragment_file, path):
             ul.log(__name__).info(f"Shape: {data.shape}")
 
+    data.uns["params"] = {
+        "fragment_file": fragment_file,
+        "h5ad_file": h5ad_file,
+        "min_num_fragments": min_num_fragments,
+        "sorted_by_barcode": sorted_by_barcode,
+        "bin_size": bin_size,
+        "min_tsse": min_tsse,
+        "need_features": need_features,
+        "is_filter_doublets": is_filter_doublets
+    }
+
     return data, features
 
 
