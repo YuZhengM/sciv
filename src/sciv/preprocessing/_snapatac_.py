@@ -66,8 +66,7 @@ def _process_sc_atac_(
     ul.log(__name__).info(f"Add tile matrix.")
     snap.pp.add_tile_matrix(data, bin_size=bin_size)
 
-    if isinstance(fragment_file, path):
-        ul.log(__name__).info(f"Shape: {data.shape}")
+    ul.log(__name__).info(f"Shape: {data.shape}")
 
     # The situation where features have been filtered
     features: Optional[str] = None
@@ -90,17 +89,17 @@ def _process_sc_atac_(
         ul.log(__name__).info("Filter doublets.")
         snap.pp.filter_doublets(data)
 
-        if isinstance(fragment_file, path):
-            ul.log(__name__).info(f"Shape: {data.shape}")
+        ul.log(__name__).info(f"Shape: {data.shape}")
 
     data.uns["params"] = {
         "fragment_file": fragment_file,
-        "h5ad_file": h5ad_file,
+        "h5ad_file": h5ad_file if h5ad_file is not None else "",
         "min_num_fragments": min_num_fragments,
         "sorted_by_barcode": sorted_by_barcode,
         "bin_size": bin_size,
         "min_tsse": min_tsse,
-        "need_features": need_features,
+        "features": features if features is not None else "",
+        "need_features": need_features if need_features is not None else "",
         "is_filter_doublets": is_filter_doublets
     }
 
