@@ -265,6 +265,7 @@ def merge_sc_atac(
         selected_list = np.array(list(data.var["selected"]))
 
     # spectral
+    ul.log(__name__).info("Spectral dimensionality reduction.")
     snap.tl.spectral(data, features=features)
 
     # Batch correction
