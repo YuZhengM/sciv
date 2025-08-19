@@ -4,6 +4,9 @@ import math
 import random
 from typing import Union, Tuple, Literal, Optional
 
+import torch
+import torch.nn as nn
+
 from scipy import sparse
 from scipy.stats import norm
 from tqdm import tqdm
@@ -572,6 +575,51 @@ def binary_indicator(labels_true: collection, labels_pred: collection) -> Tuple[
     return acc_s, rec_s, f1_s, fpr, tpr, auroc_s, auprc_s
 
 
+class RandomWalkModel(nn.Module):
+    def __init__(self, gamma: float, epsilon: float, p: int):
+        super().__init__()
+        self.gamma = gamma
+        self.epsilon = epsilon
+        self.p = p
+
+    def forward(self, weight, pt, p0):
+        factor = 1 - self.gamma
+        delta = 1.0
+        k = 0
+
+        while delta > self.epsilon:
+            p1 = factor * torch.matmul(weight, pt) + self.gamma * p0
+            delta = torch.linalg.norm(pt - p1, ord=self.p).item()
+            pt = p1
+            k += 1
+
+        return pt
+
+
+def random_walk_parallel(seed_cell_vector, weight, gamma: float = 0.05, epsilon: float = 1e-5, p: int = 2, device='auto'):
+    if device == 'auto' and torch.cuda.is_available():
+        device = 'cuda'
+    else:
+        device = 'cpu'
+
+    weight = to_dense(weight, is_array=True)
+
+    # 转换为张量并移至设备
+    weight = torch.as_tensor(weight, device=device, dtype=torch.float32)
+    p0 = torch.as_tensor(seed_cell_vector.copy()[:, np.newaxis], device=device, dtype=torch.float32)
+    pt = p0.clone()
+
+    # 使用 DataParallel
+    model = RandomWalkModel(gamma, epsilon, p).to(device)
+    if device == 'cuda' and torch.cuda.device_count() > 1:
+        model = nn.DataParallel(model)
+
+    with torch.no_grad():
+        result = model(weight, pt, p0)
+
+    return result.cpu().numpy().flatten()
+
+
 class RandomWalk:
     """
     Random walk
@@ -785,41 +833,22 @@ class RandomWalk:
         :param device: device.
         :return: The value after random walk.
         """
-        import torch
-
-        # 判断设备
-        if device == 'auto' and self.is_gpu_available or device == 'gpu':
-            device = 'cuda'
-        else:
-            device = 'cpu'
 
         if weight is None:
-            w = torch.as_tensor(to_dense(self.weight), device=device, dtype=torch.float32)
+            w = self.weight
         else:
-            w = torch.as_tensor(to_dense(weight), device=device, dtype=torch.float32)
+            w = weight
 
-        p0 = torch.as_tensor(seed_cell_vector.copy()[:, np.newaxis], device=device, dtype=torch.float32)
-        pt = torch.as_tensor(seed_cell_vector.copy()[:, np.newaxis], device=device, dtype=torch.float32)
-        k = 0
-        delta = 1
+        if not self.is_gpu_available:
+            return random_walk_parallel(seed_cell_vector, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p)
 
-        factor = 1 - gamma
+        try:
+            _data_ = random_walk_parallel(seed_cell_vector, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p, device=device)
+        except Exception as e:
+            ul.log(__name__).error(f"GPU failed to run, try to switch to CPU running.\n {e}")
+            _data_ = random_walk_parallel(seed_cell_vector, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p, device='cpu')
 
-        # iteration
-        while delta > self.epsilon:
-            p1 = factor * torch.matmul(w, pt) + gamma * p0
-
-            if self.p == 1:
-                delta = torch.linalg.norm(pt - p1, ord=1).item()
-            elif self.p == 2:
-                delta = torch.linalg.norm(pt - p1, ord=2).item()
-            else:
-                delta = torch.linalg.norm(pt - p1, ord=self.p).item()
-
-            pt = p1
-            k += 1
-
-        return pt.cpu().numpy().flatten()
+        return _data_
 
     def _random_walk_core_(self, seed_cell_vector: collection, weight: matrix_data = None) -> matrix_data:
         """
@@ -828,16 +857,7 @@ class RandomWalk:
         :param weight: weight matrix.
         :return: The value after random walk.
         """
-        if not self.is_gpu_available:
-            return self._random_walk_(seed_cell_vector, weight, self.gamma)
-
-        try:
-            _data_ = self._random_walk_(seed_cell_vector, weight, self.gamma)
-        except Exception as e:
-            ul.log(__name__).error(f"GPU failed to run, try to switch to CPU running.\n {e}")
-            _data_ = self._random_walk_(seed_cell_vector, weight, self.gamma, 'cpu')
-
-        return _data_
+        return self._random_walk_(seed_cell_vector, weight, self.gamma)
 
     @staticmethod
     def _get_weight_(cell_cell_matrix: matrix_data) -> matrix_data:
@@ -1018,11 +1038,15 @@ class RandomWalk:
                 _enrichment_end_index_: int = 2 * _seed_cell_size_ if self.cell_size > 2 * _seed_cell_size_ else _seed_cell_size_ - 1
 
                 if _gt0_cell_size_ == _seed_cell_size_:
-                    _enrichment_start_index_ = int(_seed_cell_size_ - self._enrichment_seed_cell_min_count_) if _seed_cell_size_ > self._enrichment_seed_cell_min_count_ else ((_seed_cell_size_ - 1) if _seed_cell_size_ > 2 else 0)
+                    _enrichment_start_index_ = int(_seed_cell_size_ - self._enrichment_seed_cell_min_count_) if _seed_cell_size_ > self._enrichment_seed_cell_min_count_ else (
+                        (_seed_cell_size_ - 1) if _seed_cell_size_ > 2 else 0)
                     _enrichment_end_index_ = _seed_cell_size_
 
                 _seed_cell_en_index_ = trait_value_sort_index[_enrichment_start_index_:_enrichment_end_index_]
-                _seed_cell_en_weight_ = self._get_seed_cell_weight_(seed_cell_index=_seed_cell_index_ if len(_seed_cell_en_index_) == len(_seed_cell_index_) else _seed_cell_en_index_, value=trait_value, seed_cell_index_enrichment=_seed_cell_en_index_)
+                _seed_cell_en_weight_ = self._get_seed_cell_weight_(
+                    seed_cell_index=_seed_cell_index_ if len(_seed_cell_en_index_) == len(_seed_cell_index_) else _seed_cell_en_index_, value=trait_value,
+                    seed_cell_index_enrichment=_seed_cell_en_index_
+                )
                 seed_cell_weight_en[:, i][_seed_cell_en_index_] = _seed_cell_en_weight_
 
                 if not self.is_simple and self.is_ablation:
@@ -1267,27 +1291,11 @@ class RandomWalk:
         for i in tqdm(self.trait_range):
 
             # Random walk
-            if not self.is_gpu_available:
-                cell_value = self._random_walk_(
-                    seed_cell_en_weight[:, i],
-                    weight=self.weight_m_knn if label == "run_en_ablation_m_knn" else self.weight,
-                    gamma=self.enrichment_gamma
-                )
-            else:
-                try:
-                    cell_value = self._random_walk_(
-                        seed_cell_en_weight[:, i],
-                        weight=self.weight_m_knn if label == "run_en_ablation_m_knn" else self.weight,
-                        gamma=self.enrichment_gamma
-                    )
-                except Exception as ex:
-                    ul.log(__name__).error(f"GPU failed to run, try to switch to CPU running.\n {ex}")
-                    cell_value = self._random_walk_(
-                        seed_cell_en_weight[:, i],
-                        weight=self.weight_m_knn if label == "run_en_ablation_m_knn" else self.weight,
-                        gamma=self.enrichment_gamma,
-                        device='cpu'
-                    )
+            cell_value = self._random_walk_(
+                seed_cell_en_weight[:, i],
+                weight=self.weight_m_knn if label == "run_en_ablation_m_knn" else self.weight,
+                gamma=self.enrichment_gamma
+            )
 
             # separate
             cell_value_credible = mean_symmetric_scale(np.array(source_value[:, i]).flatten() - np.array(cell_value).flatten(), is_verbose=False)
