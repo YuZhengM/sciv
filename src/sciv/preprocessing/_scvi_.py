@@ -5,7 +5,6 @@ from typing import Optional
 
 import numpy as np
 import pandas as pd
-import torch
 
 from anndata import AnnData
 
@@ -60,7 +59,27 @@ def poisson_vi(
         # PoissonVI
         scvi.external.POISSONVI.setup_anndata(adata, layer="fragments", batch_key=batch_key)
         _model_ = scvi.external.POISSONVI(adata)
-        _model_.train(max_epochs=max_epochs)
+
+        try:
+            data_splitter_kwargs = {"drop_dataset_tail": True, "drop_last": False}
+            _model_.train(
+                max_epochs=max_epochs,
+                check_val_every_n_epoch=1,
+                accelerator="gpu",
+                devices=-1,
+                datasplitter_kwargs=data_splitter_kwargs,
+                strategy="ddp_notebook_find_unused_parameters_true",
+            )
+        except Exception as ex:
+
+            try:
+                ul.log(__name__).error(f"Multiple GPU failed to run, attempting to run on one card.\n {ex}")
+                _model_.train(max_epochs=max_epochs)
+            except Exception as exc:
+                ul.log(__name__).error(f"GPU failed to run, try to switch to CPU running.\n {exc}")
+                _model_.to_device('cpu')
+                _model_.train(max_epochs=max_epochs, accelerator="cpu")
+
         return _model_
 
     if model_dir is not None:
