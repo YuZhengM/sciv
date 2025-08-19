@@ -10,6 +10,7 @@ from typing import Tuple, Union, Literal
 
 import numpy as np
 import pandas as pd
+import torch
 from numpy import asarray
 from anndata import AnnData
 from pandas import DataFrame
@@ -879,3 +880,19 @@ def add_cluster_info(data: DataFrame, data_ref: DataFrame, cluster: str) -> Data
         raise ValueError(f"`{cluster}` is not in `columns` ({new_data.columns}).")
 
     return new_data
+
+def check_gpu_availability(verbose: bool = True) -> bool:
+
+    available = torch.cuda.is_available()
+
+    if verbose:
+
+        if available:
+            print("GPU is available with PyTorch.")
+            print(f"Number of GPUs: {torch.cuda.device_count()}")
+            print(f"Current GPU: {torch.cuda.current_device()}")
+            print(f"GPU Name: {torch.cuda.get_device_name(torch.cuda.current_device())}")
+        else:
+            print("GPU is not available with PyTorch.")
+
+    return available

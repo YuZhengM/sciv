@@ -59,14 +59,14 @@ def poisson_vi(
 
     def __train__():
 
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            # PoissonVI
-            scvi.external.POISSONVI.setup_anndata(adata, layer="fragments", batch_key=batch_key)
-            _model_ = scvi.external.POISSONVI(adata)
+        # PoissonVI
+        scvi.external.POISSONVI.setup_anndata(adata, layer="fragments", batch_key=batch_key)
+        _model_ = scvi.external.POISSONVI(adata)
 
-            try:
-                data_splitter_kwargs = {"drop_dataset_tail": True, "drop_last": False}
+        try:
+            data_splitter_kwargs = {"drop_dataset_tail": True, "drop_last": False}
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
                 _model_.train(
                     max_epochs=max_epochs,
                     check_val_every_n_epoch=1,
@@ -75,15 +75,19 @@ def poisson_vi(
                     datasplitter_kwargs=data_splitter_kwargs,
                     strategy="ddp_notebook_find_unused_parameters_true",
                 )
-            except Exception as ex:
+        except Exception as ex:
 
-                try:
-                    ul.log(__name__).error(f"Multiple GPU failed to run, attempting to run on one card.\n {ex}")
-                    _model_.train(max_epochs=max_epochs)
-                except Exception as exc:
-                    ul.log(__name__).error(f"GPU failed to run, try to switch to CPU running.\n {exc}")
+            try:
+                ul.log(__name__).error(f"Multiple GPU failed to run, attempting to run on one card.\n {ex}")
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    _model_.train(max_epochs=max_epochs, check_val_every_n_epoch=1)
+            except Exception as exc:
+                ul.log(__name__).error(f"GPU failed to run, try to switch to CPU running.\n {exc}")
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
                     _model_.to_device('cpu')
-                    _model_.train(max_epochs=max_epochs, accelerator="cpu")
+                    _model_.train(max_epochs=max_epochs, check_val_every_n_epoch=1, accelerator="cpu")
 
         return _model_
 
@@ -113,6 +117,7 @@ def poisson_vi(
         ul.log(__name__).warning("Due to the original inclusion of the `clusters` column, the original `clusters` column name has been changed to `clusters_x`.")
         adata.obs["clusters_x"] = adata.obs["clusters"]
 
+    ul.log(__name__).info(f"Perform kNN and Leiden clustering.")
     # compute the k-nearest-neighbor graph that is used in both clustering and umap algorithms
     sc.pp.neighbors(adata, use_rep=latent_name)
     # cluster the space (we use a lower resolution to get fewer clusters than the default)
@@ -165,7 +170,7 @@ def poisson_vi(
             clusters_all = clusters_list.copy()
             clusters_all.remove(cluster)
             # differential peak
-            da_peaks = model.differential_accessibility(adata, groupby="clusters", delta=dp_delta, group1=cluster, two_sided=False)
+            da_peaks = model.differential_accessibility(adata, groupby="clusters", delta=dp_delta, group1=cluster, mode="vanilla", two_sided=False)
             da_peaks_all.update({cluster: da_peaks})
 
         adata.uns["da_peaks"] = da_peaks_all

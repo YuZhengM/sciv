@@ -29,7 +29,8 @@ from ..util import (
     matrix_division_block_storage,
     matrix_multiply_block_storage,
     enrichment_optional,
-    difference_peak_optional
+    difference_peak_optional,
+    check_gpu_availability
 )
 
 __name__: str = "tool_algorithm"
@@ -666,6 +667,8 @@ class RandomWalk:
         self.benchmark_count = benchmark_count
         self._enrichment_seed_cell_min_count_ = 3
 
+        self.is_gpu_available = check_gpu_availability()
+
         if not is_simple and self.is_ablation:
             if "cell_mutual_knn" not in cc_adata.layers:
                 ul.log(__name__).error("The ablation requires `cell_mutual_knn` to be in `cc_adata.layers`.")
@@ -773,37 +776,52 @@ class RandomWalk:
                 self.seed_cell_weight_en_ncw
             ) = self._get_seed_cell_(init_data=init_status_no_weight, info="ablation")
 
-    def _random_walk_(self, seed_cell_vector: collection, weight: matrix_data = None, gamma: float = 0.05) -> matrix_data:
+    def _random_walk_(self, seed_cell_vector: collection, weight: matrix_data = None, gamma: float = 0.05, device: str = 'auto') -> matrix_data:
         """
         Perform a random walk
         :param seed_cell_vector: seed cells;
         :param weight: weight matrix;
         :param gamma: reset weight.
+        :param device: device.
         :return: The value after random walk.
         """
 
-        if weight is None:
-            w = to_dense(self.weight).copy()
+        if device == 'auto':
+            if self.is_gpu_available:
+                import cupy as cp
+
+                xp = cp
+            else:
+                xp = np
+        elif device == 'gpu':
+            import cupy as cp
+
+            xp = cp
         else:
-            w = to_dense(weight).copy()
+            xp = np
+
+        if weight is None:
+            w = xp.asarray(to_dense(self.weight)) if self.is_gpu_available else to_dense(self.weight)
+        else:
+            w = xp.asarray(to_dense(weight)) if self.is_gpu_available else to_dense(weight)
 
         # Random walk
-        p0 = seed_cell_vector.copy()[:, np.newaxis]
-        pt: matrix_data = seed_cell_vector.copy()[:, np.newaxis]
+        p0 = xp.asarray(seed_cell_vector.copy()[:, np.newaxis])
+        pt = xp.asarray(seed_cell_vector.copy()[:, np.newaxis])
         k = 0
         delta = 1
 
         # iteration
         while delta > self.epsilon:
-            p1 = (1 - gamma) * np.dot(w, pt) + gamma * p0
+            p1 = ((1 - gamma) * xp.dot(w, pt) + gamma * p0)
 
             # 1 and 2, It would be faster alone
             if self.p == 1:
-                delta = np.abs(pt - p1).sum()
+                delta = xp.abs(pt - p1).sum()
             elif self.p == 2:
-                delta = np.sqrt(np.square(np.abs(pt - p1)).sum())
+                delta = xp.sqrt(np.square(xp.abs(pt - p1)).sum())
             else:
-                delta = np.float_power(np.float_power(np.abs(pt - p1), self.p).sum(), 1.0 / self.p)
+                delta = xp.float_power(xp.float_power(xp.abs(pt - p1), self.p).sum(), 1.0 / self.p)
 
             pt = p1
             k += 1
@@ -817,7 +835,16 @@ class RandomWalk:
         :param weight: weight matrix.
         :return: The value after random walk.
         """
-        return self._random_walk_(seed_cell_vector, weight, self.gamma)
+        if not self.is_gpu_available:
+            return self._random_walk_(seed_cell_vector, weight, self.gamma)
+
+        try:
+            _data_ = self._random_walk_(seed_cell_vector, weight, self.gamma)
+        except Exception as e:
+            ul.log(__name__).error(f"GPU failed to run, try to switch to CPU running.\n {e}")
+            _data_ = self._random_walk_(seed_cell_vector, weight, self.gamma, 'cpu')
+
+        return _data_
 
     @staticmethod
     def _get_weight_(cell_cell_matrix: matrix_data) -> matrix_data:
@@ -1245,8 +1272,30 @@ class RandomWalk:
 
         ul.log(__name__).info(f"Calculate {len(self.trait_list)} traits/diseases for process `{label}`. (Enrichment)")
         for i in tqdm(self.trait_range):
+
             # Random walk
-            cell_value = self._random_walk_(seed_cell_en_weight[:, i], weight=self.weight_m_knn if label == "run_en_ablation_m_knn" else self.weight, gamma=self.enrichment_gamma)
+            if not self.is_gpu_available:
+                cell_value = self._random_walk_(
+                    seed_cell_en_weight[:, i],
+                    weight=self.weight_m_knn if label == "run_en_ablation_m_knn" else self.weight,
+                    gamma=self.enrichment_gamma
+                )
+            else:
+                try:
+                    cell_value = self._random_walk_(
+                        seed_cell_en_weight[:, i],
+                        weight=self.weight_m_knn if label == "run_en_ablation_m_knn" else self.weight,
+                        gamma=self.enrichment_gamma
+                    )
+                except Exception as ex:
+                    ul.log(__name__).error(f"GPU failed to run, try to switch to CPU running.\n {ex}")
+                    cell_value = self._random_walk_(
+                        seed_cell_en_weight[:, i],
+                        weight=self.weight_m_knn if label == "run_en_ablation_m_knn" else self.weight,
+                        gamma=self.enrichment_gamma,
+                        device='cpu'
+                    )
+
             # separate
             cell_value_credible = mean_symmetric_scale(np.array(source_value[:, i]).flatten() - np.array(cell_value).flatten(), is_verbose=False)
 

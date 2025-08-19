@@ -49,7 +49,8 @@ from ._core_ import (
     matrix_division_block_storage,
     matrix_callback_block_storage,
     check_adata_get,
-    add_cluster_info
+    add_cluster_info,
+    check_gpu_availability
 )
 
 __all__ = [
@@ -98,5 +99,6 @@ __all__ = [
     "matrix_multiply_block_storage",
     "vector_multiply_block_storage",
     "matrix_division_block_storage",
-    "matrix_callback_block_storage"
+    "matrix_callback_block_storage",
+    "check_gpu_availability"
 ]
