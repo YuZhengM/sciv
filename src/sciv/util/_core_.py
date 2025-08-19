@@ -881,6 +881,7 @@ def add_cluster_info(data: DataFrame, data_ref: DataFrame, cluster: str) -> Data
 
     return new_data
 
+
 def check_gpu_availability(verbose: bool = True) -> bool:
 
     available = torch.cuda.is_available()
@@ -890,7 +891,6 @@ def check_gpu_availability(verbose: bool = True) -> bool:
         if available:
             print("GPU is available with PyTorch.")
             print(f"Number of GPUs: {torch.cuda.device_count()}")
-            print(f"Current GPU: {torch.cuda.current_device()}")
             print(f"GPU Name: {torch.cuda.get_device_name(torch.cuda.current_device())}")
         else:
             print("GPU is not available with PyTorch.")

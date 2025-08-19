@@ -597,20 +597,22 @@ class RandomWalkModel(nn.Module):
 
 
 def random_walk_parallel(seed_cell_vector, weight, gamma: float = 0.05, epsilon: float = 1e-5, p: int = 2, device='auto'):
-    if device == 'auto' and torch.cuda.is_available():
+
+    is_gpu_available = check_gpu_availability()
+
+    if device == 'auto' and is_gpu_available:
         device = 'cuda'
     else:
         device = 'cpu'
 
     weight = to_dense(weight, is_array=True)
 
-    # 转换为张量并移至设备
     weight = torch.as_tensor(weight, device=device, dtype=torch.float32)
     p0 = torch.as_tensor(seed_cell_vector.copy()[:, np.newaxis], device=device, dtype=torch.float32)
     pt = p0.clone()
 
-    # 使用 DataParallel
     model = RandomWalkModel(gamma, epsilon, p).to(device)
+
     if device == 'cuda' and torch.cuda.device_count() > 1:
         model = nn.DataParallel(model)
 
@@ -618,6 +620,47 @@ def random_walk_parallel(seed_cell_vector, weight, gamma: float = 0.05, epsilon:
         result = model(weight, pt, p0)
 
     return result.cpu().numpy().flatten()
+
+
+def _random_walk_single_(
+    seed_cell_vector: collection,
+    weight: matrix_data = None,
+    gamma: float = 0.05,
+    epsilon: float = 1e-5,
+    p: int = 2
+) -> matrix_data:
+    """
+    Perform a random walk
+    :param seed_cell_vector: seed cells;
+    :param weight: weight matrix;
+    :param gamma: reset weight.
+    :return: The value after random walk.
+    """
+
+    w = to_dense(weight)
+
+    # Random walk
+    p0 = seed_cell_vector.copy()[:, np.newaxis]
+    pt: matrix_data = p0.copy()
+    k = 0
+    delta = 1
+
+    # iteration
+    while delta > epsilon:
+        p1 = (1 - gamma) * np.dot(w, pt) + gamma * p0
+
+        # 1 and 2, It would be faster alone
+        if p == 1:
+            delta = np.abs(pt - p1).sum()
+        elif p == 2:
+            delta = np.sqrt(np.square(np.abs(pt - p1)).sum())
+        else:
+            delta = np.float_power(np.float_power(np.abs(pt - p1), p).sum(), 1.0 / p)
+
+        pt = p1
+        k += 1
+
+    return pt.flatten()
 
 
 class RandomWalk:
@@ -715,7 +758,7 @@ class RandomWalk:
         self.benchmark_count = benchmark_count
         self._enrichment_seed_cell_min_count_ = 3
 
-        self.is_gpu_available = check_gpu_availability()
+        self.is_gpu_available = check_gpu_availability(verbose=False)
 
         if not is_simple and self.is_ablation:
             if "cell_mutual_knn" not in cc_adata.layers:
@@ -840,13 +883,13 @@ class RandomWalk:
             w = weight
 
         if not self.is_gpu_available:
-            return random_walk_parallel(seed_cell_vector, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p)
+            return _random_walk_single_(seed_cell_vector, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p)
 
         try:
             _data_ = random_walk_parallel(seed_cell_vector, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p, device=device)
         except Exception as e:
             ul.log(__name__).error(f"GPU failed to run, try to switch to CPU running.\n {e}")
-            _data_ = random_walk_parallel(seed_cell_vector, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p, device='cpu')
+            _data_ = _random_walk_single_(seed_cell_vector, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p)
 
         return _data_
 
