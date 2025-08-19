@@ -785,48 +785,41 @@ class RandomWalk:
         :param device: device.
         :return: The value after random walk.
         """
+        import torch
 
-        if device == 'auto':
-            if self.is_gpu_available:
-                import cupy as cp
-
-                xp = cp
-            else:
-                xp = np
-        elif device == 'gpu':
-            import cupy as cp
-
-            xp = cp
+        # 判断设备
+        if device == 'auto' and self.is_gpu_available or device == 'gpu':
+            device = 'cuda'
         else:
-            xp = np
+            device = 'cpu'
 
         if weight is None:
-            w = xp.asarray(to_dense(self.weight)) if self.is_gpu_available else to_dense(self.weight)
+            w = torch.as_tensor(to_dense(self.weight), device=device, dtype=torch.float32)
         else:
-            w = xp.asarray(to_dense(weight)) if self.is_gpu_available else to_dense(weight)
+            w = torch.as_tensor(to_dense(weight), device=device, dtype=torch.float32)
 
-        # Random walk
-        p0 = xp.asarray(seed_cell_vector.copy()[:, np.newaxis])
-        pt = xp.asarray(seed_cell_vector.copy()[:, np.newaxis])
+        p0 = torch.as_tensor(seed_cell_vector.copy()[:, np.newaxis], device=device, dtype=torch.float32)
+        pt = torch.as_tensor(seed_cell_vector.copy()[:, np.newaxis], device=device, dtype=torch.float32)
         k = 0
         delta = 1
 
+        factor = 1 - gamma
+
         # iteration
         while delta > self.epsilon:
-            p1 = ((1 - gamma) * xp.dot(w, pt) + gamma * p0)
+            p1 = factor * torch.matmul(w, pt) + gamma * p0
 
-            # 1 and 2, It would be faster alone
             if self.p == 1:
-                delta = xp.abs(pt - p1).sum()
+                delta = torch.linalg.norm(pt - p1, ord=1).item()
             elif self.p == 2:
-                delta = xp.sqrt(np.square(xp.abs(pt - p1)).sum())
+                delta = torch.linalg.norm(pt - p1, ord=2).item()
             else:
-                delta = xp.float_power(xp.float_power(xp.abs(pt - p1), self.p).sum(), 1.0 / self.p)
+                delta = torch.linalg.norm(pt - p1, ord=self.p).item()
 
             pt = p1
             k += 1
 
-        return pt.flatten()
+        return pt.cpu().numpy().flatten()
 
     def _random_walk_core_(self, seed_cell_vector: collection, weight: matrix_data = None) -> matrix_data:
         """
