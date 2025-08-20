@@ -9,6 +9,7 @@ import torch.nn as nn
 
 from scipy import sparse
 from scipy.stats import norm
+from torch import Tensor
 from tqdm import tqdm
 
 import numpy as np
@@ -620,7 +621,7 @@ def _random_walk_cpu_(
 
 class RandomWalkModel(nn.Module):
 
-    def __init__(self, weight: matrix_data, gamma: float = 0.05, epsilon: float = 1e-5, p: int = 2, device: str = 'auto', pbar=None):
+    def __init__(self, weight: Union[matrix_data, Tensor], gamma: float = 0.05, epsilon: float = 1e-5, p: int = 2, device: str = 'auto', pbar=None):
         super().__init__()
         self.gamma = gamma
         self.epsilon = epsilon
@@ -629,16 +630,15 @@ class RandomWalkModel(nn.Module):
 
         is_gpu_available = check_gpu_availability(verbose=False)
 
-        self.device = 'cuda' if device == 'auto' and is_gpu_available else 'cpu'
+        self.device = 'cuda' if (device == 'gpu' or (device == 'auto' and is_gpu_available)) else 'cpu'
 
-        weight = to_dense(weight, is_array=True)
-
-        self.weight = torch.as_tensor(weight, device=self.device, dtype=torch.float32)
+        self.weight = torch.as_tensor(to_dense(weight, is_array=True), dtype=torch.float32) if isinstance(weight, matrix_data) else weight
 
         self.factor = 1 - self.gamma
 
-    def core(self, seed_cell_vector: collection):
-        p0 = torch.as_tensor(seed_cell_vector, device=self.device, dtype=torch.float32).unsqueeze(1)
+    def core(self, seed_cell_vector: Tensor):
+
+        p0 = seed_cell_vector
         pt = p0.clone()
 
         delta = 1.0
@@ -653,9 +653,9 @@ class RandomWalkModel(nn.Module):
         if self.pbar is not None:
             self.pbar.update(1)
 
-        return pt
+        return pt.flatten()
 
-    def forward(self, seed_cell_weight: matrix_data):
+    def forward(self, seed_cell_weight: Tensor):
 
         sample_count = seed_cell_weight.shape[1]
 
@@ -679,10 +679,13 @@ def _random_walk_gpu_(
     with tqdm(total=seed_cell_weight.shape[1]) as pbar:
 
         model = RandomWalkModel(weight, gamma, epsilon, p, device, pbar)
+
         device = model.device
         model.to(device)
 
-        if device == 'cuda' and torch.cuda.device_count() > seed_cell_weight.shape[1]:
+        seed_cell_weight = torch.as_tensor(seed_cell_weight, device=device, dtype=torch.float32)
+
+        if device == 'cuda' and torch.cuda.device_count() < seed_cell_weight.shape[1]:
             model = nn.DataParallel(model, dim=1)
 
         with torch.no_grad():
@@ -700,7 +703,9 @@ def random_walk(
     device: str = 'auto'
 ) -> matrix_data:
 
-    if device.lower() == 'cpu':
+    availability = check_gpu_availability(False)
+
+    if device == 'cpu' or (device == 'auto' and not availability):
         sample_count = seed_cell_weight.shape[1]
 
         score = np.zeros(seed_cell_weight.shape)
@@ -709,8 +714,8 @@ def random_walk(
             score[:, i] = _random_walk_cpu_(seed_cell_weight[:, i], weight, gamma, epsilon, p)
 
         return score
-    elif device.lower() == 'gpu' or device.lower() == 'auto':
-        return _random_walk_gpu_(seed_cell_weight, weight, gamma, epsilon, p, device=device.lower())
+    elif device == 'gpu' or (device == 'auto' and availability):
+        return _random_walk_gpu_(seed_cell_weight, weight, gamma, epsilon, p, device='gpu')
     else:
         raise ValueError(f'The `device` ({device}) is not supported. Only supports "cpu", "gpu", and "auto" values.')
 
