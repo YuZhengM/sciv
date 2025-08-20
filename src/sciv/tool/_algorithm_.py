@@ -619,87 +619,98 @@ def _random_walk_cpu_(
 
 
 class RandomWalkModel(nn.Module):
-    def __init__(self, gamma: float, epsilon: float, p: int):
+
+    def __init__(self, weight: matrix_data, gamma: float = 0.05, epsilon: float = 1e-5, p: int = 2, device: str = 'auto', pbar=None):
         super().__init__()
         self.gamma = gamma
         self.epsilon = epsilon
         self.p = p
+        self.pbar = pbar
 
-    def forward(self, weight, pt1, pt2, p0):
-        factor = 1 - self.gamma
+        is_gpu_available = check_gpu_availability(verbose=False)
+
+        self.device = 'cuda' if device == 'auto' and is_gpu_available else 'cpu'
+
+        weight = to_dense(weight, is_array=True)
+
+        self.weight = torch.as_tensor(weight, device=self.device, dtype=torch.float32)
+
+        self.factor = 1 - self.gamma
+
+    def core(self, seed_cell_vector: collection):
+        p0 = torch.as_tensor(seed_cell_vector, device=self.device, dtype=torch.float32).unsqueeze(1)
+        pt = p0.clone()
+
         delta = 1.0
         k = 0
 
         while delta > self.epsilon:
-            p1 = factor * torch.matmul(weight, pt1) + self.gamma * p0
-            delta = torch.linalg.norm(pt2 - p1, ord=self.p).item()
-            pt2 = p1
+            p1 = self.factor * torch.matmul(self.weight, pt) + self.gamma * p0
+            delta = torch.linalg.norm(pt - p1, ord=self.p).item()
+            pt = p1
             k += 1
 
-        return pt2
+        if self.pbar is not None:
+            self.pbar.update(1)
+
+        return pt
+
+    def forward(self, seed_cell_weight: matrix_data):
+
+        sample_count = seed_cell_weight.shape[1]
+
+        score = torch.zeros(seed_cell_weight.shape)
+
+        for i in range(sample_count):
+            score[:, i] = self.core(seed_cell_weight[:, i])
+
+        return score
 
 
-def _random_walk_gpu_(seed_cell_vector, weight, gamma: float = 0.05, epsilon: float = 1e-5, p: int = 2, device: str = 'auto') -> collection:
+def _random_walk_gpu_(
+    seed_cell_weight: matrix_data,
+    weight: matrix_data,
+    gamma: float = 0.05,
+    epsilon: float = 1e-5,
+    p: int = 2,
+    device: str = 'auto'
+) -> matrix_data:
 
-    is_gpu_available = check_gpu_availability(verbose=False)
+    with tqdm(total=seed_cell_weight.shape[1]) as pbar:
 
-    if device == 'auto' and is_gpu_available:
-        device = 'cuda'
-    else:
-        device = 'cpu'
+        model = RandomWalkModel(weight, gamma, epsilon, p, device, pbar)
+        device = model.device
+        model.to(device)
 
-    weight = to_dense(weight, is_array=True)
+        if device == 'cuda' and torch.cuda.device_count() > seed_cell_weight.shape[1]:
+            model = nn.DataParallel(model, dim=1)
 
-    weight = torch.as_tensor(weight, device=device, dtype=torch.float32)
-    p0 = torch.as_tensor(seed_cell_vector, device=device, dtype=torch.float32).unsqueeze(1)
-    pt = p0.clone()
+        with torch.no_grad():
+            result = model(seed_cell_weight)
 
-    model = RandomWalkModel(gamma, epsilon, p).to(device)
-
-    if device == 'cuda' and torch.cuda.device_count() > 1:
-
-        class CustomDataParallel(nn.DataParallel):
-
-            def scatter(self, inputs, kwargs, device_ids):
-                # 只在第一个参数（weight）的 0 维度上分割
-                _weight_, _pt_, _, _p0_ = inputs
-                scattered_weight = torch.nn.parallel.scatter(_weight_, device_ids, dim=0)
-                # 对 pt 和 p0 不进行分割，而是复制到所有设备
-                scattered_pt1 = [_pt_.to(f'cuda:{device_id}') for device_id in device_ids]
-                scattered_pt2 = torch.nn.parallel.scatter(_pt_, device_ids, dim=0)
-                scattered_p0 = torch.nn.parallel.scatter(_p0_, device_ids, dim=0)
-                # 重新组合输入
-                scattered_inputs = [(sw, spt1, spt2, sp0) for sw, spt1, spt2, sp0 in zip(scattered_weight, scattered_pt1, scattered_pt2, scattered_p0)]
-
-                scattered_kwargs = []
-
-                for device_id in device_ids:
-                    device_kwargs = {}
-
-                    for key, value in kwargs.items():
-                        if isinstance(value, torch.Tensor):
-                            device_kwargs[key] = value.to(f'cuda:{device_id}')
-                        else:
-                            device_kwargs[key] = value
-
-                    scattered_kwargs.append(device_kwargs)
-
-                return scattered_inputs, scattered_kwargs
-
-        model = CustomDataParallel(model)
-
-    with torch.no_grad():
-        result = model(weight, pt, pt, p0)
-
-    return result.cpu().numpy().flatten()
+        return result.cpu().numpy().flatten()
 
 
-def random_walk(seed_cell_vector, weight, gamma: float = 0.05, epsilon: float = 1e-5, p: int = 2, device: str = 'auto') -> collection:
+def random_walk(
+    seed_cell_weight: matrix_data,
+    weight: matrix_data,
+    gamma: float = 0.05,
+    epsilon: float = 1e-5,
+    p: int = 2,
+    device: str = 'auto'
+) -> matrix_data:
 
     if device.lower() == 'cpu':
-        return _random_walk_cpu_(seed_cell_vector, weight, gamma, epsilon, p)
+        sample_count = seed_cell_weight.shape[1]
+
+        score = np.zeros(seed_cell_weight.shape)
+
+        for i in tqdm(range(sample_count)):
+            score[:, i] = _random_walk_cpu_(seed_cell_weight[:, i], weight, gamma, epsilon, p)
+
+        return score
     elif device.lower() == 'gpu' or device.lower() == 'auto':
-        return _random_walk_gpu_(seed_cell_vector, weight, gamma, epsilon, p, device=device.lower())
+        return _random_walk_gpu_(seed_cell_weight, weight, gamma, epsilon, p, device=device.lower())
     else:
         raise ValueError(f'The `device` ({device}) is not supported. Only supports "cpu", "gpu", and "auto" values.')
 
@@ -908,10 +919,10 @@ class RandomWalk:
                 self.seed_cell_weight_en_ncw
             ) = self._get_seed_cell_(init_data=init_status_no_weight, info="ablation")
 
-    def _random_walk_(self, seed_cell_vector: collection, weight: matrix_data = None, gamma: float = 0.05, device: str = 'auto') -> matrix_data:
+    def _random_walk_(self, seed_cell_data: matrix_data, weight: matrix_data = None, gamma: float = 0.05, device: str = 'auto') -> matrix_data:
         """
         Perform a random walk
-        :param seed_cell_vector: seed cells;
+        :param seed_cell_data: seed cells;
         :param weight: weight matrix;
         :param gamma: reset weight.
         :param device: device.
@@ -924,24 +935,24 @@ class RandomWalk:
             w = weight
 
         if not self.is_gpu_available:
-            return random_walk(seed_cell_vector, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p, device='cpu')
+            return random_walk(seed_cell_data, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p, device='cpu')
 
         try:
-            _data_ = random_walk(seed_cell_vector, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p, device=device)
+            _data_ = random_walk(seed_cell_data, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p, device=device)
         except Exception as e:
             ul.log(__name__).error(f"GPU failed to run, try to switch to CPU running.\n {e}")
-            _data_ = random_walk(seed_cell_vector, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p, device='cpu')
+            _data_ = random_walk(seed_cell_data, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p, device='cpu')
 
         return _data_
 
-    def _random_walk_core_(self, seed_cell_vector: collection, weight: matrix_data = None) -> matrix_data:
+    def _random_walk_core_(self, seed_cell_data: matrix_data, weight: matrix_data = None) -> matrix_data:
         """
         Perform a random walk
-        :param seed_cell_vector: seed cells;
+        :param seed_cell_data: seed cells;
         :param weight: weight matrix.
         :return: The value after random walk.
         """
-        return self._random_walk_(seed_cell_vector, weight, self.gamma)
+        return self._random_walk_(seed_cell_data, weight, self.gamma)
 
     @staticmethod
     def _get_weight_(cell_cell_matrix: matrix_data) -> matrix_data:
@@ -1168,7 +1179,7 @@ class RandomWalk:
         with tqdm(total=total_steps) as pbar:
             for i in self.trait_range:
 
-                cell_value = np.zeros(self.cell_size)
+                random_seed_cell_matrix = np.zeros((self.cell_size, self.benchmark_count))
 
                 for _ in range(self.benchmark_count):
                     # Set random seed information
@@ -1186,12 +1197,14 @@ class RandomWalk:
                     if trait_value_min != trait_value_max:
                         # seed cell weight
                         random_seed_cell[random_seed_index] = 1 / self.cell_size
+                        random_seed_cell_matrix = random_seed_cell
 
-                        # Random walk
-                        cell_value += self._random_walk_core_(random_seed_cell)
                     pbar.update(1)
+
+                # Random walk
+                cell_value_matrix = self._random_walk_core_(random_seed_cell_matrix)
                 # Remove the influence of background
-                self.random_seed_cell[:, i] = cell_value / self.benchmark_count
+                self.random_seed_cell[:, i] = cell_value_matrix.mean(axis=0)
 
         cell_value = self.scale_norm(self.random_seed_cell)
         self.trs_adata.layers["benchmark"] = to_sparse(cell_value)
@@ -1230,13 +1243,10 @@ class RandomWalk:
         if weight is None:
             weight = self.weight
 
-        score = np.zeros(self.trs_adata.shape)
-
         _log_info_, _layer_label_ = self._get_label_description_(label)
         ul.log(__name__).info(f"Calculate {len(self.trait_list)} traits/diseases for process `{label}`. ({_log_info_} ===> `{_layer_label_}`)")
 
-        for i in tqdm(self.trait_range):
-            score[:, i] = self._random_walk_core_(seed_cell_data[:, i], weight=weight)
+        score = self._random_walk_core_(seed_cell_data, weight=weight)
 
         cell_value = self.scale_norm(score)
 
@@ -1371,15 +1381,19 @@ class RandomWalk:
         trait_cell_enrichment = np.zeros(self.trs_adata.shape)
         trait_cell_credible = np.zeros(self.trs_adata.shape)
 
-        ul.log(__name__).info(f"Calculate {len(self.trait_list)} traits/diseases for process `{label}`. (Enrichment)")
+        ul.log(__name__).info(f"Calculate {len(self.trait_list)} traits/diseases for process `{label}`. (Enrichment-random walk)")
+        # Random walk
+        cell_value_data = self._random_walk_(
+            seed_cell_en_weight,
+            weight=self.weight_m_knn if label == "run_en_ablation_m_knn" else self.weight,
+            gamma=self.enrichment_gamma
+        )
+
+        ul.log(__name__).info(f"Calculate {len(self.trait_list)} traits/diseases for process `{label}`. (Enrichment-score)")
         for i in tqdm(self.trait_range):
 
             # Random walk
-            cell_value = self._random_walk_(
-                seed_cell_en_weight[:, i],
-                weight=self.weight_m_knn if label == "run_en_ablation_m_knn" else self.weight,
-                gamma=self.enrichment_gamma
-            )
+            cell_value = cell_value_data[:, i]
 
             # separate
             cell_value_credible = mean_symmetric_scale(np.array(source_value[:, i]).flatten() - np.array(cell_value).flatten(), is_verbose=False)
