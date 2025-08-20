@@ -575,27 +575,6 @@ def binary_indicator(labels_true: collection, labels_pred: collection) -> Tuple[
     return acc_s, rec_s, f1_s, fpr, tpr, auroc_s, auprc_s
 
 
-class RandomWalkModel(nn.Module):
-    def __init__(self, gamma: float, epsilon: float, p: int):
-        super().__init__()
-        self.gamma = gamma
-        self.epsilon = epsilon
-        self.p = p
-
-    def forward(self, weight, pt, p0):
-        factor = 1 - self.gamma
-        delta = 1.0
-        k = 0
-
-        while delta > self.epsilon:
-            p1 = factor * torch.dot(weight, pt) + self.gamma * p0
-            delta = torch.linalg.norm(pt - p1, ord=self.p).item()
-            pt = p1
-            k += 1
-
-        return pt
-
-
 def _random_walk_cpu_(
     seed_cell_vector: collection,
     weight: matrix_data = None,
@@ -639,6 +618,33 @@ def _random_walk_cpu_(
     return pt.flatten()
 
 
+class RandomWalkModel(nn.Module):
+    def __init__(self, gamma: float, epsilon: float, p: int):
+        super().__init__()
+        self.gamma = gamma
+        self.epsilon = epsilon
+        self.p = p
+
+    def forward(self, weight, pt1, pt2, p0):
+        factor = 1 - self.gamma
+        delta = 1.0
+        k = 0
+
+        while delta > self.epsilon:
+            print("============================")
+            print(weight.shape)
+            print(pt1.shape)
+            print(pt2.shape)
+            print(p0.shape)
+            print("============================")
+            p1 = factor * torch.matmul(weight, pt1) + self.gamma * p0
+            delta = torch.linalg.norm(pt2 - p1, ord=self.p).item()
+            pt2 = p1
+            k += 1
+
+        return pt2
+
+
 def _random_walk_gpu_(seed_cell_vector, weight, gamma: float = 0.05, epsilon: float = 1e-5, p: int = 2, device: str = 'auto') -> collection:
 
     is_gpu_available = check_gpu_availability(verbose=False)
@@ -662,13 +668,14 @@ def _random_walk_gpu_(seed_cell_vector, weight, gamma: float = 0.05, epsilon: fl
 
             def scatter(self, inputs, kwargs, device_ids):
                 # 只在第一个参数（weight）的 0 维度上分割
-                _weight_, _pt_, _p0_ = inputs
+                _weight_, _pt_, _, _p0_ = inputs
                 scattered_weight = torch.nn.parallel.scatter(_weight_, device_ids, dim=0)
                 # 对 pt 和 p0 不进行分割，而是复制到所有设备
-                scattered_pt = [_pt_.to(f'cuda:{device_id}') for device_id in device_ids]
-                scattered_p0 = [_p0_.to(f'cuda:{device_id}') for device_id in device_ids]
+                scattered_pt1 = [_pt_.to(f'cuda:{device_id}') for device_id in device_ids]
+                scattered_pt2 = torch.nn.parallel.scatter(_pt_, device_ids, dim=0)
+                scattered_p0 = torch.nn.parallel.scatter(_p0_, device_ids, dim=0)
                 # 重新组合输入
-                scattered_inputs = [(sw, sp, sp0) for sw, sp, sp0 in zip(scattered_weight, scattered_pt, scattered_p0)]
+                scattered_inputs = [(sw, spt1, spt2, sp0) for sw, spt1, spt2, sp0 in zip(scattered_weight, scattered_pt1, scattered_pt2, scattered_p0)]
 
                 scattered_kwargs = []
 
@@ -680,6 +687,7 @@ def _random_walk_gpu_(seed_cell_vector, weight, gamma: float = 0.05, epsilon: fl
                             device_kwargs[key] = value.to(f'cuda:{device_id}')
                         else:
                             device_kwargs[key] = value
+
                     scattered_kwargs.append(device_kwargs)
 
                 return scattered_inputs, scattered_kwargs
@@ -687,7 +695,10 @@ def _random_walk_gpu_(seed_cell_vector, weight, gamma: float = 0.05, epsilon: fl
         model = CustomDataParallel(model)
 
     with torch.no_grad():
-        result = model(weight, pt, p0)
+        result = model(weight, pt, pt, p0)
+        print("------------------------------------")
+        print(result.shape)
+        print("------------------------------------")
 
     return result.cpu().numpy().flatten()
 
