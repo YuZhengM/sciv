@@ -598,7 +598,7 @@ class RandomWalkModel(nn.Module):
 
 def random_walk_parallel(seed_cell_vector, weight, gamma: float = 0.05, epsilon: float = 1e-5, p: int = 2, device='auto'):
 
-    is_gpu_available = check_gpu_availability()
+    is_gpu_available = check_gpu_availability(verbose=False)
 
     if device == 'auto' and is_gpu_available:
         device = 'cuda'
@@ -608,13 +608,40 @@ def random_walk_parallel(seed_cell_vector, weight, gamma: float = 0.05, epsilon:
     weight = to_dense(weight, is_array=True)
 
     weight = torch.as_tensor(weight, device=device, dtype=torch.float32)
-    p0 = torch.as_tensor(seed_cell_vector.copy()[:, np.newaxis], device=device, dtype=torch.float32)
+    p0 = torch.as_tensor(seed_cell_vector, device=device, dtype=torch.float32).unsqueeze(1)
     pt = p0.clone()
 
     model = RandomWalkModel(gamma, epsilon, p).to(device)
 
     if device == 'cuda' and torch.cuda.device_count() > 1:
-        model = nn.DataParallel(model)
+
+        class CustomDataParallel(nn.DataParallel):
+
+            def scatter(self, inputs, kwargs, device_ids):
+                # 只在第一个参数（weight）的 0 维度上分割
+                _weight_, _pt_, _p0_ = inputs
+                scattered_weight = torch.nn.parallel.scatter(_weight_, device_ids, dim=0)
+                # 对 pt 和 p0 不进行分割，而是复制到所有设备
+                scattered_pt = [_pt_.to(f'cuda:{device_id}') for device_id in device_ids]
+                scattered_p0 = [_p0_.to(f'cuda:{device_id}') for device_id in device_ids]
+                # 重新组合输入
+                scattered_inputs = [(sw, sp, sp0) for sw, sp, sp0 in zip(scattered_weight, scattered_pt, scattered_p0)]
+
+                scattered_kwargs = []
+
+                for device_id in device_ids:
+                    device_kwargs = {}
+
+                    for key, value in kwargs.items():
+                        if isinstance(value, torch.Tensor):
+                            device_kwargs[key] = value.to(f'cuda:{device_id}')
+                        else:
+                            device_kwargs[key] = value
+                    scattered_kwargs.append(device_kwargs)
+
+                return scattered_inputs, scattered_kwargs
+
+        model = CustomDataParallel(model)
 
     with torch.no_grad():
         result = model(weight, pt, p0)
@@ -622,7 +649,7 @@ def random_walk_parallel(seed_cell_vector, weight, gamma: float = 0.05, epsilon:
     return result.cpu().numpy().flatten()
 
 
-def _random_walk_single_(
+def random_walk_single(
     seed_cell_vector: collection,
     weight: matrix_data = None,
     gamma: float = 0.05,
@@ -634,6 +661,8 @@ def _random_walk_single_(
     :param seed_cell_vector: seed cells;
     :param weight: weight matrix;
     :param gamma: reset weight.
+    :param epsilon: conditions for stopping in random walk;
+    :param p: Distance used for loss {1: Manhattan distance, 2: Euclidean distance};
     :return: The value after random walk.
     """
 
@@ -758,7 +787,7 @@ class RandomWalk:
         self.benchmark_count = benchmark_count
         self._enrichment_seed_cell_min_count_ = 3
 
-        self.is_gpu_available = check_gpu_availability(verbose=False)
+        self.is_gpu_available = check_gpu_availability()
 
         if not is_simple and self.is_ablation:
             if "cell_mutual_knn" not in cc_adata.layers:
@@ -883,13 +912,13 @@ class RandomWalk:
             w = weight
 
         if not self.is_gpu_available:
-            return _random_walk_single_(seed_cell_vector, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p)
+            return random_walk_single(seed_cell_vector, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p)
 
         try:
             _data_ = random_walk_parallel(seed_cell_vector, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p, device=device)
         except Exception as e:
             ul.log(__name__).error(f"GPU failed to run, try to switch to CPU running.\n {e}")
-            _data_ = _random_walk_single_(seed_cell_vector, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p)
+            _data_ = random_walk_single(seed_cell_vector, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p)
 
         return _data_
 
