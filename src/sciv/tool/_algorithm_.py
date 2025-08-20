@@ -588,7 +588,7 @@ class RandomWalkModel(nn.Module):
         k = 0
 
         while delta > self.epsilon:
-            p1 = factor * torch.matmul(weight, pt) + self.gamma * p0
+            p1 = factor * torch.dot(weight, pt) + self.gamma * p0
             delta = torch.linalg.norm(pt - p1, ord=self.p).item()
             pt = p1
             k += 1
@@ -596,7 +596,50 @@ class RandomWalkModel(nn.Module):
         return pt
 
 
-def random_walk_parallel(seed_cell_vector, weight, gamma: float = 0.05, epsilon: float = 1e-5, p: int = 2, device='auto'):
+def _random_walk_cpu_(
+    seed_cell_vector: collection,
+    weight: matrix_data = None,
+    gamma: float = 0.05,
+    epsilon: float = 1e-5,
+    p: int = 2
+) -> collection:
+    """
+    Perform a random walk
+    :param seed_cell_vector: seed cells;
+    :param weight: weight matrix;
+    :param gamma: reset weight.
+    :param epsilon: conditions for stopping in random walk;
+    :param p: Distance used for loss {1: Manhattan distance, 2: Euclidean distance};
+    :return: The value after random walk.
+    """
+
+    w = to_dense(weight)
+
+    # Random walk
+    p0 = seed_cell_vector.copy()[:, np.newaxis]
+    pt: matrix_data = p0.copy()
+    k = 0
+    delta = 1
+
+    # iteration
+    while delta > epsilon:
+        p1 = (1 - gamma) * np.dot(w, pt) + gamma * p0
+
+        # 1 and 2, It would be faster alone
+        if p == 1:
+            delta = np.abs(pt - p1).sum()
+        elif p == 2:
+            delta = np.sqrt(np.square(np.abs(pt - p1)).sum())
+        else:
+            delta = np.float_power(np.float_power(np.abs(pt - p1), p).sum(), 1.0 / p)
+
+        pt = p1
+        k += 1
+
+    return pt.flatten()
+
+
+def _random_walk_gpu_(seed_cell_vector, weight, gamma: float = 0.05, epsilon: float = 1e-5, p: int = 2, device: str = 'auto') -> collection:
 
     is_gpu_available = check_gpu_availability(verbose=False)
 
@@ -649,47 +692,14 @@ def random_walk_parallel(seed_cell_vector, weight, gamma: float = 0.05, epsilon:
     return result.cpu().numpy().flatten()
 
 
-def random_walk_single(
-    seed_cell_vector: collection,
-    weight: matrix_data = None,
-    gamma: float = 0.05,
-    epsilon: float = 1e-5,
-    p: int = 2
-) -> matrix_data:
-    """
-    Perform a random walk
-    :param seed_cell_vector: seed cells;
-    :param weight: weight matrix;
-    :param gamma: reset weight.
-    :param epsilon: conditions for stopping in random walk;
-    :param p: Distance used for loss {1: Manhattan distance, 2: Euclidean distance};
-    :return: The value after random walk.
-    """
+def random_walk(seed_cell_vector, weight, gamma: float = 0.05, epsilon: float = 1e-5, p: int = 2, device: str = 'auto') -> collection:
 
-    w = to_dense(weight)
-
-    # Random walk
-    p0 = seed_cell_vector.copy()[:, np.newaxis]
-    pt: matrix_data = p0.copy()
-    k = 0
-    delta = 1
-
-    # iteration
-    while delta > epsilon:
-        p1 = (1 - gamma) * np.dot(w, pt) + gamma * p0
-
-        # 1 and 2, It would be faster alone
-        if p == 1:
-            delta = np.abs(pt - p1).sum()
-        elif p == 2:
-            delta = np.sqrt(np.square(np.abs(pt - p1)).sum())
-        else:
-            delta = np.float_power(np.float_power(np.abs(pt - p1), p).sum(), 1.0 / p)
-
-        pt = p1
-        k += 1
-
-    return pt.flatten()
+    if device.lower() == 'cpu':
+        return _random_walk_cpu_(seed_cell_vector, weight, gamma, epsilon, p)
+    elif device.lower() == 'gpu' or device.lower() == 'auto':
+        return _random_walk_gpu_(seed_cell_vector, weight, gamma, epsilon, p, device=device.lower())
+    else:
+        raise ValueError(f'The `device` ({device}) is not supported. Only supports "cpu", "gpu", and "auto" values.')
 
 
 class RandomWalk:
@@ -912,13 +922,13 @@ class RandomWalk:
             w = weight
 
         if not self.is_gpu_available:
-            return random_walk_single(seed_cell_vector, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p)
+            return random_walk(seed_cell_vector, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p, device='cpu')
 
         try:
-            _data_ = random_walk_parallel(seed_cell_vector, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p, device=device)
+            _data_ = random_walk(seed_cell_vector, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p, device=device)
         except Exception as e:
             ul.log(__name__).error(f"GPU failed to run, try to switch to CPU running.\n {e}")
-            _data_ = random_walk_single(seed_cell_vector, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p)
+            _data_ = random_walk(seed_cell_vector, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p, device='cpu')
 
         return _data_
 
