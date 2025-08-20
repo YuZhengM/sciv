@@ -631,12 +631,6 @@ class RandomWalkModel(nn.Module):
         k = 0
 
         while delta > self.epsilon:
-            print("============================")
-            print(weight.shape)
-            print(pt1.shape)
-            print(pt2.shape)
-            print(p0.shape)
-            print("============================")
             p1 = factor * torch.matmul(weight, pt1) + self.gamma * p0
             delta = torch.linalg.norm(pt2 - p1, ord=self.p).item()
             pt2 = p1
@@ -696,9 +690,6 @@ def _random_walk_gpu_(seed_cell_vector, weight, gamma: float = 0.05, epsilon: fl
 
     with torch.no_grad():
         result = model(weight, pt, pt, p0)
-        print("------------------------------------")
-        print(result.shape)
-        print("------------------------------------")
 
     return result.cpu().numpy().flatten()
 
