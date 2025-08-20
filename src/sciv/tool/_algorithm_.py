@@ -657,7 +657,7 @@ class RandomWalkModel(nn.Module):
 
         sample_count = seed_cell_weight.shape[1]
 
-        score = torch.zeros(seed_cell_weight.shape)
+        score = torch.zeros(seed_cell_weight.shape).cuda()
 
         for i in range(sample_count):
             score[:, i] = self.core(seed_cell_weight[:, i], weight)
@@ -710,12 +710,21 @@ def _random_walk_gpu_(
 
                     return scattered_inputs, scattered_kwargs
 
+                def gather(self, outputs, output_device):
+                    """
+                    收集并行处理后的结果，检查是否存在结果，并将结果按列合并（每个结果矩阵，行数一样，列数不一样）
+                    :param outputs: 各个设备的输出结果
+                    :param output_device: 输出设备
+                    :return: 收集并按列合并后的结果
+                    """
+                    return torch.nn.parallel.scatter_gather.gather(outputs, output_device, dim=1)
+
             model = CustomDataParallel(model)
 
         with torch.no_grad():
             result = model(seed_cell_weight, weight)
 
-        return result.cpu().numpy().flatten()
+        return result.cpu().numpy()
 
 
 def random_walk(
