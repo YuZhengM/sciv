@@ -78,12 +78,12 @@ def poisson_vi(
         except Exception as ex:
 
             try:
-                ul.log(__name__).error(f"Multiple GPU failed to run, attempting to run on one card.\n {ex}")
+                ul.log(__name__).warning(f"Multiple GPU failed to run, attempting to run on one card.\n {ex}")
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore")
                     _model_.train(max_epochs=max_epochs, check_val_every_n_epoch=1)
             except Exception as exc:
-                ul.log(__name__).error(f"GPU failed to run, try to switch to CPU running.\n {exc}")
+                ul.log(__name__).warning(f"GPU failed to run, try to switch to CPU running.\n {exc}")
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore")
                     _model_.to_device('cpu')
@@ -171,7 +171,7 @@ def poisson_vi(
             try:
                 da_peaks = model.differential_accessibility(adata, groupby="clusters", delta=dp_delta, group1=cluster, mode="vanilla", two_sided=False)
             except Exception as e:
-                ul.log(__name__).error(f"GPU failed to run, try to switch to CPU running.\n {e}")
+                ul.log(__name__).warning(f"GPU failed to run, try to switch to CPU running.\n {e}")
                 # PyTorch uses CPU
                 model.to_device('cpu')
                 da_peaks = model.differential_accessibility(adata, groupby="clusters", delta=dp_delta, group1=cluster, mode="vanilla", two_sided=False)

@@ -685,7 +685,7 @@ def _random_walk_gpu_(
         weight = to_dense(weight, is_array=True)
         weight = torch.as_tensor(weight, device=device, dtype=torch.float32)
 
-        if device == 'cuda' and torch.cuda.device_count() < seed_cell_weight.shape[1]:
+        if device == 'cuda' and 1 < torch.cuda.device_count() < seed_cell_weight.shape[1]:
 
             class CustomDataParallel(nn.DataParallel):
 
@@ -750,6 +750,7 @@ def random_walk(
     elif device == 'gpu' or (device == 'auto' and availability):
         return _random_walk_gpu_(seed_cell_weight, weight, gamma, epsilon, p, device='gpu')
     else:
+        ul.log(__name__).error(f'The `device` ({device}) is not supported. Only supports "cpu", "gpu", and "auto" values.')
         raise ValueError(f'The `device` ({device}) is not supported. Only supports "cpu", "gpu", and "auto" values.')
 
 
@@ -978,7 +979,7 @@ class RandomWalk:
         try:
             _data_ = random_walk(seed_cell_data, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p, device=device)
         except Exception as e:
-            ul.log(__name__).error(f"GPU failed to run, try to switch to CPU running.\n {e}")
+            ul.log(__name__).warning(f"GPU failed to run, try to switch to CPU running.\n {e}")
             _data_ = random_walk(seed_cell_data, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p, device='cpu')
 
         return _data_
