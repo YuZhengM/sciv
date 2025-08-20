@@ -106,9 +106,6 @@ def poisson_vi(
     else:
         model = __train__()
 
-    # PyTorch uses CPU
-    model.to_device('cpu')
-
     # latent space
     latent = model.get_latent_representation()
     adata.obsm[latent_name] = latent
@@ -169,8 +166,16 @@ def poisson_vi(
             ul.log(__name__).info(f"Start difference peak: {cluster}/({', '.join(clusters_list)})")
             clusters_all = clusters_list.copy()
             clusters_all.remove(cluster)
+
             # differential peak
-            da_peaks = model.differential_accessibility(adata, groupby="clusters", delta=dp_delta, group1=cluster, mode="vanilla", two_sided=False)
+            try:
+                da_peaks = model.differential_accessibility(adata, groupby="clusters", delta=dp_delta, group1=cluster, mode="vanilla", two_sided=False)
+            except Exception as e:
+                ul.log(__name__).error(f"GPU failed to run, try to switch to CPU running.\n {e}")
+                # PyTorch uses CPU
+                model.to_device('cpu')
+                da_peaks = model.differential_accessibility(adata, groupby="clusters", delta=dp_delta, group1=cluster, mode="vanilla", two_sided=False)
+
             da_peaks_all.update({cluster: da_peaks})
 
         adata.uns["da_peaks"] = da_peaks_all
