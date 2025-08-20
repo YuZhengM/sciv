@@ -621,7 +621,7 @@ def _random_walk_cpu_(
 
 class RandomWalkModel(nn.Module):
 
-    def __init__(self, weight: Union[matrix_data, Tensor], gamma: float = 0.05, epsilon: float = 1e-5, p: int = 2, device: str = 'auto', pbar=None):
+    def __init__(self, gamma: float = 0.05, epsilon: float = 1e-5, p: int = 2, device: str = 'auto', pbar=None):
         super().__init__()
         self.gamma = gamma
         self.epsilon = epsilon
@@ -632,11 +632,9 @@ class RandomWalkModel(nn.Module):
 
         self.device = 'cuda' if (device == 'gpu' or (device == 'auto' and is_gpu_available)) else 'cpu'
 
-        self.weight = torch.as_tensor(to_dense(weight, is_array=True), dtype=torch.float32) if isinstance(weight, matrix_data) else weight
-
         self.factor = 1 - self.gamma
 
-    def core(self, seed_cell_vector: Tensor):
+    def core(self, seed_cell_vector: Tensor, weight: Tensor):
 
         p0 = seed_cell_vector
         pt = p0.clone()
@@ -645,7 +643,7 @@ class RandomWalkModel(nn.Module):
         k = 0
 
         while delta > self.epsilon:
-            p1 = self.factor * torch.matmul(self.weight, pt) + self.gamma * p0
+            p1 = self.factor * torch.matmul(weight, pt) + self.gamma * p0
             delta = torch.linalg.norm(pt - p1, ord=self.p).item()
             pt = p1
             k += 1
@@ -655,14 +653,14 @@ class RandomWalkModel(nn.Module):
 
         return pt.flatten()
 
-    def forward(self, seed_cell_weight: Tensor):
+    def forward(self, seed_cell_weight: Tensor, weight: Tensor):
 
         sample_count = seed_cell_weight.shape[1]
 
         score = torch.zeros(seed_cell_weight.shape)
 
         for i in range(sample_count):
-            score[:, i] = self.core(seed_cell_weight[:, i])
+            score[:, i] = self.core(seed_cell_weight[:, i], weight)
 
         return score
 
@@ -678,18 +676,44 @@ def _random_walk_gpu_(
 
     with tqdm(total=seed_cell_weight.shape[1]) as pbar:
 
-        model = RandomWalkModel(weight, gamma, epsilon, p, device, pbar)
+        model = RandomWalkModel(gamma, epsilon, p, device, pbar)
 
         device = model.device
         model.to(device)
 
         seed_cell_weight = torch.as_tensor(seed_cell_weight, device=device, dtype=torch.float32)
+        weight = to_dense(weight, is_array=True)
+        weight = torch.as_tensor(weight, device=device, dtype=torch.float32)
 
         if device == 'cuda' and torch.cuda.device_count() < seed_cell_weight.shape[1]:
-            model = nn.DataParallel(model, dim=1)
+
+            class CustomDataParallel(nn.DataParallel):
+
+                def scatter(self, inputs, kwargs, device_ids):
+                    _seed_cell_weight_, _weight_ = inputs
+                    scattered_seed_cell_weight = torch.nn.parallel.scatter(_seed_cell_weight_, device_ids, dim=1)
+                    scattered_weight = [_weight_.to(f'cuda:{device_id}') for device_id in device_ids]
+                    scattered_inputs = [(ssw, sw) for ssw, sw in zip(scattered_seed_cell_weight, scattered_weight)]
+
+                    scattered_kwargs = []
+
+                    for device_id in device_ids:
+                        device_kwargs = {}
+
+                        for key, value in kwargs.items():
+                            if isinstance(value, torch.Tensor):
+                                device_kwargs[key] = value.to(f'cuda:{device_id}')
+                            else:
+                                device_kwargs[key] = value
+
+                        scattered_kwargs.append(device_kwargs)
+
+                    return scattered_inputs, scattered_kwargs
+
+            model = CustomDataParallel(model)
 
         with torch.no_grad():
-            result = model(seed_cell_weight)
+            result = model(seed_cell_weight, weight)
 
         return result.cpu().numpy().flatten()
 
