@@ -889,10 +889,10 @@ def check_gpu_availability(verbose: bool = True) -> bool:
     if verbose:
 
         if available:
-            print("GPU is available with PyTorch.")
-            print(f"Number of GPUs: {torch.cuda.device_count()}")
-            print(f"GPU Name: {torch.cuda.get_device_name(torch.cuda.current_device())}")
+            log(__name__).info("GPU is available.")
+            log(__name__).info(f"Number of GPUs: {torch.cuda.device_count()}")
+            log(__name__).info(f"GPU Name: {torch.cuda.get_device_name(torch.cuda.current_device())}")
         else:
-            print("GPU is not available with PyTorch.")
+            log(__name__).info("GPU is not available.")
 
     return available

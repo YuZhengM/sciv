@@ -848,7 +848,7 @@ class RandomWalk:
         self.benchmark_count = benchmark_count
         self._enrichment_seed_cell_min_count_ = 3
 
-        self.is_gpu_available = check_gpu_availability()
+        self.is_gpu_available = check_gpu_availability(False)
 
         if not is_simple and self.is_ablation:
             if "cell_mutual_knn" not in cc_adata.layers:
