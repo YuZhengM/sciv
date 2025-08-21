@@ -754,6 +754,12 @@ def random_walk(
         raise ValueError(f'The `device` ({device}) is not supported. Only supports "cpu", "gpu", and "auto" values.')
 
 
+def trs_scale_norm(score: matrix_data, axis: Literal[0, 1, -1] = 0, is_verbose: bool = True) -> matrix_data:
+    cell_value = mean_symmetric_scale(score, axis=axis, is_verbose=is_verbose)
+    cell_value = np.log1p(min_max_norm(cell_value, axis=axis))
+    return cell_value
+
+
 class RandomWalk:
     """
     Random walk
@@ -1196,9 +1202,7 @@ class RandomWalk:
 
     @staticmethod
     def scale_norm(score: matrix_data, is_verbose: bool = False) -> matrix_data:
-        cell_value = mean_symmetric_scale(score, axis=0, is_verbose=is_verbose)
-        cell_value = np.log1p(min_max_norm(cell_value, axis=0))
-        return cell_value
+        return trs_scale_norm(score, axis=0, is_verbose=is_verbose)
 
     def _simple_error_(self) -> None:
 
