@@ -32,6 +32,7 @@ from ..util import (
 __name__: str = "tool_algorithm"
 
 _Affinity = Literal["nearest_neighbors", "rbf", "precomputed", "precomputed_nearest_neighbors", "jaccard"]
+_EigenSolver = Literal["arpack", "lobpcg", "amg"]
 
 
 def sigmoid(data: Union[collection, matrix_data]) -> Union[collection, matrix_data]:
@@ -314,20 +315,25 @@ def pca(data: matrix_data, n_components: int = 50) -> dense_data:
         return pca_data
 
 
-def jaccard_similarity(data: matrix_data, n_jobs: int = -1) -> matrix_data:
+def jaccard_similarity(data: matrix_data, is_binary: bool = True, n_jobs: int = -1) -> matrix_data:
     """
     计算杰卡德相似性矩阵
     """
     from sklearn.metrics.pairwise import pairwise_kernels
+    from sklearn.preprocessing import binarize
+
+    if is_binary:
+        data = binarize(data, threshold=0.5)
 
     return pairwise_kernels(data, metric='jaccard', n_jobs=n_jobs)
 
 
-def spectral_eigenmaps(data: matrix_data, n_components: int = 2, affinity: _Affinity = 'jaccard', n_jobs: int = -1) -> dense_data:
+def spectral_eigenmaps(data: matrix_data, n_components: int = 30, affinity: _Affinity = 'jaccard', eigen_solver: _EigenSolver = "arpack", n_jobs: int = -1) -> dense_data:
     """
     Spectral Eigenmaps
     :param data: input cell feature data;
     :param n_components: Dimensions that need to be reduced to.
+    :param eigen_solver:
     :param affinity:
     :param n_jobs:
     :return: Reduced dimensional data.
@@ -335,21 +341,19 @@ def spectral_eigenmaps(data: matrix_data, n_components: int = 2, affinity: _Affi
     from sklearn.manifold import SpectralEmbedding
 
     if data.shape[1] <= n_components:
-        ul.log(__name__).info(
-            "The features of the data are less than or equal to the `n_components` parameter, ignoring Laplacian "
-            "Eigenmaps"
-        )
+        ul.log(__name__).info("The features of the data are less than or equal to the `n_components` parameter, ignoring Spectral Eigenmaps.")
         return to_dense(data, is_array=True)
     else:
-        ul.log(__name__).info("Start Laplacian Eigenmaps")
+        ul.log(__name__).info("Start Spectral Eigenmaps")
         data = to_dense(data, is_array=True)
         se = SpectralEmbedding(
             n_components=n_components,
             affinity=jaccard_similarity if affinity == 'jaccard' else affinity,
+            eigen_solver=eigen_solver,
             n_jobs=n_jobs
         )
         se_data = se.fit_transform(data)
-        ul.log(__name__).info("End Laplacian Eigenmaps")
+        ul.log(__name__).info("End Spectral Eigenmaps")
         return se_data
 
 
