@@ -12,7 +12,8 @@ from ._algorithm_ import (
     is_asc_sort,
     lsi,
     pca,
-    laplacian_eigenmaps,
+    jaccard_similarity,
+    spectral_eigenmaps,
     semi_mutual_knn_weight,
     k_means,
     spectral_clustering,
@@ -26,9 +27,6 @@ from ._algorithm_ import (
     ami,
     binary_indicator,
     z_score_to_p_value,
-    trs_scale_norm,
-    random_walk,
-    RandomWalk,
     euclidean_distances,
     overlap,
     overlap_sum,
@@ -37,6 +35,12 @@ from ._algorithm_ import (
     obtain_cell_cell_network,
     perturb_data,
     add_noise
+)
+
+from ._random_walk_ import (
+    trs_scale_norm,
+    random_walk,
+    RandomWalk,
 )
 
 __all__ = [
@@ -51,7 +55,8 @@ __all__ = [
     "is_asc_sort",
     "lsi",
     "pca",
-    "laplacian_eigenmaps",
+    "jaccard_similarity",
+    "spectral_eigenmaps",
     "semi_mutual_knn_weight",
     "k_means",
     "spectral_clustering",
