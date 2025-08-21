@@ -39,6 +39,7 @@ from ._algorithm_ import (
 
 from ._random_walk_ import (
     trs_scale_norm,
+    TraitDataParallel,
     random_walk,
     RandomWalk,
 )
@@ -71,6 +72,7 @@ __all__ = [
     "binary_indicator",
     "z_score_to_p_value",
     "trs_scale_norm",
+    "TraitDataParallel",
     "random_walk",
     "RandomWalk",
     "euclidean_distances",

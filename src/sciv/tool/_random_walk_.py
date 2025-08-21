@@ -131,6 +131,40 @@ class RandomWalkModel(nn.Module):
         return score
 
 
+class TraitDataParallel(nn.DataParallel):
+
+    def scatter(self, inputs, kwargs, device_ids):
+        _seed_cell_weight_, _weight_ = inputs
+        scattered_seed_cell_weight = torch.nn.parallel.scatter(_seed_cell_weight_, device_ids, dim=1)
+        scattered_weight = [_weight_.to(f'cuda:{device_id}') for device_id in device_ids]
+        scattered_inputs = [(ssw, sw) for ssw, sw in zip(scattered_seed_cell_weight, scattered_weight)]
+
+        scattered_kwargs = []
+
+        for device_id in device_ids:
+            device_kwargs = {}
+
+            for key, value in kwargs.items():
+
+                if isinstance(value, torch.Tensor):
+                    device_kwargs[key] = value.to(f'cuda:{device_id}')
+                else:
+                    device_kwargs[key] = value
+
+            scattered_kwargs.append(device_kwargs)
+
+        return scattered_inputs, scattered_kwargs
+
+    def gather(self, outputs, output_device):
+        """
+        收集并行处理后的结果，检查是否存在结果，并将结果按列合并（每个结果矩阵，行数一样，列数不一样）
+        :param outputs: 各个设备的输出结果
+        :param output_device: 输出设备
+        :return: 收集并按列合并后的结果
+        """
+        return torch.nn.parallel.scatter_gather.gather(outputs, output_device, dim=1)
+
+
 def _random_walk_gpu_(
     seed_cell_weight: matrix_data,
     weight: matrix_data,
@@ -152,40 +186,7 @@ def _random_walk_gpu_(
         weight = torch.as_tensor(weight, device=device, dtype=torch.float32)
 
         if device == 'cuda' and 1 < torch.cuda.device_count() < seed_cell_weight.shape[1]:
-
-            class CustomDataParallel(nn.DataParallel):
-
-                def scatter(self, inputs, kwargs, device_ids):
-                    _seed_cell_weight_, _weight_ = inputs
-                    scattered_seed_cell_weight = torch.nn.parallel.scatter(_seed_cell_weight_, device_ids, dim=1)
-                    scattered_weight = [_weight_.to(f'cuda:{device_id}') for device_id in device_ids]
-                    scattered_inputs = [(ssw, sw) for ssw, sw in zip(scattered_seed_cell_weight, scattered_weight)]
-
-                    scattered_kwargs = []
-
-                    for device_id in device_ids:
-                        device_kwargs = {}
-
-                        for key, value in kwargs.items():
-                            if isinstance(value, torch.Tensor):
-                                device_kwargs[key] = value.to(f'cuda:{device_id}')
-                            else:
-                                device_kwargs[key] = value
-
-                        scattered_kwargs.append(device_kwargs)
-
-                    return scattered_inputs, scattered_kwargs
-
-                def gather(self, outputs, output_device):
-                    """
-                    收集并行处理后的结果，检查是否存在结果，并将结果按列合并（每个结果矩阵，行数一样，列数不一样）
-                    :param outputs: 各个设备的输出结果
-                    :param output_device: 输出设备
-                    :return: 收集并按列合并后的结果
-                    """
-                    return torch.nn.parallel.scatter_gather.gather(outputs, output_device, dim=1)
-
-            model = CustomDataParallel(model)
+            model = TraitDataParallel(model)
 
         with torch.no_grad():
             result = model(seed_cell_weight, weight)
