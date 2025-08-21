@@ -11,6 +11,8 @@ from typing import Tuple, Union, Literal
 import numpy as np
 import pandas as pd
 import torch
+from matplotlib import pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 from numpy import asarray
 from anndata import AnnData
 from pandas import DataFrame
@@ -896,3 +898,22 @@ def check_gpu_availability(verbose: bool = True) -> bool:
             log(__name__).info("GPU is not available.")
 
     return available
+
+
+def plot_end(fig, output: str, show: bool, dpi: float = 300):
+    if output is not None:
+
+        if output.endswith(".pdf"):
+
+            with PdfPages(output) as pdf:
+                pdf.savefig(fig)
+
+        elif output.endswith(".png") or output.endswith(".jpg"):
+            plt.savefig(output, dpi=dpi)
+        else:
+            plt.savefig(f"{output}.png", dpi=dpi)
+
+    if show:
+        plt.show()
+
+    plt.close()

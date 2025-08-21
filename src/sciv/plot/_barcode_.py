@@ -4,13 +4,12 @@ import os
 
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.colors import ListedColormap
 from matplotlib.gridspec import GridSpec
 from pandas import DataFrame
 
 from .. import util as ul
-from ..util import path, type_50_colors, type_20_colors
+from ..util import path, type_50_colors, type_20_colors, plot_end
 
 __name__: str = "plot_barcode"
 
@@ -92,16 +91,7 @@ def barcode_base(
     ticks = np.linspace(round(df_sort[sort_column].min(), 2), round(df_sort[sort_column].max() - 0.05, 2), 3)
     color_bar.set_ticks(ticks if is_ticks else [])
 
-    if output is not None:
-        output_pdf = output if output.endswith(".pdf") else f"{output}.pdf"
-        # plt.savefig(output_pdf, dpi=300)
-        with PdfPages(output_pdf) as pdf:
-            pdf.savefig(fig)
-
-    if show:
-        plt.show()
-
-    plt.close()
+    plot_end(fig, output, show)
 
 
 def barcode_trait(

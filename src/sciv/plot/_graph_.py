@@ -20,7 +20,8 @@ from ..util import (
     to_dense,
     type_20_colors,
     type_50_colors,
-    check_adata_get
+    check_adata_get,
+    plot_end
 )
 
 __name__: str = "plot_graph"
@@ -142,7 +143,8 @@ def communities_graph(
         ul.log(__name__).info("Get position")
         color_index = 0
         g = nx.from_numpy_array(adj_matrix)
-        partition = [0 for _ in range(g.number_of_nodes())]
+        partition: list = [0 for _ in range(g.number_of_nodes())]
+
         for c_i, nodes in enumerate(communities):
             for i in nodes:
                 partition[i] = type_colors[start_color_index + color_index * color_step_size + c_i]
@@ -395,15 +397,4 @@ def network_two_types(
         # 显示图形
         plt.axis('off')
 
-        # noinspection DuplicatedCode
-        if output is not None:
-            output_pdf = output if output.endswith(".pdf") else f"{output}.pdf"
-            # plt.savefig(output_pdf, dpi=300)
-            with PdfPages(output_pdf) as pdf:
-                pdf.savefig(fig)
-
-        if show:
-            plt.grid(True)
-            plt.show()
-
-        plt.close()
+        plot_end(fig, output, show)

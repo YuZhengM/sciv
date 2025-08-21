@@ -9,11 +9,10 @@ from pandas import DataFrame
 
 import seaborn as sns
 from matplotlib import pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
 from statannotations.Annotator import Annotator
 
 from .. import util as ul
-from ..util import path, collection, plot_color_types
+from ..util import path, collection, plot_color_types, plot_end
 
 __name__: str = "plot_bar"
 
@@ -63,16 +62,7 @@ def bar(
                 color=text_color
             )
 
-        if output is not None:
-            output_pdf = output if output.endswith(".pdf") else f"{output}.pdf"
-            # plt.savefig(output_pdf, dpi=300)
-            with PdfPages(output_pdf) as pdf:
-                pdf.savefig(fig)
-
-        if show:
-            plt.show()
-
-        plt.close()
+        plot_end(fig, output, show)
 
 
 def two_bar(
@@ -125,16 +115,7 @@ def two_bar(
                 color=text_color
             )
 
-        if output is not None:
-            output_pdf = output if output.endswith(".pdf") else f"{output}.pdf"
-            # plt.savefig(output_pdf, dpi=300)
-            with PdfPages(output_pdf) as pdf:
-                pdf.savefig(fig)
-
-        if show:
-            plt.show()
-
-        plt.close()
+        plot_end(fig, output, show)
 
 
 def class_bar(
@@ -455,13 +436,4 @@ def bar_significance(
         if y_name is not None:
             plt.ylabel(y_name, rotation=90)
 
-        if output is not None:
-            output_pdf = output if output.endswith(".pdf") else f"{output}.pdf"
-            # plt.savefig(output_pdf, dpi=300)
-            with PdfPages(output_pdf) as pdf:
-                pdf.savefig(fig)
-
-        if show:
-            plt.show()
-
-        plt.close()
+        plot_end(fig, output, show)

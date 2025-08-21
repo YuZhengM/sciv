@@ -1,11 +1,10 @@
 # -*- coding: UTF-8 -*-
 
 from matplotlib import pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib_venn import venn3, venn3_circles, venn2, venn2_circles
 
 from .. import util as ul
-from ..util import path, collection, type_set_colors
+from ..util import path, collection, type_set_colors, plot_end
 
 __name__: str = "plot_venn"
 
@@ -58,16 +57,7 @@ def three_venn(
 
         ax1.axis('off')
 
-        if output is not None:
-            output_pdf = output if output.endswith(".pdf") else f"{output}.pdf"
-            # plt.savefig(output_pdf, dpi=300)
-            with PdfPages(output_pdf) as pdf:
-                pdf.savefig(fig)
-
-        if show:
-            plt.show()
-
-        plt.close()
+        plot_end(fig, output, show)
 
 
 def two_venn(
@@ -113,14 +103,4 @@ def two_venn(
 
         ax1.axis('off')
 
-        if output is not None:
-            output_pdf = output if output.endswith(".pdf") else f"{output}.pdf"
-            # plt.savefig(output_pdf, dpi=300)
-            with PdfPages(output_pdf) as pdf:
-                pdf.savefig(fig)
-
-        if show:
-            plt.show()
-
-        plt.close()
-
+        plot_end(fig, output, show)

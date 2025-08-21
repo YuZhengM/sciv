@@ -3,11 +3,10 @@
 import numpy as np
 from matplotlib import pyplot as plt
 import seaborn as sns
-from matplotlib.backends.backend_pdf import PdfPages
 from pandas import DataFrame
 
 from .. import util as ul
-from ..util import path
+from ..util import path, plot_end
 
 __name__: str = "plot_bubble"
 
@@ -50,13 +49,4 @@ def bubble(
             data=df
         )
 
-        if output is not None:
-            output_pdf = output if output.endswith(".pdf") else f"{output}.pdf"
-            # plt.savefig(output_pdf, dpi=300)
-            with PdfPages(output_pdf) as pdf:
-                pdf.savefig(fig)
-
-        if show:
-            plt.show()
-
-        plt.close()
+        plot_end(fig, output, show)

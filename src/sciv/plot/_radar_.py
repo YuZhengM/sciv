@@ -7,11 +7,10 @@ import numpy as np
 import pandas as pd
 
 from matplotlib import pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
 from pandas import DataFrame
 
 from .. import util as ul
-from ..util import path, collection
+from ..util import path, collection, plot_end
 
 __name__: str = "plot_radar"
 
@@ -98,16 +97,7 @@ def radar(
         # Adjust the layout to prevent label overlap
         plt.tight_layout()
 
-        if output is not None:
-            output_pdf = output if output.endswith(".pdf") else f"{output}.pdf"
-            # plt.savefig(output_pdf, dpi=300)
-            with PdfPages(output_pdf) as pdf:
-                pdf.savefig(fig)
-
-        if show:
-            plt.show()
-
-        plt.close()
+        plot_end(fig, output, show)
 
 
 def radar_trait(

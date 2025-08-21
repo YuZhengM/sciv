@@ -5,12 +5,11 @@ from typing import Literal
 import numpy as np
 from anndata import AnnData
 from matplotlib import pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
 import seaborn as sns
 from tqdm import tqdm
 
 from .. import util as ul
-from ..util import path, down_sampling_data, check_adata_get
+from ..util import path, down_sampling_data, check_adata_get, plot_end
 
 __name__: str = "plot_kde"
 
@@ -75,13 +74,4 @@ def kde(
             if is_legend:
                 ax.legend(list(adata.obs.index))
 
-        if output is not None:
-            output_pdf = output if output.endswith(".pdf") else f"{output}.pdf"
-            # plt.savefig(output_pdf, dpi=300)
-            with PdfPages(output_pdf) as pdf:
-                pdf.savefig(fig)
-
-        if show:
-            plt.show()
-
-        plt.close()
+        plot_end(fig, output, show)

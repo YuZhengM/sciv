@@ -6,12 +6,11 @@ from pandas import DataFrame
 from anndata import AnnData
 from matplotlib import pyplot as plt
 import matplotlib.dates as mdates
-from matplotlib.backends.backend_pdf import PdfPages
 import seaborn as sns
 
 from .. import util as ul
 from ..preprocessing import adata_map_df
-from ..util import path, plot_color_types, collection
+from ..util import path, plot_color_types, collection, plot_end
 
 __name__: str = "plot_line"
 
@@ -132,13 +131,4 @@ def stability_line(
         else:
             plt.xticks(x_ticks, rotation=x_name_rotation)
 
-        if output is not None:
-            output_pdf = output if output.endswith(".pdf") else f"{output}.pdf"
-            # plt.savefig(output_pdf, dpi=300)
-            with PdfPages(output_pdf) as pdf:
-                pdf.savefig(fig)
-
-        if show:
-            plt.show()
-
-        plt.close()
+        plot_end(fig, output, show)

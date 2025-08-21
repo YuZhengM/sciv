@@ -5,11 +5,10 @@ from typing import Tuple, Union
 
 from pandas import DataFrame
 from matplotlib import pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
 import seaborn as sns
 
 from .. import util as ul
-from ..util import path
+from ..util import path, plot_end
 
 __name__: str = "plot_box"
 
@@ -121,16 +120,7 @@ def box_base(
 
         plt.ylabel(y_name)
 
-        if output is not None:
-            output_pdf = output if output.endswith(".pdf") else f"{output}.pdf"
-            # plt.savefig(output_pdf, dpi=300)
-            with PdfPages(output_pdf) as pdf:
-                pdf.savefig(fig)
-
-        if show:
-            plt.show()
-
-        plt.close()
+        plot_end(fig, output, show)
 
 
 def box_trait(

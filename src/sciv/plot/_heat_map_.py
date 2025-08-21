@@ -6,14 +6,13 @@ import pandas as pd
 from anndata import AnnData
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
-from matplotlib.backends.backend_pdf import PdfPages
 from PyComplexHeatmap import HeatmapAnnotation, anno_simple, ClusterMapPlotter, anno_label, anno_barplot
 from matplotlib.colors import ListedColormap
 from pandas import DataFrame
 import seaborn as sns
 
 from .. import util as ul
-from ..util import path, type_20_colors, type_50_colors
+from ..util import path, type_20_colors, type_50_colors, plot_end
 
 __name__: str = "plot_heat_map"
 
@@ -301,21 +300,7 @@ def heatmap_annotation(
             **kwargs
         )
 
-        # noinspection DuplicatedCode
-        if output is not None:
-
-            if output.endswith(".png") or output.endswith(".jpg"):
-                plt.savefig(output, dpi=300)
-            else:
-                output_pdf = output if output.endswith(".pdf") else f"{output}.pdf"
-
-                with PdfPages(output_pdf) as pdf:
-                    pdf.savefig(fig)
-
-        if show:
-            plt.show()
-
-        plt.close()
+        plot_end(fig, output, show)
 
 
 def heatmap(
@@ -362,33 +347,16 @@ def heatmap(
         if not is_cluster:
             plt.subplots_adjust(left=0, bottom=0)
             plt.setp(
-                heat_map.get_xticklabels(), rotation=65, ha="right", rotation_mode="anchor"
+                heat_map.get_xticklabels(), rotation=rotation, ha="right", rotation_mode="anchor"
             )
         else:
             # noinspection PyUnresolvedReferences
             plt.setp(heat_map.ax_heatmap.get_xticklabels(), rotation=rotation)
 
         if x_name is not None:
-            plt.xlabel(x_name, fontsize=15)
+            plt.xlabel(x_name)
 
         if y_name is not None:
-            plt.ylabel(y_name, fontsize=15)
+            plt.ylabel(y_name)
 
-        # noinspection DuplicatedCode
-        if output is not None:
-
-            if output.endswith(".png") or output.endswith(".jpg"):
-                plt.savefig(output, dpi=300)
-            else:
-                output_pdf = output if output.endswith(".pdf") else f"{output}.pdf"
-
-                if is_cluster:
-                    plt.savefig(output_pdf, dpi=300)
-                else:
-                    with PdfPages(output_pdf) as pdf:
-                        pdf.savefig(fig)
-
-        if show:
-            plt.show()
-
-        plt.close()
+        plot_end(fig, output, show)

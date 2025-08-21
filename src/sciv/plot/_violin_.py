@@ -4,12 +4,11 @@ import os
 from typing import Tuple, Union, Literal
 
 from matplotlib import pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
 from pandas import DataFrame
 import seaborn as sns
 
 from .. import util as ul
-from ..util import path
+from ..util import path, plot_end
 
 __name__: str = "plot_violin"
 
@@ -118,16 +117,7 @@ def violin_base(
 
     plt.ylabel(y_name)
 
-    if output is not None:
-        output_pdf = output if output.endswith(".pdf") else f"{output}.pdf"
-        # Fix the saved graphic object. It should save the figure of g instead of fig
-        with PdfPages(output_pdf) as pdf:
-            pdf.savefig(g.fig)
-
-    if show:
-        plt.show()
-
-    plt.close()
+    plot_end(fig, output, show)
 
 
 def violin_trait(

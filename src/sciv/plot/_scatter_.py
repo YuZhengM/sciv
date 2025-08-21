@@ -12,7 +12,7 @@ from pandas import DataFrame
 import seaborn as sns
 
 from .. import util as ul
-from ..util import path, collection, type_50_colors, type_20_colors, chrtype, type_set_colors
+from ..util import path, collection, type_50_colors, type_20_colors, chrtype, type_set_colors, plot_end
 
 __name__: str = "plot_pie"
 
@@ -147,18 +147,7 @@ def scatter_base(
         ax.set_xlabel(x)
         ax.set_ylabel(y)
 
-        # noinspection DuplicatedCode
-        if output is not None:
-            output_pdf = output if output.endswith(".pdf") else f"{output}.pdf"
-            # plt.savefig(output_pdf, dpi=300)
-            with PdfPages(output_pdf) as pdf:
-                pdf.savefig(fig)
-
-        if show:
-            plt.grid(True)
-            plt.show()
-
-        plt.close()
+        plot_end(fig, output, show)
 
 
 def scatter_atac(
@@ -481,15 +470,4 @@ def manhattan_causal_variant(
         if y_name is not None:
             ax.set_ylabel(y_name)
 
-        # noinspection DuplicatedCode
-        if output is not None:
-            output_pdf = output if output.endswith(".pdf") else f"{output}.pdf"
-            # plt.savefig(output_pdf, dpi=300)
-            with PdfPages(output_pdf) as pdf:
-                pdf.savefig(fig)
-
-        if show:
-            plt.grid(True)
-            plt.show()
-
-        plt.close()
+        plot_end(fig, output, show)
