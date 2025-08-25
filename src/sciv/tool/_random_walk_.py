@@ -1,20 +1,16 @@
 # -*- coding: UTF-8 -*-
 
 import math
-import random
-from typing import Union, Tuple, Literal, Optional
+from typing import Union, Tuple, Literal
 
 import torch
 import torch.nn as nn
 
-from scipy import sparse
-from scipy.stats import norm
 from torch import Tensor
 from tqdm import tqdm
 
 import numpy as np
 from anndata import AnnData
-import pandas as pd
 from pandas import DataFrame
 
 from . import mean_symmetric_scale, min_max_norm
@@ -24,18 +20,9 @@ from ..util import (
     matrix_data,
     to_sparse,
     to_dense,
-    sparse_matrix,
-    dense_data,
-    number,
     collection,
-    get_index,
     check_adata_get,
-    matrix_dot_block_storage,
-    vector_multiply_block_storage,
-    matrix_division_block_storage,
-    matrix_multiply_block_storage,
     enrichment_optional,
-    difference_peak_optional,
     check_gpu_availability
 )
 

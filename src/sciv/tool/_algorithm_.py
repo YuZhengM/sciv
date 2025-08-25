@@ -315,20 +315,22 @@ def pca(data: matrix_data, n_components: int = 50) -> dense_data:
         return pca_data
 
 
-def jaccard_similarity(data: matrix_data, is_binary: bool = True, n_jobs: int = -1) -> matrix_data:
+def jaccard_similarity(data: matrix_data, n_jobs: int = -1) -> matrix_data:
     """
     计算杰卡德相似性矩阵
     """
-    from sklearn.metrics.pairwise import pairwise_kernels
+    from sklearn.metrics import pairwise_distances
     from sklearn.preprocessing import binarize
 
-    if is_binary:
-        data = binarize(data, threshold=0.5)
+    ul.log(__name__).info("Start Jaccard Similarity")
+    data = binarize(data, threshold=0.5).astype(bool)
+    data = to_dense(data, is_array=True)
+    jaccard_data = 1 - pairwise_distances(data, metric='jaccard', n_jobs=n_jobs)
+    ul.log(__name__).info("End Jaccard Similarity")
+    return jaccard_data
 
-    return pairwise_kernels(data, metric='jaccard', n_jobs=n_jobs)
 
-
-def spectral_eigenmaps(data: matrix_data, n_components: int = 30, affinity: _Affinity = 'jaccard', eigen_solver: _EigenSolver = "arpack", n_jobs: int = -1) -> dense_data:
+def spectral_eigenmaps(data: matrix_data, n_components: int = 30, affinity: _Affinity = 'nearest_neighbors', eigen_solver: Optional[_EigenSolver] = None, n_jobs: int = -1) -> dense_data:
     """
     Spectral Eigenmaps
     :param data: input cell feature data;
@@ -345,14 +347,20 @@ def spectral_eigenmaps(data: matrix_data, n_components: int = 30, affinity: _Aff
         return to_dense(data, is_array=True)
     else:
         ul.log(__name__).info("Start Spectral Eigenmaps")
-        data = to_dense(data, is_array=True)
+
+        if affinity == 'jaccard':
+            affinity_matrix = jaccard_similarity(data=data, n_jobs=n_jobs)
+            affinity = 'precomputed'
+        else:
+            affinity_matrix = data
+
         se = SpectralEmbedding(
             n_components=n_components,
-            affinity=jaccard_similarity if affinity == 'jaccard' else affinity,
+            affinity=affinity,
             eigen_solver=eigen_solver,
             n_jobs=n_jobs
         )
-        se_data = se.fit_transform(data)
+        se_data = se.fit_transform(affinity_matrix)
         ul.log(__name__).info("End Spectral Eigenmaps")
         return se_data
 
