@@ -39,6 +39,21 @@ def sigmoid(data: Union[collection, matrix_data]) -> Union[collection, matrix_da
     return 1 / (1 + np.exp(-data))
 
 
+def tf_idf(data: matrix_data, ri_sparse: bool = True) -> matrix_data:
+    """
+    TF-IDF transformer
+    :param data: Matrix data that needs to be converted;
+    :param ri_sparse: (return_is_sparse) Whether to return sparse matrix.
+    :return: Matrix processed by TF-IDF.
+    """
+    from sklearn.feature_extraction.text import TfidfTransformer
+
+    ul.log(__name__).info("TF-IDF transformer")
+    transformer = TfidfTransformer()
+    tfidf = transformer.fit_transform(to_dense(data, is_array=True))
+    return to_sparse(tfidf) if ri_sparse else to_dense(tfidf)
+
+
 def z_score_normalize(
     data: matrix_data,
     with_mean: bool = True,

@@ -2,6 +2,7 @@
 
 from ._algorithm_ import (
     sigmoid,
+    tf_idf,
     z_score_normalize,
     z_score_marginal,
     marginal_normalize,
@@ -46,6 +47,7 @@ from ._random_walk_ import (
 
 __all__ = [
     "sigmoid",
+    "tf_idf",
     "z_score_normalize",
     "z_score_marginal",
     "marginal_normalize",
