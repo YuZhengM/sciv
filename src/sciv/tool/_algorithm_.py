@@ -525,6 +525,28 @@ def umap(data: matrix_data, n_neighbors: float = 15, n_components: int = 2, min_
     return embedding
 
 
+def safe_kl_divergence(p, q, epsilon: float = 1e-10):
+    """Safe KL divergence calculation to avoid division by zero"""
+    # Ensure p and q are probability distributions
+
+    p = to_dense(p, is_array=True).flatten()
+    q = to_dense(q, is_array=True).flatten()
+
+    # Normalize
+    p = p / np.sum(p)
+    q = q / np.sum(q)
+
+    # Smoothing: add small value to q to avoid zeros
+    q = q + epsilon
+    q = q / np.sum(q)  # Renormalize
+
+    # Only calculate for p > 0 parts (0 * log(0/q) = 0)
+    mask = p > 0
+    kl = np.sum(p[mask] * np.log(p[mask] / q[mask]))
+
+    return kl
+
+
 def kl_divergence(data1: matrix_data, data2: matrix_data) -> float:
     """
     Calculate KL divergence for two data
@@ -536,7 +558,13 @@ def kl_divergence(data1: matrix_data, data2: matrix_data) -> float:
 
     data1 = to_dense(data1, is_array=True).flatten()
     data2 = to_dense(data2, is_array=True).flatten()
-    return stats.entropy(data1, data2)
+
+    entropy = stats.entropy(data1, data2)
+
+    if np.isnan(entropy) or np.isinf(entropy):
+        entropy = safe_kl_divergence(data1, data2)
+
+    return entropy
 
 
 def calinski_harabasz(data: matrix_data, labels: collection) -> float:
