@@ -525,24 +525,21 @@ def umap(data: matrix_data, n_neighbors: float = 15, n_components: int = 2, min_
     return embedding
 
 
-def safe_kl_divergence(p, q, epsilon: float = 1e-10):
+def safe_kl_divergence(p: collection, q: collection, epsilon: float = 1e-10):
     """Safe KL divergence calculation to avoid division by zero"""
-    # Ensure p and q are probability distributions
 
+    # Ensure p and q are probability distributions
     p = to_dense(p, is_array=True).flatten()
     q = to_dense(q, is_array=True).flatten()
 
-    # Normalize
+    # Smoothing: add small value to q to avoid zeros
+    p = p + epsilon
     p = p / np.sum(p)
+
+    q = q + epsilon
     q = q / np.sum(q)
 
-    # Smoothing: add small value to q to avoid zeros
-    q = q + epsilon
-    q = q / np.sum(q)  # Renormalize
-
-    # Only calculate for p > 0 parts (0 * log(0/q) = 0)
-    mask = p > 0
-    kl = np.sum(p[mask] * np.log(p[mask] / q[mask]))
+    kl = np.sum(p * np.log(p / q))
 
     return kl
 
