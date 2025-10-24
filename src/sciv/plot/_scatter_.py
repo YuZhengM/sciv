@@ -32,6 +32,7 @@ def scatter_base(
     height: float = 2,
     right: float = 0.9,
     text_fontsize: float = 7,
+    legend_fontsize: float = 7,
     start_color_index: int = 0,
     color_step_size: int = 0,
     type_colors: collection = None,
@@ -131,7 +132,8 @@ def scatter_base(
             ax.legend(
                 loc="center left",
                 bbox_to_anchor=(right, 0.5),
-                bbox_transform=fig.transFigure
+                bbox_transform=fig.transFigure,
+                fontsize=legend_fontsize
             )
 
         # Remove scales and labels on the coordinate axis
@@ -162,6 +164,7 @@ def scatter_atac(
     type_colors: collection = None,
     size: float = 1.0,
     text_fontsize: float = 7,
+    legend_fontsize: float = 7,
     is_text: bool = False,
     output: path = None,
     show: bool = True
@@ -184,6 +187,7 @@ def scatter_atac(
         type_colors=type_colors,
         is_text=is_text,
         text_fontsize=text_fontsize,
+        legend_fontsize=legend_fontsize,
         output=output,
         show=show,
         right=0.75
@@ -204,6 +208,7 @@ def scatter_trait(
     number: bool = True,
     size: Union[float, collection] = 1.0,
     text_fontsize: float = 7,
+    legend_fontsize: float = 7,
     start_color_index: int = 0,
     color_step_size: int = 0,
     type_colors: collection = None,
@@ -214,6 +219,7 @@ def scatter_trait(
 ) -> None:
     """
     Scatter plot of cell scores for traits/diseases
+    :param legend_fontsize:
     :param text_fontsize:
     :param size:
     :param type_colors:
@@ -284,6 +290,7 @@ def scatter_trait(
             size=size,
             type_colors=type_colors,
             text_fontsize=text_fontsize,
+            legend_fontsize=legend_fontsize,
             start_color_index=start_color_index,
             color_step_size=color_step_size,
             is_text=is_text,
