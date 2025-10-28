@@ -184,6 +184,7 @@ def merge_sc_atac(
     max_iter_harmony: int = 20,
     harmony_groupby: Optional[Union[str | list[str]]] = None,
     is_selected: bool = False,
+    is_batch: bool = True,
     need_features: Optional[Union[int | float]] = None,
     output_path: Optional[path] = None
 ) -> AnnData:
@@ -201,6 +202,7 @@ def merge_sc_atac(
     :param harmony_groupby: If specified, split the data into groups and perform batch correction on each group separately.
     :param is_selected: If True, based on the feature selection in the `snap.pp.select_features` method, further
         filtering is performed according to the features of each sample.
+    :param is_batch: If True, batch correction by sample.
     :param need_features: If `need_features` <=1, it represents the retention of `need_features`% of the overall
         features. Otherwise, it is considered an integer and `need_features` features are filtered.
     :param output_path: Path to generate file
@@ -269,9 +271,10 @@ def merge_sc_atac(
     snap.tl.spectral(data, features=features)
 
     # Batch correction
-    ul.log(__name__).info("Batch correction.")
-    snap.pp.mnc_correct(data, batch="sample")
-    snap.pp.harmony(data, batch="sample", groupby=harmony_groupby, max_iter_harmony=max_iter_harmony)
+    if is_batch:
+        ul.log(__name__).info("Batch correction.")
+        snap.pp.mnc_correct(data, batch="sample")
+        snap.pp.harmony(data, batch="sample", groupby=harmony_groupby, max_iter_harmony=max_iter_harmony)
 
     # close
     data.close()
