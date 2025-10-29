@@ -464,7 +464,7 @@ def semi_mutual_knn_weight(
     return adjacency_weight_matrix, adjacency_and_matrix
 
 
-def k_means(data: matrix_data, n_clusters: int = 2, is_to_dense: bool = False):
+def k_means(data: matrix_data, n_clusters: int = 8, is_to_dense: bool = False):
     """
     Perform k-means clustering on data
     :param data: Input data matrix;
@@ -486,7 +486,7 @@ def k_means(data: matrix_data, n_clusters: int = 2, is_to_dense: bool = False):
 
 def spectral_clustering(
     data: matrix_data,
-    n_clusters: int = 2,
+    n_clusters: int = 8,
     n_components=30,
     eigen_solver="arpack",
     is_to_dense: bool = False
