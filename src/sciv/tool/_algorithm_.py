@@ -287,87 +287,106 @@ def is_asc_sort(positions_list: list) -> bool:
     return True
 
 
-def lsi(data: matrix_data, n_components: int = 50) -> dense_data:
+def lsi(data: matrix_data, n_components: int = 50, is_to_dense: bool = False) -> dense_data:
     """
     SVD LSI
     :param data: input cell feature data;
     :param n_components: Dimensions that need to be reduced to.
+    :param is_to_dense: Whether to convert the data into a dense matrix.
     :return: Reduced dimensional data (SVD LSI model).
     """
 
     from sklearn.decomposition import TruncatedSVD
 
-    if data.shape[1] <= n_components:
+    data_x = to_dense(data, is_array=True) if is_to_dense else data
+
+    if data_x.shape[1] <= n_components:
         ul.log(__name__).info("The features of the data are less than or equal to the `n_components` parameter, ignoring LSI")
-        return to_dense(data, is_array=True)
+        return data_x
     else:
         ul.log(__name__).info("Start LSI")
         svd = TruncatedSVD(n_components=n_components)
-        svd_data = svd.fit_transform(to_dense(data, is_array=True))
+        svd_data = svd.fit_transform(data_x)
         ul.log(__name__).info("End LSI")
         return svd_data
 
 
-def pca(data: matrix_data, n_components: int = 50) -> dense_data:
+def pca(data: matrix_data, n_components: int = 50, is_to_dense: bool = False) -> dense_data:
     """
     PCA
     :param data: input cell feature data;
     :param n_components: Dimensions that need to be reduced to.
+    :param is_to_dense: Whether to convert the data into a dense matrix.
     :return: Reduced dimensional data.
     """
     from sklearn.decomposition import PCA
 
-    if data.shape[1] <= n_components:
+    data_x = to_dense(data, is_array=True) if is_to_dense else data
+
+    if data_x.shape[1] <= n_components:
         ul.log(__name__).info("The features of the data are less than or equal to the `n_components` parameter, ignoring PCA")
-        return to_dense(data, is_array=True)
+        return data_x
     else:
         ul.log(__name__).info("Start PCA")
-        data = to_dense(data, is_array=True)
         pca_n = PCA(n_components=n_components)
-        pca_n.fit_transform(data)
-        pca_data = pca_n.transform(data)
+        pca_data = pca_n.fit_transform(data_x)
         ul.log(__name__).info("End PCA")
         return pca_data
 
 
-def jaccard_similarity(data: matrix_data, n_jobs: int = -1) -> matrix_data:
+def jaccard_similarity(data: matrix_data, n_jobs: int = -1, is_to_dense: bool = False) -> matrix_data:
     """
-    计算杰卡德相似性矩阵
+    Calculate the Jaccard similarity matrix
+    :param data: input cell feature data;
+    :param n_jobs: The number of jobs to use for the computation.
+    :param is_to_dense: Whether to convert the data into a dense matrix.
     """
     from sklearn.metrics import pairwise_distances
     from sklearn.preprocessing import binarize
 
     ul.log(__name__).info("Start Jaccard Similarity")
     data = binarize(data, threshold=0.5).astype(bool)
-    data = to_dense(data, is_array=True)
-    jaccard_data = 1 - pairwise_distances(data, metric='jaccard', n_jobs=n_jobs)
+
+    data_x = to_dense(data, is_array=True) if is_to_dense else data
+
+    jaccard_data = 1 - pairwise_distances(data_x, metric='jaccard', n_jobs=n_jobs)
     ul.log(__name__).info("End Jaccard Similarity")
     return jaccard_data
 
 
-def spectral_eigenmaps(data: matrix_data, n_components: int = 30, affinity: _Affinity = 'nearest_neighbors', eigen_solver: Optional[_EigenSolver] = None, n_jobs: int = -1) -> dense_data:
+def spectral_eigenmaps(
+    data: matrix_data,
+    n_components: int = 30,
+    affinity: _Affinity = 'nearest_neighbors',
+    eigen_solver: Optional[_EigenSolver] = None,
+    n_jobs: int = -1,
+    is_to_dense: bool = False
+) -> dense_data:
     """
     Spectral Eigenmaps
     :param data: input cell feature data;
     :param n_components: Dimensions that need to be reduced to.
-    :param eigen_solver:
-    :param affinity:
-    :param n_jobs:
+    :param eigen_solver: The eigenvalue decomposition strategy to use.
+    :param affinity: method
+    :param n_jobs: The number of jobs to use for the computation.
+    :param is_to_dense: Whether to convert the data into a dense matrix.
     :return: Reduced dimensional data.
     """
     from sklearn.manifold import SpectralEmbedding
 
-    if data.shape[1] <= n_components:
+    data_x = to_dense(data, is_array=True) if is_to_dense else data
+
+    if data_x.shape[1] <= n_components:
         ul.log(__name__).info("The features of the data are less than or equal to the `n_components` parameter, ignoring Spectral Eigenmaps.")
-        return to_dense(data, is_array=True)
+        return data_x
     else:
         ul.log(__name__).info("Start Spectral Eigenmaps")
 
         if affinity == 'jaccard':
-            affinity_matrix = jaccard_similarity(data=data, n_jobs=n_jobs)
+            affinity_matrix = jaccard_similarity(data=data_x, n_jobs=n_jobs)
             affinity = 'precomputed'
         else:
-            affinity_matrix = data
+            affinity_matrix = data_x
 
         se = SpectralEmbedding(
             n_components=n_components,
@@ -445,60 +464,78 @@ def semi_mutual_knn_weight(
     return adjacency_weight_matrix, adjacency_and_matrix
 
 
-def k_means(data: matrix_data, n_clusters: int = 2):
+def k_means(data: matrix_data, n_clusters: int = 2, is_to_dense: bool = False):
     """
     Perform k-means clustering on data
     :param data: Input data matrix;
     :param n_clusters: The number of clusters to form as well as the number of centroids to generate.
+    :param is_to_dense: Whether to convert the data into a dense matrix.
     :return: Tags after k-means clustering.
     """
     ul.log(__name__).info("Start K-means cluster")
     from sklearn.cluster import KMeans
 
+    data_x = to_dense(data, is_array=True) if is_to_dense else data
+
     model = KMeans(n_clusters=n_clusters, n_init="auto")
-    model.fit(to_dense(data, is_array=True))
+    model.fit(to_dense(data_x, is_array=True))
     labels = model.labels_
     ul.log(__name__).info("End K-means cluster")
     return labels
 
 
-def spectral_clustering(data: matrix_data, n_clusters: int = 2, n_components=30, eigen_solver="arpack") -> collection:
+def spectral_clustering(
+    data: matrix_data,
+    n_clusters: int = 2,
+    n_components=30,
+    eigen_solver="arpack",
+    is_to_dense: bool = False
+) -> collection:
     """
     Spectral clustering
     :param data: Input data matrix;
     :param n_clusters: The dimension of the projection subspace.
     :param n_components: The dimension of the projection subspace.
-    :param eigen_solver: Default use of Nyström approximation
+    :param eigen_solver: Default use of Nyström approximation.
+    :param is_to_dense: Whether to convert the data into a dense matrix.
     :return: Tags after spectral clustering.
     """
     ul.log(__name__).info("Start spectral clustering")
 
     from sklearn.cluster import SpectralClustering
 
-    data = to_dense(data, is_array=True)
+    data_x = to_dense(data, is_array=True) if is_to_dense else data
+
     model = SpectralClustering(n_clusters=n_clusters, n_components=n_components, eigen_solver=eigen_solver)
-    clusters_types = model.fit_predict(data)
+    clusters_types = model.fit_predict(data_x)
     ul.log(__name__).info("End spectral clustering")
     return clusters_types
 
 
-def tsne(data: matrix_data, n_components: int = 2) -> matrix_data:
+def tsne(data: matrix_data, n_components: int = 2, is_to_dense: bool = False) -> matrix_data:
     """
     T-SNE dimensionality reduction
     :param data: Data matrix that requires dimensionality reduction;
     :param n_components: Dimension of the embedded space.
+    :param is_to_dense: Whether to convert the data into a dense matrix.
     :return: Reduced dimensional data matrix
     """
     from sklearn.manifold import TSNE
 
-    data = to_dense(data, is_array=True)
+    data_x = to_dense(data, is_array=True) if is_to_dense else data
+
     _tsne_ = TSNE(n_components=n_components)
-    _tsne_.fit(data)
-    data_tsne = _tsne_.fit_transform(data)
+    data_tsne = _tsne_.fit_transform(data_x)
     return data_tsne
 
 
-def umap(data: matrix_data, n_neighbors: float = 15, n_components: int = 2, min_dist: float = 0.15) -> matrix_data:
+def umap(
+    data: matrix_data,
+    n_neighbors: float = 15,
+    n_components: int = 2,
+    min_dist: float = 0.15,
+    is_to_dense: bool = False
+) -> matrix_data:
     """
     UMAP dimensionality reduction
     :param data: Data matrix that requires dimensionality reduction;
@@ -517,11 +554,14 @@ def umap(data: matrix_data, n_neighbors: float = 15, n_components: int = 2, min_
         result on a more even dispersal of points. The value should be set
         relative to the ``spread`` value, which determines the scale at which
         embedded points will be spread out.
+    :param is_to_dense: Whether to convert the data into a dense matrix.
     :return: Reduced dimensional data matrix
     """
     import umap as umap_
-    data = to_dense(data, is_array=True)
-    embedding = umap_.UMAP(n_neighbors=n_neighbors, n_components=n_components, min_dist=min_dist).fit_transform(data)
+
+    data_x = to_dense(data, is_array=True) if is_to_dense else data
+
+    embedding = umap_.UMAP(n_neighbors=n_neighbors, n_components=n_components, min_dist=min_dist).fit_transform(data_x)
     return embedding
 
 
