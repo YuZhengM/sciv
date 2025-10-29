@@ -51,6 +51,7 @@ from ._core_ import (
     matrix_callback_block_storage,
     check_adata_get,
     add_cluster_info,
+    generate_hex_colors,
     check_gpu_availability
 )
 
@@ -102,5 +103,6 @@ __all__ = [
     "vector_multiply_block_storage",
     "matrix_division_block_storage",
     "matrix_callback_block_storage",
+    "generate_hex_colors",
     "check_gpu_availability"
 ]

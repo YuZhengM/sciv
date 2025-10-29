@@ -917,3 +917,17 @@ def plot_end(fig, output: str, show: bool, dpi: float = 300):
         plt.show()
 
     plt.close()
+
+
+def generate_hex_colors(num_colors):
+    colors = []
+
+    while len(colors) < num_colors:
+        color = "#{:02X}{:02X}{:02X}".format(
+            random.randint(0, 255),
+            random.randint(0, 255),
+            random.randint(0, 255)
+        )
+        colors.append(color)
+
+    return colors
