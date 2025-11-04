@@ -13,7 +13,7 @@ import numpy as np
 from anndata import AnnData
 from pandas import DataFrame
 
-from . import mean_symmetric_scale, min_max_norm
+from . import mean_symmetric_scale, min_max_norm, perturb_data
 
 from .. import util as ul
 from ..util import (

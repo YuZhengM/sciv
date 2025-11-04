@@ -1004,7 +1004,7 @@ def calculate_init_score_weight(
         _cell_type_weight_[anno_info["clusters"] == cluster, :] = to_dense(_cluster_weight_tmp_, is_array=True).flatten()
         del _cluster_weight_tmp_
 
-    ul.log(__name__).info("Calculate trait- or disease-cell related initial score")
+    ul.log(__name__).info("Calculate initial trait relevance scores")
     _init_trs_weight_ = matrix_multiply_block_storage(_init_trs_ncw_, _cell_type_weight_, block_size=block_size)
 
     init_trs_adata = AnnData(to_sparse(_init_trs_weight_), obs=adata.obs, var=overlap_adata.var)
