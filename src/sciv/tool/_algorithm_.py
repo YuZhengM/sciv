@@ -889,18 +889,35 @@ def calculate_fragment_weighted_accessibility(
     overlap_matrix = to_dense(input_data["overlap_data"])
     del input_data["overlap_data"]
 
-    # Summation information
-    ul.log(__name__).info("Calculate expected counts matrix ===> (numerator)")
-    row_col_multiply = vector_multiply_block_storage(matrix.sum(axis=1), matrix.sum(axis=0), block_size=block_size)
-
     all_sum = matrix.sum()
 
-    ul.log(__name__).info("Calculate expected counts matrix.")
-    row_col_multiply = matrix_division_block_storage(row_col_multiply, all_sum, block_size=block_size, data=row_col_multiply)
+    try:
+        # Summation information
+        ul.log(__name__).info("Calculate expected counts matrix ===> (numerator)")
+        row_col_multiply = vector_multiply_block_storage(matrix.sum(axis=1), matrix.sum(axis=0), block_size=block_size)
 
-    ul.log(__name__).info("Calculate fragment weighted accessibility ===> (denominator)")
-    global_scale_data = matrix_dot_block_storage(row_col_multiply, overlap_matrix, block_size=block_size)
-    del row_col_multiply
+        ul.log(__name__).info("Calculate expected counts matrix.")
+        row_col_multiply = matrix_division_block_storage(row_col_multiply, all_sum, block_size=block_size, data=row_col_multiply)
+
+        ul.log(__name__).info("Calculate fragment weighted accessibility ===> (denominator)")
+        global_scale_data = matrix_dot_block_storage(row_col_multiply, overlap_matrix, block_size=block_size)
+        del row_col_multiply
+
+    except MemoryError as e:
+        ul.log(__name__).warning(f"Memory overflow, attempting sparse matrix computation.\n{e}")
+        overlap_matrix = to_sparse(overlap_matrix)
+
+        ul.log(__name__).info("Calculate expected counts matrix ===> (numerator)")
+        row_col_multiply = to_sparse(matrix.sum(axis=1)).multiply(to_sparse(matrix.sum(axis=0)))
+
+        ul.log(__name__).info("Calculate expected counts matrix.")
+        row_col_multiply /= all_sum
+
+        ul.log(__name__).info("Calculate fragment weighted accessibility ===> (denominator)")
+        global_scale_data = row_col_multiply.dot(overlap_matrix)
+        del row_col_multiply
+
+    global_scale_data = to_dense(global_scale_data)
     global_scale_data[global_scale_data == 0] = global_scale_data[global_scale_data != 0].min() / 2
     ul.log(__name__).info("Calculate fragment weighted accessibility ===> (numerator)")
     init_score: matrix_data = matrix_dot_block_storage(matrix, overlap_matrix, block_size=block_size)
