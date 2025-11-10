@@ -707,35 +707,20 @@ def euclidean_distances(data1: matrix_data, data2: matrix_data = None, block_siz
     return distances
 
 
-def overlap(regions: DataFrame, variants: DataFrame) -> DataFrame:
+def _overlap_(regions_sort: DataFrame, variants: DataFrame) -> DataFrame:
     """
     Relate the peak region and variant site
-    :param regions: peaks information
+    :param regions_sort: peaks information
     :param variants: variants information
     :return: The variant maps data in the peak region
     """
-    regions_columns: list = list(regions.columns)
-
-    if "chr" not in regions_columns or "start" not in regions_columns or "end" not in regions_columns:
-        ul.log(__name__).error(
-            f"The peaks information {regions_columns} in data `adata` must include three columns: `chr`, `start` and "
-            f"`end`. (It is recommended to use the `read_sc_atac` method.)"
-        )
-        raise ValueError(
-            f"The peaks information {regions_columns} in data `adata` must include three columns: `chr`, `start` and "
-            f"`end`. (It is recommended to use the `read_sc_atac` method.)"
-        )
 
     columns = ['variant_id', 'index', 'chr', 'position', 'rsId', 'chr_a', 'start', 'end']
 
-    if regions.shape[0] == 0 or variants.shape[0] == 0:
+    if regions_sort.shape[0] == 0 or variants.shape[0] == 0:
         ul.log(__name__).warning("Data is empty.")
         return pd.DataFrame(columns=columns)
 
-    regions = regions.rename_axis("index")
-    regions = regions.reset_index()
-    # sort
-    regions_sort = regions.sort_values(["chr", "start", "end"])[["index", "chr", "start", "end"]]
     variants_sort = variants.sort_values(["chr", "position"])[["variant_id", "chr", "position", "rsId"]]
 
     # Intersect and Sort
@@ -794,6 +779,39 @@ def overlap(regions: DataFrame, variants: DataFrame) -> DataFrame:
     return overlap_data
 
 
+def overlap(regions: DataFrame, variants: DataFrame) -> DataFrame:
+    """
+    Relate the peak region and variant site
+    :param regions: peaks information
+    :param variants: variants information
+    :return: The variant maps data in the peak region
+    """
+    regions_columns: list = list(regions.columns)
+
+    if "chr" not in regions_columns or "start" not in regions_columns or "end" not in regions_columns:
+        ul.log(__name__).error(
+            f"The peaks information {regions_columns} in data `adata` must include three columns: `chr`, `start` and "
+            f"`end`. (It is recommended to use the `read_sc_atac` method.)"
+        )
+        raise ValueError(
+            f"The peaks information {regions_columns} in data `adata` must include three columns: `chr`, `start` and "
+            f"`end`. (It is recommended to use the `read_sc_atac` method.)"
+        )
+
+    columns = ['variant_id', 'index', 'chr', 'position', 'rsId', 'chr_a', 'start', 'end']
+
+    if regions.shape[0] == 0 or variants.shape[0] == 0:
+        ul.log(__name__).warning("Data is empty.")
+        return pd.DataFrame(columns=columns)
+
+    regions = regions.rename_axis("index")
+    regions = regions.reset_index()
+    # sort
+    regions_sort = regions.sort_values(["chr", "start", "end"])[["index", "chr", "start", "end"]]
+
+    return _overlap_(regions_sort, variants)
+
+
 def overlap_sum(regions: AnnData, variants: dict, trait_info: DataFrame) -> AnnData:
     """
     Overlap regional data and mutation data and sum the PP values of all mutations in a region as the values for that
@@ -814,6 +832,25 @@ def overlap_sum(regions: AnnData, variants: dict, trait_info: DataFrame) -> AnnD
 
     matrix = np.zeros((label_all_size, len(trait_names)))
 
+    regions_df = regions.var.copy()
+
+    regions_columns: list = list(regions_df.columns)
+
+    if "chr" not in regions_columns or "start" not in regions_columns or "end" not in regions_columns:
+        ul.log(__name__).error(
+            f"The peaks information {regions_columns} in data `adata` must include three columns: `chr`, `start` and "
+            f"`end`. (It is recommended to use the `read_sc_atac` method.)"
+        )
+        raise ValueError(
+            f"The peaks information {regions_columns} in data `adata` must include three columns: `chr`, `start` and "
+            f"`end`. (It is recommended to use the `read_sc_atac` method.)"
+        )
+
+    regions_df = regions_df.rename_axis("index")
+    regions_df = regions_df.reset_index()
+    # sort
+    regions_df = regions_df.sort_values(["chr", "start", "end"])[["index", "chr", "start", "end"]]
+
     ul.log(__name__).info(f"Obtain peak-trait/disease matrix. (overlap variant information)")
     for trait_name in tqdm(trait_names):
 
@@ -821,7 +858,7 @@ def overlap_sum(regions: AnnData, variants: dict, trait_info: DataFrame) -> AnnD
         index: int = trait_names.index(trait_name)
 
         # handle overlap data
-        overlap_info: DataFrame = overlap(regions.var, variant.obs)
+        overlap_info: DataFrame = _overlap_(regions_df, variant.obs)
 
         if overlap_info.shape[0] == 0:
             continue
