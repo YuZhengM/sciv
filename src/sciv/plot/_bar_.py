@@ -1,7 +1,7 @@
 # -*- coding: UTF-8 -*-
 
 import os
-from typing import Tuple, Union, Optional
+from typing import Tuple, Union, Optional, Any
 
 import numpy as np
 import pandas as pd
@@ -12,7 +12,7 @@ from matplotlib import pyplot as plt
 from statannotations.Annotator import Annotator
 
 from .. import util as ul
-from ..util import path, collection, plot_color_types, plot_end
+from ..util import path, collection, plot_color_types, plot_start, plot_end
 
 __name__: str = "plot_bar"
 
@@ -30,39 +30,28 @@ def bar(
     bottom: float = 0,
     text_left_move: float = 0.1,
     output: path = None,
-    show: bool = True
-):
-    if output is None and not show:
-        ul.log(__name__).info(f"At least one of the `output` and `show` parameters is required")
-    else:
-        fig, ax = plt.subplots(figsize=(width, height))
-        fig.subplots_adjust(bottom=bottom)
+    show: bool = True,
+    **kwargs: Any
+) -> None:
 
-        if title is not None:
-            plt.title(title)
+    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
 
-        ax_x = np.array(ax_x).astype(str)
-        ax.bar(ax_x, ax_y, color=color)
+    ax_x = np.array(ax_x).astype(str)
+    ax.bar(ax_x, ax_y, color=color, **kwargs)
 
-        if x_name is not None:
-            ax.set_xlabel(x_name)
+    ax.set_xticklabels(labels=list(ax_x), rotation=65)
 
-        if y_name is not None:
-            ax.set_ylabel(y_name)
+    # Draw numerical values
+    for i, v in enumerate(list(ax_y)):
+        plt.text(
+            x=i - text_left_move,
+            y=0.03 if v < 0.03 else v / 2,
+            s=str(round(v, 3)),
+            rotation=90,
+            color=text_color
+        )
 
-        ax.set_xticklabels(labels=list(ax_x), rotation=65)
-
-        # Draw numerical values
-        for i, v in enumerate(list(ax_y)):
-            plt.text(
-                x=i - text_left_move,
-                y=0.03 if v < 0.03 else v / 2,
-                s=str(round(v, 3)),
-                rotation=90,
-                color=text_color
-            )
-
-        plot_end(fig, output, show)
+    plot_end(fig, output, show)
 
 
 def two_bar(
@@ -80,42 +69,31 @@ def two_bar(
     text_left_move: float = 0.15,
     title: str = None,
     output: path = None,
-    show: bool = True
+    show: bool = True,
+    **kwargs: Any
 ):
-    if output is None and not show:
-        ul.log(__name__).info(f"At least one of the `output` and `show` parameters is required")
-    else:
-        fig, ax = plt.subplots(figsize=(width, height))
-        fig.subplots_adjust(bottom=bottom)
 
-        if title is not None:
-            plt.title(title)
+    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
 
-        ax_x = np.array(ax_x).astype(str)
-        ax.bar(ax_x, ax_y[0], label=legend[0], color=color[0])
-        ax.bar(ax_x, ax_y[1], bottom=ax_y[0], label=legend[1], color=color[1])
+    ax_x = np.array(ax_x).astype(str)
+    ax.bar(ax_x, ax_y[0], label=legend[0], color=color[0], **kwargs)
+    ax.bar(ax_x, ax_y[1], bottom=ax_y[0], label=legend[1], color=color[1], **kwargs)
 
-        ax.legend()
+    ax.legend()
 
-        if x_name is not None:
-            ax.set_xlabel(x_name)
+    ax.set_xticklabels(labels=list(ax_x), rotation=rotation)
 
-        if y_name is not None:
-            ax.set_ylabel(y_name)
+    # Draw numerical values
+    for i, v in enumerate(list(ax_y[0])):
+        plt.text(
+            x=i - text_left_move,
+            y=0.03 if v < 0.03 else v / 2,
+            s=str(round(v, 3)),
+            rotation=90,
+            color=text_color
+        )
 
-        ax.set_xticklabels(labels=list(ax_x), rotation=rotation)
-
-        # Draw numerical values
-        for i, v in enumerate(list(ax_y[0])):
-            plt.text(
-                x=i - text_left_move,
-                y=0.03 if v < 0.03 else v / 2,
-                s=str(round(v, 3)),
-                rotation=90,
-                color=text_color
-            )
-
-        plot_end(fig, output, show)
+    plot_end(fig, output, show)
 
 
 def class_bar(
@@ -136,46 +114,45 @@ def class_bar(
     title: str = None,
     text_left_move: float = 0.15,
     output: path = None,
-    show: bool = True
+    show: bool = True,
+    **kwargs: Any
 ):
-    if output is None and not show:
-        ul.log(__name__).info(f"At least one of the `output` and `show` parameters is required")
+
+    df1 = df[df[by] == 1]
+    df2 = df[df[by] == 0]
+
+    # Sort
+    if clusters_sort is not None:
+        df1[clusters] = pd.Categorical(df1[clusters], categories=clusters_sort, ordered=True)
+        df1 = df1.sort_values(by=clusters)
+        df2[clusters] = pd.Categorical(df2[clusters], categories=clusters_sort, ordered=True)
+        df2 = df2.sort_values(by=clusters)
+        ax_x = clusters_sort
     else:
+        df1 = df1.sort_values([value], ascending=False)
+        df2 = df2.sort_values([value])
+        ax_x = df1[clusters]
 
-        df1 = df[df[by] == 1]
-        df2 = df[df[by] == 0]
+    ax_y = (df1[value], df2[value])
 
-        # Sort
-        if clusters_sort is not None:
-            df1[clusters] = pd.Categorical(df1[clusters], categories=clusters_sort, ordered=True)
-            df1 = df1.sort_values(by=clusters)
-            df2[clusters] = pd.Categorical(df2[clusters], categories=clusters_sort, ordered=True)
-            df2 = df2.sort_values(by=clusters)
-            ax_x = clusters_sort
-        else:
-            df1 = df1.sort_values([value], ascending=False)
-            df2 = df2.sort_values([value])
-            ax_x = df1[clusters]
-
-        ax_y = (df1[value], df2[value])
-
-        two_bar(
-            ax_x=ax_x,
-            ax_y=ax_y,
-            x_name=x_name,
-            y_name=y_name,
-            legend=legend,
-            width=width,
-            height=height,
-            color=color,
-            text_color=text_color,
-            bottom=bottom,
-            rotation=rotation,
-            text_left_move=text_left_move,
-            title=title,
-            output=output,
-            show=True
-        )
+    two_bar(
+        ax_x=ax_x,
+        ax_y=ax_y,
+        x_name=x_name,
+        y_name=y_name,
+        legend=legend,
+        width=width,
+        height=height,
+        color=color,
+        text_color=text_color,
+        bottom=bottom,
+        rotation=rotation,
+        text_left_move=text_left_move,
+        title=title,
+        output=output,
+        show=show,
+        **kwargs
+    )
 
 
 def bar_trait(
@@ -197,7 +174,8 @@ def bar_trait(
     title: str = None,
     text_left_move: float = 0.15,
     output: path = None,
-    show: bool = True
+    show: bool = True,
+    **kwargs: Any
 ):
     def trait_plot(trait_: str, cell_df_: DataFrame) -> None:
         """
@@ -227,7 +205,8 @@ def bar_trait(
             text_left_move=text_left_move,
             text_color=text_color,
             output=os.path.join(output, f"cell_{trait_}_enrichment_bar.pdf") if output is not None else None,
-            show=show
+            show=show,
+            **kwargs
         )
 
     trait_list = list(set(trait_df[trait_column_name]))
@@ -263,8 +242,11 @@ def bar_significance(
     hue_order: list = None,
     width: float = 2,
     height: float = 2,
+    bottom: float = 0,
     legend_gap: float = 1.15,
     line_width: float = 0.5,
+    capsize: float = 0.1,
+    errcolor: str = "k",
     start_color_index: int = 0,
     color_step_size: int = 0,
     color_type: str = "set",
@@ -278,162 +260,168 @@ def bar_significance(
     anno_fontsize: float = 7,
     line_height: float = 0.01,
     line_offset: float = 0.01,
-    colors: list = None,
+    colors: Union[list, dict] = None,
     title: str = None,
     output: path = None,
-    show: bool = True
+    show: bool = True,
+    **kwargs: Any
 ) -> None:
     """
     A bar chart with specified anchor significance.
-    :param line_offset:
-    :param line_height:
-    :param df:
-    :param x:
-    :param y:
-    :param hue:
-    :param x_name:
-    :param y_name:
-    :param anchor:
-    :param hue_order:
-    :param legend:
-    :param legend_list:
-    :param width:
-    :param height:
-    :param legend_gap:
-    :param line_width:
-    :param start_color_index:
-    :param color_step_size:
-    :param color_type:
-    :param test:
+    :param df: Input DataFrame containing the data to plot
+    :param x: Column name for x-axis categories
+    :param y: Column name for y-axis values
+    :param hue: Column name for grouping bars by color
+    :param x_name: Label for x-axis (optional)
+    :param y_name: Label for y-axis (optional)
+    :param anchor: Reference group for pairwise significance testing
+    :param hue_order: Order of hue categories
+    :param legend: Legend title (default: "category")
+    :param legend_list: Subset of hue values to include in plot
+    :param width: Figure width in inches
+    :param height: Figure height in inches
+    :param bottom: Figure bottom in inches
+    :param legend_gap: Vertical gap between plot and legend
+    :param line_width: Width of error bars and significance lines
+    :param start_color_index: Starting index in color palette
+    :param color_step_size: Step size when cycling through palette
+    :param color_type: Name of seaborn palette to use
+    :param test: Statistical test for pairwise comparisons
         {"t-test_ind", "t-test_welch", "t-test_paired", "Mann-Whitney", "Mann-Whitney-gt", "Mann-Whitney-ls", "Levene", "Wilcoxon", "Kruskal", "Brunner-Munzel"}
-    :param ci:
-    :param x_rotation:
-    :param x_deviation:
-    :param y_deviation:
-    :param y_limit:
-    :param anno:
-    :param anno_fontsize:
-    :param colors:
-    :param title:
-    :param output:
-    :param show:
-    :return:
+    :param ci: Confidence interval type or value
+    :param capsize: Width of the error-bar caps
+    :param errcolor: Color of the error bars
+    :param line_offset: Vertical offset for significance lines
+    :param line_height: Height of significance lines
+    :param x_rotation: Rotation angle for x-axis tick labels
+    :param x_deviation: Horizontal offset for bar annotations
+    :param y_deviation: Vertical offset for bar annotations
+    :param y_limit: Tuple setting y-axis limits
+    :param anno: Whether to annotate bars with their values
+    :param anno_fontsize: Font size for bar annotations
+    :param colors: Custom color list (overrides palette)
+    :param title: Plot title
+    :param output: Path to save figure (optional)
+    :param show: Whether to display the plot
+    :return: None
     """
 
-    if output is None and not show:
-        ul.log(__name__).info(f"At least one of the `output` and `show` parameters is required")
+    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
+
+    if legend_list is not None:
+        new_data: DataFrame = df[df[hue].isin(legend_list)].copy()
     else:
+        new_data: DataFrame = df.copy()
 
-        fig, ax = plt.subplots(figsize=(width, height))
+    if legend is None:
+        legend = "category"
 
-        if legend_list is not None:
-            new_data: DataFrame = df[df[hue].isin(legend_list)].copy()
-        else:
-            new_data: DataFrame = df.copy()
+    new_data.loc[:, legend] = new_data[hue].astype(str)
 
-        if legend is None:
-            legend = "category"
+    new_data_columns = list(new_data.columns)
 
-        new_data.loc[:, legend] = new_data[hue].astype(str)
+    if hue_order is not None:
+        # Sort
+        new_data[legend] = pd.Categorical(new_data[legend], categories=hue_order, ordered=True)
+        new_data = new_data.sort_values(by=legend)
 
-        new_data_columns = list(new_data.columns)
+    hue_types = new_data[legend].unique().tolist()
 
-        if hue_order is not None:
-            # Sort
-            new_data[legend] = pd.Categorical(new_data[legend], categories=hue_order, ordered=True)
-            new_data = new_data.sort_values(by=legend)
-
-        hue_types = new_data[legend].unique().tolist()
-
-        # noinspection DuplicatedCode
-        if colors is not None:
+    if colors is not None:
+        if isinstance(colors, list):
             palette = colors
+        elif isinstance(colors, dict):
+            palette = []
+            for hue_type in hue_types:
+                if hue_type in colors:
+                    palette.append(colors[hue_type])
+                else:
+                    ul.log(__name__).warning(f"`{hue_type}` is not in `colors` ({colors})")
+                    raise ValueError(f"`{hue_type}` is not in `colors` ({colors})")
         else:
-            if "color" in new_data_columns:
-                palette = new_data["color"]
-            else:
-                palette = []
+            ul.log(__name__).error(f"`colors` ({colors}) must be a list or dict")
+            raise ValueError(f"`colors` ({colors}) must be a list or dict")
+    else:
+        if "color" in new_data_columns:
+            palette = new_data["color"]
+        else:
+            palette = []
 
-                for i in range(len(hue_types)):
-                    palette.append(plot_color_types[color_type][start_color_index + i * color_step_size + i])
+            for i in range(len(hue_types)):
+                palette.append(plot_color_types[color_type][start_color_index + i * color_step_size + i])
 
-        ax.set(ylim=y_limit)
-        ax = sns.barplot(
-            data=new_data,
-            x=x,
-            y=y,
-            hue=legend,
-            hue_order=hue_order,
-            ci=ci,
-            capsize=.1,
-            errwidth=line_width,
-            errcolor="k",
-            ax=ax,
-            palette=palette,
-            **{"edgecolor": "k", "linewidth": line_width}
-        )
+    # Set y-axis limits first to prevent seaborn from overriding
+    ax.set_ylim(y_limit)
+    # Draw barplot, note ax receives return value to keep handles
+    ax = sns.barplot(
+        data=new_data,
+        x=x,
+        y=y,
+        hue=legend,
+        hue_order=hue_order,
+        ci=ci,
+        capsize=capsize,
+        errwidth=line_width,
+        errcolor=errcolor,
+        ax=ax,
+        palette=palette,
+        edgecolor=errcolor,
+        linewidth=line_width,
+        **kwargs
+    )
 
-        if anno:
-            for p in ax.patches:
-                y_value = p.get_height()
-                height = p.get_height() / 2 - y_deviation
-                height = 0.03 if height < 0.03 else height
-                x = p.get_x() + p.get_width() / 2 + x_deviation
-                ax.annotate(
-                    f'{y_value:.2f}',
-                    (x, height),
-                    textcoords="offset points",
-                    ha='center',
-                    va='bottom',
-                    rotation=90,
-                    fontsize=anno_fontsize
-                )
+    if anno:
+        for p in ax.patches:
+            y_value = p.get_height()
+            height = p.get_height() / 2 - y_deviation
+            height = 0.03 if height < 0.03 else height
+            x = p.get_x() + p.get_width() / 2 + x_deviation
+            ax.annotate(
+                f'{y_value:.2f}',
+                (x, height),
+                textcoords="offset points",
+                ha='center',
+                va='bottom',
+                rotation=90,
+                fontsize=anno_fontsize
+            )
 
-        if anchor is not None:
+    if anchor is not None:
 
-            # Add p value
-            box_pairs: list = []
+        # Add p value
+        box_pairs: list = []
 
-            x_list = new_data[x].unique().tolist()
-            class_list = new_data[legend].unique().tolist()
+        x_list = new_data[x].unique().tolist()
+        class_list = new_data[legend].unique().tolist()
 
-            if anchor not in class_list:
-                ul.log(__name__).error(f"`anchor` ({anchor}) is not in the `df[hue]` ({class_list})")
-                raise ValueError(f"`anchor` ({anchor}) is not in the `df[hue]` ({class_list})")
+        if anchor not in class_list:
+            ul.log(__name__).error(f"`anchor` ({anchor}) is not in the `df[hue]` ({class_list})")
+            raise ValueError(f"`anchor` ({anchor}) is not in the `df[hue]` ({class_list})")
 
-            class_list.remove(anchor)
+        class_list.remove(anchor)
 
-            for x_ele in x_list:
+        for x_ele in x_list:
 
-                for class_ele in class_list:
-                    box_pairs.append(((x_ele, anchor), (x_ele, class_ele)))
+            for class_ele in class_list:
+                box_pairs.append(((x_ele, anchor), (x_ele, class_ele)))
 
-            annotator = Annotator(ax=ax, data=new_data, x=x, y=y, hue=legend, hue_order=hue_order, pairs=box_pairs)
-            annotator.configure(test=test, text_format='star', line_height=line_height, line_offset=line_offset, line_width=0.7)
-            annotator.apply_and_annotate()
+        annotator = Annotator(ax=ax, data=new_data, x=x, y=y, hue=legend, hue_order=hue_order, pairs=box_pairs)
+        annotator.configure(test=test, text_format='star', line_height=line_height, line_offset=line_offset,
+                            line_width=0.7)
+        annotator.apply_and_annotate()
 
-        ax.tick_params(which='major', direction='in', length=3, width=1.0, bottom=False)
+    ax.tick_params(which='major', direction='in', length=3, width=1.0, bottom=False)
 
-        for spine in ["top", "left", "right"]:
-            ax.spines[spine].set_visible(False)
+    for spine in ["top", "left", "right"]:
+        ax.spines[spine].set_visible(False)
 
-        ax.spines['bottom'].set_linewidth(1)
-        ax.grid(axis='y', ls='--', c='gray')
-        ax.set_axisbelow(True)
-        ax.set_ylim(y_limit)
+    ax.spines['bottom'].set_linewidth(1)
+    ax.grid(axis='y', ls='--', c='gray')
+    ax.set_axisbelow(True)
 
-        if x_rotation != 0:
-            ax.set_xticklabels(labels=ax.get_xticklabels(), rotation=x_rotation)
+    if x_rotation != 0:
+        ax.set_xticklabels(labels=ax.get_xticklabels(), rotation=x_rotation)
 
-        plt.legend(loc='upper left', bbox_to_anchor=(0.0, legend_gap), ncol=2)
+    plt.legend(loc='upper left', bbox_to_anchor=(0.0, legend_gap), ncol=2)
 
-        if title is not None:
-            plt.title(title)
-
-        if x_name is not None:
-            plt.xlabel(x_name)
-
-        if y_name is not None:
-            plt.ylabel(y_name, rotation=90)
-
-        plot_end(fig, output, show)
+    plot_end(fig, output, show)

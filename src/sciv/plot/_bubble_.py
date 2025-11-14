@@ -24,7 +24,7 @@ def bubble(
     show: bool = True
 ):
     if output is None and not show:
-        ul.log(__name__).info(f"At least one of the `output` and `show` parameters is required")
+        ul.log(__name__).warning(f"At least one of the `output` and `show` parameters is required")
     else:
         fig, ax = plt.subplots(figsize=(width, height))
 

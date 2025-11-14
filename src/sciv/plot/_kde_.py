@@ -27,7 +27,7 @@ def kde(
     show: bool = True
 ) -> None:
     if output is None and not show:
-        ul.log(__name__).info(f"At least one of the `output` and `show` parameters is required")
+        ul.log(__name__).warning(f"At least one of the `output` and `show` parameters is required")
     else:
         ul.log(__name__).info("Start plotting the Kernel density estimation chart")
         fig, ax = plt.subplots(figsize=(width, height))

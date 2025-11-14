@@ -44,7 +44,7 @@ def scatter_base(
     show: bool = True
 ) -> None:
     if output is None and not show:
-        ul.log(__name__).info(f"At least one of the `output` and `show` parameters is required")
+        ul.log(__name__).warning(f"At least one of the `output` and `show` parameters is required")
     else:
         fig, ax = plt.subplots(figsize=(width, height))
         fig.subplots_adjust(right=right)
@@ -348,7 +348,7 @@ def volcano_base(
     show: bool = True
 ):
     if output is None and not show:
-        ul.log(__name__).info(f"At least one of the `output` and `show` parameters is required")
+        ul.log(__name__).warning(f"At least one of the `output` and `show` parameters is required")
     else:
 
         if palette is None:
@@ -409,7 +409,7 @@ def manhattan_causal_variant(
     show: bool = True
 ):
     if output is None and not show:
-        ul.log(__name__).info(f"At least one of the `output` and `show` parameters is required")
+        ul.log(__name__).warning(f"At least one of the `output` and `show` parameters is required")
     else:
 
         df[chr_name] = df[chr_name].astype(chrtype)

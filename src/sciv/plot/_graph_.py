@@ -52,7 +52,7 @@ def graph(
     :return: None
     """
     if output is None and not show:
-        ul.log(__name__).info(f"At least one of the `output` and `show` parameters is required")
+        ul.log(__name__).warning(f"At least one of the `output` and `show` parameters is required")
     else:
         plt.figure(figsize=(width, height), dpi=150)
 
@@ -124,7 +124,7 @@ def communities_graph(
     show: bool = True
 ):
     if output is None and not show:
-        ul.log(__name__).info(f"At least one of the `output` and `show` parameters is required")
+        ul.log(__name__).warning(f"At least one of the `output` and `show` parameters is required")
     else:
         ul.log(__name__).info("Start cell-cell network diagram")
 
@@ -222,7 +222,7 @@ def network_two_types(
 ):
 
     if output is None and not show:
-        ul.log(__name__).info(f"At least one of the `output` and `show` parameters is required")
+        ul.log(__name__).warning(f"At least one of the `output` and `show` parameters is required")
     else:
         # 创建基因和变异的节点列表
         type1_nodes = []
