@@ -366,7 +366,8 @@ def down_sampling_data(data: Union[matrix_data | collection], sample_number: int
             log(__name__).error("The number of rows of data must be greater than zero")
             raise ValueError("The number of rows of data must be greater than zero")
 
-        log(__name__).info(f"Kernel density estimation plot down-sampling data from {row_count * col_count} to {sample_number}")
+        log(__name__).info(
+            f"Kernel density estimation plot down-sampling data from {row_count * col_count} to {sample_number}")
 
         # get count
         count = row_count * col_count
@@ -520,8 +521,10 @@ def matrix_multiply_block_storage(
     n1, m1 = data2.shape
 
     if n != n1 or m != m1:
-        log(__name__).error(f"Need to satisfy the multiplication principle of Hadamard products in matrices. ({(n, m)} != {n1, m1})")
-        raise ValueError(f"Need to satisfy the multiplication principle of Hadamard products in matrices. ({(n, m)} != {n1, m1})")
+        log(__name__).error(
+            f"Need to satisfy the multiplication principle of Hadamard products in matrices. ({(n, m)} != {n1, m1})")
+        raise ValueError(
+            f"Need to satisfy the multiplication principle of Hadamard products in matrices. ({(n, m)} != {n1, m1})")
 
     if block_size <= 0 or n <= block_size and m <= block_size:
         return np.multiply(data1, data2)
@@ -857,7 +860,6 @@ def check_adata_get(adata: AnnData, layer: str = None, is_dense: bool = True, is
 
 
 def add_cluster_info(data: DataFrame, data_ref: DataFrame, cluster: str) -> DataFrame:
-
     new_data: DataFrame = data.copy()
     if data_ref is not None and cluster not in new_data.columns:
 
@@ -885,7 +887,6 @@ def add_cluster_info(data: DataFrame, data_ref: DataFrame, cluster: str) -> Data
 
 
 def check_gpu_availability(verbose: bool = True) -> bool:
-
     available = torch.cuda.is_available()
 
     if verbose:
@@ -898,6 +899,35 @@ def check_gpu_availability(verbose: bool = True) -> bool:
             log(__name__).info("GPU is not available.")
 
     return available
+
+
+def plot_start(
+    title: str = None,
+    x_name: str = None,
+    y_name: str = None,
+    width: float = 2,
+    height: float = 2,
+    bottom: float = 0,
+    output: str = None,
+    show: bool = True,
+):
+    if output is None and not show:
+        ul.log(__name__).error(f"At least one of the `output` and `show` parameters is required")
+        raise ValueError(f"At least one of the `output` and `show` parameters is required")
+
+    fig, ax = plt.subplots(figsize=(width, height))
+    fig.subplots_adjust(bottom=bottom)
+
+    if title is not None:
+        plt.title(title)
+
+    if x_name is not None:
+        plt.xlabel(x_name)
+
+    if y_name is not None:
+        plt.xlabel(y_name, rotation=90)
+
+    return fig, ax
 
 
 def plot_end(fig, output: str, show: bool, dpi: float = 300):

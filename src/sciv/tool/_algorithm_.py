@@ -199,7 +199,10 @@ def symmetric_scale(
         scale[scale == 0] = 1
         x_data = to_dense(data) / scale[:, np.newaxis]
     else:
-        ul.log(__name__).warning("The `axis` parameter supports only -1, 0, and 1, while other values will make the `scale` parameter value equal to 1.")
+        ul.log(__name__).warning(
+            "The `axis` parameter supports only -1, 0, and 1, while other values will make the `scale` parameter value "
+            "equal to 1."
+        )
         x_data = to_dense(data)
 
     # Record symbol information
@@ -241,8 +244,8 @@ def mean_symmetric_scale(data: matrix_data, axis: Literal[0, 1, -1] = -1, is_ver
         raise ValueError("The `axis` parameter supports only -1, 0, and 1")
 
 
-def coefficient_of_variation(matrix: matrix_data, axis: Literal[0, 1, -1] = 0, default: float = 0) -> Union[float, collection]:
-
+def coefficient_of_variation(matrix: matrix_data, axis: Literal[0, 1, -1] = 0, default: float = 0) -> Union[
+    float, collection]:
     if axis == -1:
         _std_ = np.array(np.std(matrix))
         _mean_ = np.array(np.mean(matrix))
@@ -301,7 +304,9 @@ def lsi(data: matrix_data, n_components: int = 50, is_to_dense: bool = False) ->
     data_x = to_dense(data, is_array=True) if is_to_dense else data
 
     if data_x.shape[1] <= n_components:
-        ul.log(__name__).info("The features of the data are less than or equal to the `n_components` parameter, ignoring LSI")
+        ul.log(__name__).info(
+            "The features of the data are less than or equal to the `n_components` parameter, ignoring LSI"
+        )
         return data_x
     else:
         ul.log(__name__).info("Start LSI")
@@ -324,7 +329,9 @@ def pca(data: matrix_data, n_components: int = 50, is_to_dense: bool = False) ->
     data_x = to_dense(data, is_array=True) if is_to_dense else data
 
     if data_x.shape[1] <= n_components:
-        ul.log(__name__).info("The features of the data are less than or equal to the `n_components` parameter, ignoring PCA")
+        ul.log(__name__).info(
+            "The features of the data are less than or equal to the `n_components` parameter, ignoring PCA"
+        )
         return data_x
     else:
         ul.log(__name__).info("Start PCA")
@@ -377,7 +384,10 @@ def spectral_eigenmaps(
     data_x = to_dense(data, is_array=True) if is_to_dense else data
 
     if data_x.shape[1] <= n_components:
-        ul.log(__name__).info("The features of the data are less than or equal to the `n_components` parameter, ignoring Spectral Eigenmaps.")
+        ul.log(__name__).info(
+            "The features of the data are less than or equal to the `n_components` parameter, ignoring Spectral "
+            "Eigenmaps."
+        )
         return data_x
     else:
         ul.log(__name__).info("Start Spectral Eigenmaps")
@@ -414,7 +424,8 @@ def semi_mutual_knn_weight(
     :param weight: The weight of interactions or operations;
     :param is_mknn_fully_connected: Is the network of MKNN an all connected graph?
         If the value is True, it ensures that a node is connected to at least the node that is not closest to itself.
-        This parameter does not affect the result of SM-KNN (the first result), but only affects the result of traditional M-KNN (the second result).
+        This parameter does not affect the result of SM-KNN (the first result), but only affects the result of
+        traditional M-KNN (the second result).
     :return: Adjacency weight matrix
     """
     ul.log(__name__).info("Start semi-mutual KNN")
@@ -423,45 +434,77 @@ def semi_mutual_knn_weight(
         ul.log(__name__).error("The `and_weight` parameter must be between 0 and 1.")
         raise ValueError("The `and_weight` parameter must be between 0 and 1.")
 
-    new_data: matrix_data = to_dense(data).copy()
-
-    for j in range(new_data.shape[0]):
-        new_data[j, j] = 0
-
-    def _knn_(_data_: matrix_data, _neighbors_: int) -> matrix_data:
-        _cell_cell_knn_: matrix_data = _data_.copy()
-        del _data_
-        _cell_cell_knn_copy_: matrix_data = _cell_cell_knn_.copy()
-
-        # Obtain numerical values for constructing a k-neighbor network
-        cell_cell_affinity_sort = np.sort(_cell_cell_knn_, axis=1)
-        cell_cell_value = cell_cell_affinity_sort[:, -(_neighbors_ + 1)]
-        del cell_cell_affinity_sort
-        _cell_cell_knn_[_cell_cell_knn_copy_ >= np.array(cell_cell_value).flatten()[:, np.newaxis]] = 1
-        _cell_cell_knn_[_cell_cell_knn_copy_ < np.array(cell_cell_value).flatten()[:, np.newaxis]] = 0
-        return _cell_cell_knn_
-
-    cell_cell_knn = _knn_(new_data, neighbors)
-
-    if neighbors == or_neighbors:
-        cell_cell_knn_or = cell_cell_knn.copy()
+    # Work directly on the sparse matrix to avoid a full dense copy
+    if sparse.issparse(data):
+        # Keep sparse, set diagonal to 0 efficiently
+        data = to_sparse(data)
+        data.setdiag(0)
+        data.eliminate_zeros()
+        new_data = data
     else:
-        cell_cell_knn_or = _knn_(new_data, or_neighbors)
+        # Dense case: in-place diagonal zeroing
+        new_data = to_dense(data)
+        np.fill_diagonal(new_data, 0)
 
-    # Obtain symmetric adjacency matrix, using mutual kNN algorithm
-    adjacency_and_matrix = np.minimum(cell_cell_knn, cell_cell_knn.T)
-    del cell_cell_knn
-    adjacency_or_matrix = np.maximum(cell_cell_knn_or, cell_cell_knn_or.T)
-    del cell_cell_knn_or
-    adjacency_weight_matrix = (1 - weight) * adjacency_and_matrix + weight * adjacency_or_matrix
-    del adjacency_or_matrix
+    def _knn(_mat: matrix_data, k: int) -> matrix_data:
+        """
+        Return k-nearest-neighbor 0/1 adjacency matrix (int8 to save memory).
+        Supports both sparse and dense inputs.
+        """
+        if sparse.issparse(_mat):
+            # Sparse path: sort each row's data to find the k-th largest
+            _mat = _mat.tocsr(copy=False)
+            n_rows = _mat.shape[0]
+            adj = sparse.lil_matrix((n_rows, n_rows), dtype=np.int8)
+            for i in range(n_rows):
+                row = _mat[i].toarray().ravel()
+                if row.size <= k:
+                    adj[i, :] = 1
+                    adj[i, i] = 0
+                    continue
+                kth = np.partition(row, -k)[-k]
+                mask = row >= kth
+                mask[i] = False  # remove self
+                adj[i, mask] = 1
+            return adj.tocsr()
+        else:
+            # Dense path: vectorized thresholding
+            kth_val = np.sort(_mat, axis=1)[:, -(k + 1)]
+            adj = (_mat >= kth_val[:, None]).astype(np.int8)
+            np.fill_diagonal(adj, 0)
+            return adj
 
+    # Compute adjacency matrices for AND/OR logic
+    adj_and = _knn(new_data, neighbors)
+    if neighbors == or_neighbors:
+        adj_or = adj_and
+    else:
+        adj_or = _knn(new_data, or_neighbors)
+
+    # Symmetrize
+    if sparse.issparse(adj_and):
+        adj_and = adj_and.minimum(adj_and.T)
+        adj_or = adj_or.maximum(adj_or.T)
+    else:
+        adj_and = np.minimum(adj_and, adj_and.T)
+        adj_or = np.maximum(adj_or, adj_or.T)
+
+    # Weighted combination, float32 is sufficient
+    if sparse.issparse(adj_and):
+        adj_weight = (1 - weight) * adj_and.astype(np.float32) + weight * adj_or.astype(np.float32)
+    else:
+        adj_weight = (1 - weight) * adj_and.astype(np.float32) + weight * adj_or.astype(np.float32)
+
+    # Ensure full connectivity if required
     if is_mknn_fully_connected:
-        cell_cell_knn = _knn_(new_data, 1)
-        adjacency_and_matrix = np.maximum(adjacency_and_matrix, cell_cell_knn)
+        adj_1nn = _knn(new_data, 1)
+        if sparse.issparse(adj_and):
+            adj_and = adj_and.maximum(adj_1nn)
+        else:
+            adj_and = np.maximum(adj_and, adj_1nn)
 
     ul.log(__name__).info("End semi-mutual KNN")
-    return adjacency_weight_matrix, adjacency_and_matrix
+    return adj_weight, adj_and
 
 
 def k_means(data: matrix_data, n_clusters: int = 8, is_to_dense: bool = False):
@@ -661,14 +704,25 @@ def ami(labels_pred: collection, labels_true: collection) -> float:
     return adjusted_mutual_info_score(labels_true, labels_pred)
 
 
-def binary_indicator(labels_true: collection, labels_pred: collection) -> Tuple[float, float, float, float, float, float, float]:
+def binary_indicator(
+    labels_true: collection,
+    labels_pred: collection
+) -> Tuple[float, float, float, float, float, float, float]:
     """
     Accuracy, Recall, F1, FPR, TPR, AUROC, AUPRC
     :param labels_true: Real labels for clustering;
     :param labels_pred: Predictive labels for clustering.
     :return: Indicators
     """
-    from sklearn.metrics import accuracy_score, recall_score, f1_score, roc_curve, roc_auc_score, average_precision_score
+    from sklearn.metrics import (
+        accuracy_score,
+        recall_score,
+        f1_score,
+        roc_curve,
+        roc_auc_score,
+        average_precision_score
+    )
+
     acc_s = accuracy_score(labels_true, labels_pred)
     rec_s = recall_score(labels_true, labels_pred)
     f1_s = f1_score(labels_true, labels_pred)
@@ -739,7 +793,8 @@ def _overlap_(regions_sort: DataFrame, variants: DataFrame) -> DataFrame:
 
     variants_overlap_info_list: list = []
 
-    for index, chr_a, start, end in zip(regions_sort["index"], regions_sort["chr"], regions_sort["start"], regions_sort["end"]):
+    for index, chr_a, start, end in zip(regions_sort["index"], regions_sort["chr"], regions_sort["start"],
+                                        regions_sort["end"]):
 
         # judge chr
         if chr_a in chr_keys:
@@ -767,7 +822,9 @@ def _overlap_(regions_sort: DataFrame, variants: DataFrame) -> DataFrame:
                     variants_overlap_info["chr_a"] = chr_a
                     variants_overlap_info["start"] = start
                     variants_overlap_info["end"] = end
-                    variants_overlap_info.index = (variants_overlap_info["variant_id"].astype(str) + "_" + variants_overlap_info["index"].astype(str))
+                    variants_overlap_info.index = (
+                        variants_overlap_info["variant_id"].astype(str) + "_" + variants_overlap_info[
+                        "index"].astype(str))
                     variants_overlap_info_list.append(variants_overlap_info)
 
     # merge result
@@ -934,7 +991,8 @@ def calculate_fragment_weighted_accessibility(
         row_col_multiply = vector_multiply_block_storage(matrix.sum(axis=1), matrix.sum(axis=0), block_size=block_size)
 
         ul.log(__name__).info("Calculate expected counts matrix.")
-        row_col_multiply = matrix_division_block_storage(row_col_multiply, all_sum, block_size=block_size, data=row_col_multiply)
+        row_col_multiply = matrix_division_block_storage(row_col_multiply, all_sum, block_size=block_size,
+                                                         data=row_col_multiply)
 
         ul.log(__name__).info("Calculate fragment weighted accessibility ===> (denominator)")
         global_scale_data = matrix_dot_block_storage(row_col_multiply, overlap_matrix, block_size=block_size)
@@ -959,8 +1017,14 @@ def calculate_fragment_weighted_accessibility(
     ul.log(__name__).info("Calculate fragment weighted accessibility ===> (numerator)")
     init_score: matrix_data = matrix_dot_block_storage(matrix, overlap_matrix, block_size=block_size)
     del matrix, overlap_matrix
+
     ul.log(__name__).info("Calculate fragment weighted accessibility.")
-    init_score: matrix_data = matrix_division_block_storage(init_score, global_scale_data, block_size=block_size, data=init_score)
+    init_score: matrix_data = matrix_division_block_storage(
+        init_score,
+        global_scale_data,
+        block_size=block_size,
+        data=init_score
+    )
 
     return init_score
 
@@ -979,8 +1043,8 @@ def calculate_init_score_weight(
     :param adata: scATAC-seq data;
     :param da_peaks_adata: Differential peak data;
     :param overlap_adata: Peaks-traits/diseases data;
-    :param top_rate: Only retaining a specified proportion of peak information in peak correction of clustering type differences;
-        The default is the reciprocal of the number of Leiden clustering types.
+    :param top_rate: Only retaining a specified proportion of peak information in peak correction of clustering type
+        differences; The default is the reciprocal of the number of Leiden clustering types.
     :param diff_peak_value: Specify the correction value in peak correction of clustering type differences.
         {'emp_effect', 'bayes_factor', 'emp_prob1', 'all'}
     :param is_simple: True represents not adding unnecessary intermediate variables, only adding the final result. It
@@ -991,17 +1055,24 @@ def calculate_init_score_weight(
     :return: Initial TRS with weight.
     """
     if "is_overlap" not in overlap_adata.uns:
-        ul.log(__name__).warning("The `is_overlap` is not in `overlap_data.uns`. (Need to execute function `tl.overlap_sum`)")
+        ul.log(__name__).warning(
+            "The `is_overlap` is not in `overlap_data.uns`. (Need to execute function `tl.overlap_sum`)"
+        )
 
     if "dp_delta" not in da_peaks_adata.uns:
-        ul.log(__name__).warning("The `dp_delta` is not in `da_peaks_adata.uns`. (Need to execute function `pp.poisson_vi`)")
+        ul.log(__name__).warning(
+            "The `dp_delta` is not in `da_peaks_adata.uns`. (Need to execute function `pp.poisson_vi`)"
+        )
 
     if top_rate is not None and (top_rate <= 0 or top_rate >= 1):
         ul.log(__name__).error("The parameter of `top_rate` should be between 0 and 1, or not set.")
         raise ValueError("The parameter of `top_rate` should be between 0 and 1, or not set.")
 
     if top_rate is not None and top_rate >= 0.5:
-        ul.log(__name__).error("The `top_rate` value is set to be greater than or equal to 0.5, it is recommended to be less than this value.")
+        ul.log(__name__).error(
+            "The `top_rate` value is set to be greater than or equal to 0.5, it is recommended to be less than this "
+            "value."
+        )
 
     cluster_size: int = adata.uns["poisson_vi"]["cluster_size"]
 
@@ -1016,7 +1087,11 @@ def calculate_init_score_weight(
     ul.log(__name__).info("Calculate cell type weight")
 
     def _get_cluster_weight_(da_matrix: matrix_data):
-        _cluster_weight_data_: matrix_data = matrix_dot_block_storage(to_dense(min_max_norm(da_matrix, axis=0)), overlap_matrix, block_size=block_size)
+        _cluster_weight_data_: matrix_data = matrix_dot_block_storage(
+            to_dense(min_max_norm(da_matrix, axis=0)),
+            overlap_matrix,
+            block_size=block_size
+        )
         return sigmoid(mean_symmetric_scale(_cluster_weight_data_, axis=0, is_verbose=False))
 
     if diff_peak_value == "emp_effect":
@@ -1032,8 +1107,14 @@ def calculate_init_score_weight(
         _cluster_weight_ = (_cluster_weight1_ + _cluster_weight2_ + _cluster_weight3_) / 3
         del _cluster_weight1_, _cluster_weight2_, _cluster_weight3_
     else:
-        ul.log(__name__).error("The `diff_peak_value` parameter only supports one of the {'emp_effect', 'bayes_factor', 'emp_prob1', 'all'} values.")
-        raise ValueError("The `diff_peak_value` parameter only supports one of the {'emp_effect', 'bayes_factor', 'emp_prob1', 'all'} values.")
+        ul.log(__name__).error(
+            "The `diff_peak_value` parameter only supports one of the {'emp_effect', 'bayes_factor', 'emp_prob1', "
+            "'all'} values."
+        )
+        raise ValueError(
+            "The `diff_peak_value` parameter only supports one of the {'emp_effect', 'bayes_factor', 'emp_prob1', "
+            "'all'} values."
+        )
 
     # calculate
     input_data: dict = {
@@ -1055,7 +1136,10 @@ def calculate_init_score_weight(
 
     for cluster in da_peaks_adata.obs_names:
         _cluster_weight_tmp_ = da_peaks_adata[cluster, :].obsm["cluster_weight"]
-        _cell_type_weight_[anno_info["clusters"] == cluster, :] = to_dense(_cluster_weight_tmp_, is_array=True).flatten()
+        _cell_type_weight_[anno_info["clusters"] == cluster, :] = to_dense(
+            _cluster_weight_tmp_,
+            is_array=True
+        ).flatten()
         del _cluster_weight_tmp_
 
     ul.log(__name__).info("Calculate initial trait relevance scores")
@@ -1088,8 +1172,8 @@ def obtain_cell_cell_network(
     """
     Calculate cell-cell correlation
     :param adata: scATAC-seq data;
-    :param k: When building an mKNN network, the number of nodes connected by each node (and);
-    :param or_k: When building an mKNN network, the number of nodes connected by each node (or);
+    :param k: When building an M-KNN network, the number of nodes connected by each node (and);
+    :param or_k: When building an M-KNN network, the number of nodes connected by each node (or);
     :param weight: The weight of interactions or operations;
     :param gamma: If None, defaults to 1.0 / n_features. Otherwise, it should be strictly positive;
     :param is_simple: True represents not adding unnecessary intermediate variables, only adding the final result.
@@ -1111,7 +1195,8 @@ def obtain_cell_cell_network(
             "the `poisson_vi` function."
         )
 
-    _latent_name_ = "latent" if adata.uns["poisson_vi"]["latent_name"] is None else adata.uns["poisson_vi"]["latent_name"]
+    _latent_name_ = "latent" if adata.uns["poisson_vi"]["latent_name"] is None else adata.uns["poisson_vi"][
+        "latent_name"]
     latent = adata.obsm[_latent_name_]
     del _latent_name_
     cell_anno = adata.obs
@@ -1121,7 +1206,13 @@ def obtain_cell_cell_network(
     cell_affinity = laplacian_kernel(latent, gamma=gamma)
 
     # Define KNN network
-    cell_mutual_knn_weight, cell_mutual_knn = semi_mutual_knn_weight(cell_affinity, neighbors=k, or_neighbors=or_k, weight=weight, is_mknn_fully_connected=False)
+    cell_mutual_knn_weight, cell_mutual_knn = semi_mutual_knn_weight(
+        cell_affinity,
+        neighbors=k,
+        or_neighbors=or_k,
+        weight=weight,
+        is_mknn_fully_connected=False
+    )
 
     # cell-cell graph
     cc_data: AnnData = AnnData(to_sparse(cell_mutual_knn_weight), var=cell_anno, obs=cell_anno)
