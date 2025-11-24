@@ -522,9 +522,11 @@ def matrix_multiply_block_storage(
 
     if n != n1 or m != m1:
         log(__name__).error(
-            f"Need to satisfy the multiplication principle of Hadamard products in matrices. ({(n, m)} != {n1, m1})")
+            f"Need to satisfy the multiplication principle of Hadamard products in matrices. ({(n, m)} != {n1, m1})"
+        )
         raise ValueError(
-            f"Need to satisfy the multiplication principle of Hadamard products in matrices. ({(n, m)} != {n1, m1})")
+            f"Need to satisfy the multiplication principle of Hadamard products in matrices. ({(n, m)} != {n1, m1})"
+        )
 
     if block_size <= 0 or n <= block_size and m <= block_size:
         return np.multiply(data1, data2)
@@ -575,6 +577,65 @@ def matrix_multiply_block_storage(
     shutil.rmtree(_cache_path_)
 
     return data
+
+
+def sparse_matrix_operation_memory_efficient(
+    data1: matrix_data,
+    data2: matrix_data,
+    chunk_size: int = 10000,
+    default: float = 1e+8,
+    operation: Literal['+', '-', '*', '/'] = '*'
+) -> sparse_matrix:
+    """
+    Perform element-wise addition, subtraction, multiplication, and division on two sparse matrices by blocks, supporting memory-efficient processing.
+    :param data1: Sparse matrix 1
+    :param data2: Sparse matrix 2
+    :param chunk_size: The size of the segmentation stored in block wise element-wise operation.
+        If the value is less than or equal to zero, no block operation will be performed.
+    :param default: 1e+8
+    :param operation: Element-wise operation type, optional '+', '-', '*', '/'
+    :return: Result sparse matrix (CSR format)
+    """
+    n, m = data1.shape
+    n1, m1 = data2.shape
+
+    # Element-wise operations follow below
+    if n != n1 or m != m1:
+        log(__name__).error(f"Need to satisfy the element-wise operation principle in matrices. ({(n, m)} != {n1, m1})")
+        raise ValueError(f"Need to satisfy the element-wise operation principle in matrices. ({(n, m)} != {n1, m1})")
+
+    data1 = to_sparse(data1)
+    data2 = to_sparse(data2)
+
+    result = sparse.lil_matrix(data1.shape)
+
+    for i in range(0, data1.shape[0], chunk_size):
+        i_end = min(i + chunk_size, data1.shape[0])
+
+        chunk1 = data1[i:i_end, :]
+        chunk2 = data2[i:i_end, :]
+
+        if operation == '+':
+            result_chunk = chunk1 + chunk2
+        elif operation == '-':
+            result_chunk = chunk1 - chunk2
+        elif operation == '*':
+            result_chunk = chunk1.multiply(chunk2)
+        elif operation == '/':
+            # Sparse matrix division: convert to dense, perform element-wise division, then convert back to sparse
+            dense_chunk1 = chunk1.todense()
+            dense_chunk2 = chunk2.todense()
+            # Avoid division by zero
+            dense_chunk2[dense_chunk2 == 0] = default
+            result_chunk = dense_chunk1 / dense_chunk2
+            result_chunk = sparse.csr_matrix(result_chunk)
+        else:
+            log(__name__).error(f"Unsupported operation: {operation}")
+            raise ValueError(f"Unsupported operation: {operation}")
+
+        result[i:i_end, :] = result_chunk
+
+    return result.tocsr()
 
 
 def vector_multiply_block_storage(
@@ -850,9 +911,8 @@ def check_adata_get(adata: AnnData, layer: str = None, is_dense: bool = True, is
             log(__name__).error("The `layer` parameter needs to include in `adata.layers`")
             raise ValueError("The `layer` parameter needs to include in `adata.layers`")
 
-        data.X = to_dense(data.layers[layer], is_array=True) if is_dense else to_sparse(
-            data.layers[layer], is_matrix=is_matrix
-        )
+        data.X = to_dense(data.layers[layer], is_array=True) if is_dense \
+            else to_sparse(data.layers[layer], is_matrix=is_matrix)
     else:
         data.X = to_dense(data.X, is_array=True) if is_dense else to_sparse(data.X, is_matrix=is_matrix)
 

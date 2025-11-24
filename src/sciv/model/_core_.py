@@ -78,7 +78,6 @@ def _check_and_run_two_step_(
     min_seed_cell_rate: float = 0.01,
     max_seed_cell_rate: float = 0.05,
     credible_threshold: float = 0,
-    top_rate: float = 0.01,
     diff_peak_value: difference_peak_optional = 'emp_effect',
     enrichment_threshold: Union[enrichment_optional, float] = 'golden',
     is_ablation: bool = False,
@@ -193,10 +192,6 @@ def _check_and_run_two_step_(
             f"'golden', 'half', 'e', 'pi', 'none',  Alternatively, input a floating-point type value within the range of (0, log1p(1))"
         )
 
-    if top_rate is not None and (top_rate <= 0 or top_rate >= 1):
-        ul.log(__name__).error("The parameter of `top_rate` should be between 0 and 1, or not set.")
-        raise ValueError("The parameter of `top_rate` should be between 0 and 1, or not set.")
-
     if diff_peak_value not in ['emp_effect', 'bayes_factor', 'emp_prob1', 'all']:
         ul.log(__name__).error("The `diff_peak_value` parameter only supports one of the {'emp_effect', 'bayes_factor', 'emp_prob1', 'all'} values.")
         raise ValueError("The `diff_peak_value` parameter only supports one of the {'emp_effect', 'bayes_factor', 'emp_prob1', 'all'} values.")
@@ -233,7 +228,6 @@ def _check_and_run_two_step_(
         "max_seed_cell_rate": max_seed_cell_rate,
         "credible_threshold": credible_threshold,
         "enrichment_threshold": enrichment_threshold,
-        "top_rate": top_rate,
         "diff_peak_value": diff_peak_value,
         "is_ablation": is_ablation,
         "model_dir": str(model_dir),
@@ -354,7 +348,6 @@ def core(
     min_seed_cell_rate: float = 0.01,
     max_seed_cell_rate: float = 0.05,
     credible_threshold: float = 0,
-    top_rate: Optional[float] = None,
     diff_peak_value: difference_peak_optional = 'emp_effect',
     enrichment_threshold: Union[enrichment_optional, float] = 'golden',
     is_ablation: bool = False,
@@ -403,8 +396,6 @@ def core(
     :param max_seed_cell_rate: The maximum percentage of seed cells in all cells;
     :param credible_threshold: The threshold for determining the credibility of enriched cells in the context of
         enrichment, i.e. the threshold for judging enriched cells;
-    :param top_rate: Only retaining a specified proportion of peak information in peak correction of clustering type differences;
-        The default is the reciprocal of the number of Leiden clustering types.
     :param diff_peak_value: Specify the correction value in peak correction of clustering type differences.
         {'emp_effect', 'bayes_factor', 'emp_prob1'}
     :param enrichment_threshold: Only by setting a threshold for the standardized output TRS can a portion of the enrichment
@@ -478,7 +469,6 @@ def core(
         max_seed_cell_rate=max_seed_cell_rate,
         credible_threshold=max_seed_cell_rate,
         enrichment_threshold=enrichment_threshold,
-        top_rate=top_rate,
         diff_peak_value=diff_peak_value,
         is_ablation=is_ablation,
         model_dir=model_dir,
@@ -577,7 +567,6 @@ def core(
                     adata=adata,
                     da_peaks_adata=da_peaks,
                     overlap_adata=_chunk_overlap_adata_,
-                    top_rate=top_rate,
                     diff_peak_value=diff_peak_value,
                     is_simple=is_simple,
                     block_size=block_size
@@ -789,7 +778,6 @@ def core(
                 adata=adata,
                 da_peaks_adata=da_peaks,
                 overlap_adata=overlap_adata,
-                top_rate=top_rate,
                 diff_peak_value=diff_peak_value,
                 is_simple=is_simple,
                 block_size=block_size
@@ -986,7 +974,6 @@ def knock(
         max_seed_cell_rate=params["max_seed_cell_rate"],
         credible_threshold=params["credible_threshold"],
         enrichment_threshold=params["enrichment_threshold"],
-        top_rate=params["top_rate"] if "top_rate" in params else None,
         diff_peak_value=params["diff_peak_value"],
         is_ablation=False,
         model_dir=params["model_dir"] if "model_dir" in params else None,
@@ -1006,7 +993,6 @@ def knock(
         adata=adata,
         da_peaks_adata=da_peaks,
         overlap_adata=knock_overlap_adata,
-        top_rate=params["top_rate"] if "top_rate" in params else None,
         diff_peak_value=params["diff_peak_value"],
         is_simple=True,
         block_size=params["block_size"]

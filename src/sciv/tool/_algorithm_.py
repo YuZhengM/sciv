@@ -23,9 +23,7 @@ from ..util import (
     collection,
     get_index,
     matrix_dot_block_storage,
-    vector_multiply_block_storage,
-    matrix_division_block_storage,
-    matrix_multiply_block_storage,
+    sparse_matrix_operation_memory_efficient,
     difference_peak_optional
 )
 
@@ -133,7 +131,7 @@ def marginal_normalize(matrix: matrix_data, axis: Literal[0, 1] = 0, default: fl
     return matrix / (__sum__ + default)
 
 
-def min_max_norm(data: matrix_data, axis: Literal[0, 1, -1] = -1) -> matrix_data:
+def min_max_norm(data: matrix_data, axis: Literal[0, 1, -1] = -1) -> dense_data:
     """
     Calculate min max standardized data
     :param data: input data;
@@ -951,10 +949,7 @@ def overlap_sum(regions: AnnData, variants: dict, trait_info: DataFrame) -> AnnD
     return overlap_adata
 
 
-def calculate_fragment_weighted_accessibility(
-    input_data: dict,
-    block_size: int = -1
-) -> matrix_data:
+def calculate_fragment_weighted_accessibility(input_data: dict, block_size: int = -1) -> matrix_data:
     """
     Calculate the initial trait- or disease-related cell score
     :param input_data:
@@ -976,55 +971,53 @@ def calculate_fragment_weighted_accessibility(
     # Processing data
     ul.log(__name__).info("Data pre conversion.")
 
-    matrix = to_dense(input_data["data"])
-    del input_data["data"]
+    matrix = input_data.pop("data")
+    overlap_matrix = input_data.pop("overlap_data")
 
-    # init_score
-    overlap_matrix = to_dense(input_data["overlap_data"])
-    del input_data["overlap_data"]
+    if sparse.issparse(matrix):
+        matrix = matrix.tocsr(copy=False)
+    else:
+        matrix = to_sparse(matrix)
 
-    all_sum = matrix.sum()
-
-    try:
-        # Summation information
-        ul.log(__name__).info("Calculate expected counts matrix ===> (numerator)")
-        row_col_multiply = vector_multiply_block_storage(matrix.sum(axis=1), matrix.sum(axis=0), block_size=block_size)
-
-        ul.log(__name__).info("Calculate expected counts matrix.")
-        row_col_multiply = matrix_division_block_storage(row_col_multiply, all_sum, block_size=block_size,
-                                                         data=row_col_multiply)
-
-        ul.log(__name__).info("Calculate fragment weighted accessibility ===> (denominator)")
-        global_scale_data = matrix_dot_block_storage(row_col_multiply, overlap_matrix, block_size=block_size)
-        del row_col_multiply
-
-    except MemoryError as e:
-        ul.log(__name__).warning(f"Memory overflow, attempting sparse matrix computation.\n{e}")
+    if sparse.issparse(overlap_matrix):
+        overlap_matrix = overlap_matrix.tocsr(copy=False)
+    else:
         overlap_matrix = to_sparse(overlap_matrix)
 
-        ul.log(__name__).info("Calculate expected counts matrix ===> (numerator)")
-        row_col_multiply = to_sparse(matrix.sum(axis=1)).multiply(to_sparse(matrix.sum(axis=0)))
+    matrix.data = matrix.data.astype(np.float32)
+    overlap_matrix.data = overlap_matrix.data.astype(np.float32)
 
-        ul.log(__name__).info("Calculate expected counts matrix.")
-        row_col_multiply /= all_sum
+    row_sum = np.asarray(matrix.sum(axis=1)).ravel()
+    col_sum = np.asarray(matrix.sum(axis=0)).ravel()
+    all_sum = row_sum.sum()
 
-        ul.log(__name__).info("Calculate fragment weighted accessibility ===> (denominator)")
-        global_scale_data = row_col_multiply.dot(overlap_matrix)
-        del row_col_multiply
-
-    global_scale_data = to_dense(global_scale_data)
-    global_scale_data[global_scale_data == 0] = global_scale_data[global_scale_data != 0].min() / 2
     ul.log(__name__).info("Calculate fragment weighted accessibility ===> (numerator)")
-    init_score: matrix_data = matrix_dot_block_storage(matrix, overlap_matrix, block_size=block_size)
-    del matrix, overlap_matrix
+    init_score = matrix.dot(overlap_matrix).tocsr()
+
+    del matrix
+
+    ul.log(__name__).info("Calculate expected counts matrix ===> (numerator)")
+    global_scale_data = sparse.csr_matrix(row_sum.reshape(-1, 1)).dot(sparse.csr_matrix(col_sum.reshape(1, -1)))
+    global_scale_data.data = global_scale_data.data.astype(np.float32)
+
+    del row_sum, col_sum
+
+    global_scale_data.data = global_scale_data.data / all_sum
+
+    del all_sum
+
+    ul.log(__name__).info("Calculate fragment weighted accessibility ===> (denominator)")
+    global_scale_data = global_scale_data.dot(overlap_matrix)
+
+    min_nz = global_scale_data.data.min() / 2
 
     ul.log(__name__).info("Calculate fragment weighted accessibility.")
-    init_score: matrix_data = matrix_division_block_storage(
-        init_score,
-        global_scale_data,
-        block_size=block_size,
-        data=init_score
+    init_score = sparse_matrix_operation_memory_efficient(
+        init_score, global_scale_data, chunk_size=block_size, default=min_nz, operation="/"
     )
+    init_score.data = init_score.data.astype(np.float32)
+
+    del global_scale_data, min_nz
 
     return init_score
 
@@ -1033,7 +1026,6 @@ def calculate_init_score_weight(
     adata: AnnData,
     da_peaks_adata: AnnData,
     overlap_adata: AnnData,
-    top_rate: Optional[float] = None,
     diff_peak_value: difference_peak_optional = 'emp_effect',
     is_simple: bool = True,
     block_size: int = -1
@@ -1043,8 +1035,6 @@ def calculate_init_score_weight(
     :param adata: scATAC-seq data;
     :param da_peaks_adata: Differential peak data;
     :param overlap_adata: Peaks-traits/diseases data;
-    :param top_rate: Only retaining a specified proportion of peak information in peak correction of clustering type
-        differences; The default is the reciprocal of the number of Leiden clustering types.
     :param diff_peak_value: Specify the correction value in peak correction of clustering type differences.
         {'emp_effect', 'bayes_factor', 'emp_prob1', 'all'}
     :param is_simple: True represents not adding unnecessary intermediate variables, only adding the final result. It
@@ -1064,34 +1054,13 @@ def calculate_init_score_weight(
             "The `dp_delta` is not in `da_peaks_adata.uns`. (Need to execute function `pp.poisson_vi`)"
         )
 
-    if top_rate is not None and (top_rate <= 0 or top_rate >= 1):
-        ul.log(__name__).error("The parameter of `top_rate` should be between 0 and 1, or not set.")
-        raise ValueError("The parameter of `top_rate` should be between 0 and 1, or not set.")
-
-    if top_rate is not None and top_rate >= 0.5:
-        ul.log(__name__).error(
-            "The `top_rate` value is set to be greater than or equal to 0.5, it is recommended to be less than this "
-            "value."
-        )
-
-    cluster_size: int = adata.uns["poisson_vi"]["cluster_size"]
-
-    if top_rate is None:
-        top_rate = 1 / cluster_size
-
-    top_peak_count: int = int(np.ceil(top_rate * da_peaks_adata.shape[1]))
-
     fragments = adata.layers["fragments"]
     overlap_matrix = to_dense(overlap_adata.X)
 
     ul.log(__name__).info("Calculate cell type weight")
 
     def _get_cluster_weight_(da_matrix: matrix_data):
-        _cluster_weight_data_: matrix_data = matrix_dot_block_storage(
-            to_dense(min_max_norm(da_matrix, axis=0)),
-            overlap_matrix,
-            block_size=block_size
-        )
+        _cluster_weight_data_: matrix_data = min_max_norm(da_matrix, axis=0).dot(overlap_matrix)
         return sigmoid(mean_symmetric_scale(_cluster_weight_data_, axis=0, is_verbose=False))
 
     if diff_peak_value == "emp_effect":
@@ -1116,48 +1085,73 @@ def calculate_init_score_weight(
             "'all'} values."
         )
 
-    # calculate
-    input_data: dict = {
-        "data": fragments,
-        "overlap_data": overlap_matrix
-    }
-    del fragments, overlap_matrix
-    _init_trs_ncw_ = calculate_fragment_weighted_accessibility(input_data, block_size=block_size)
+    fragments = to_sparse(fragments.astype(np.int32))
+    overlap_matrix = to_sparse(overlap_matrix.astype(np.float32))
 
-    # enrichment_factor
-    cluster_weight_factor = _cluster_weight_.copy()
+    row_sum = np.asarray(fragments.sum(axis=1)).ravel()
+    col_sum = np.asarray(fragments.sum(axis=0)).ravel()
+    all_sum = row_sum.sum()
+
+    ul.log(__name__).info("Calculate fragment weighted accessibility ===> (numerator)")
+    _init_trs_ncw_ = fragments.dot(overlap_matrix)
+
+    del fragments
+
+    ul.log(__name__).info("Calculate expected counts matrix ===> (numerator)")
+    global_scale_data = sparse.csr_matrix(row_sum.reshape(-1, 1)).dot(sparse.csr_matrix(col_sum.reshape(1, -1)))
+    global_scale_data.data = global_scale_data.data.astype(np.float32)
+
+    del row_sum, col_sum
+
+    global_scale_data.data = global_scale_data.data / all_sum
+
+    del all_sum
+
+    ul.log(__name__).info("Calculate fragment weighted accessibility ===> (denominator)")
+    global_scale_data = global_scale_data.dot(overlap_matrix)
+    del overlap_matrix
+
+    min_nz = global_scale_data.data.min() / 2
+
+    ul.log(__name__).info("Calculate fragment weighted accessibility.")
+    _init_trs_ncw_ = sparse_matrix_operation_memory_efficient(
+        _init_trs_ncw_, global_scale_data, chunk_size=block_size, default=min_nz, operation="/"
+    )
+    _init_trs_ncw_.data = _init_trs_ncw_.data.astype(np.float32)
+
+    del global_scale_data, min_nz
 
     da_peaks_adata.obsm["cluster_weight"] = to_sparse(_cluster_weight_)
-
-    ul.log(__name__).info("Broadcasting the weight factor to the cellular level")
-    anno_info = adata.obs
-    _cell_type_weight_ = np.zeros((adata.shape[0], _cluster_weight_.shape[1]))
     del _cluster_weight_
 
+    ul.log(__name__).info("Broadcasting the weight factor to the cellular level")
+    _cell_type_weight_ = np.zeros((adata.shape[0], da_peaks_adata.obsm["cluster_weight"].shape[1]), dtype=np.float32)
+
+    cluster_series = adata.obs["clusters"]
+
     for cluster in da_peaks_adata.obs_names:
-        _cluster_weight_tmp_ = da_peaks_adata[cluster, :].obsm["cluster_weight"]
-        _cell_type_weight_[anno_info["clusters"] == cluster, :] = to_dense(
-            _cluster_weight_tmp_,
-            is_array=True
-        ).flatten()
-        del _cluster_weight_tmp_
+        mask = cluster_series == cluster
+        _cell_type_weight_[mask, :] = to_dense(
+            da_peaks_adata[cluster, :].obsm["cluster_weight"], is_array=True
+        ).flatten().astype(np.float32)
 
     ul.log(__name__).info("Calculate initial trait relevance scores")
-    _init_trs_weight_ = matrix_multiply_block_storage(_init_trs_ncw_, _cell_type_weight_, block_size=block_size)
+    _init_trs_weight_ = sparse_matrix_operation_memory_efficient(
+        _init_trs_ncw_, _cell_type_weight_, chunk_size=block_size, operation="*"
+    )
+    _init_trs_weight_.data = _init_trs_weight_.data.astype(np.float32)
 
-    init_trs_adata = AnnData(to_sparse(_init_trs_weight_), obs=adata.obs, var=overlap_adata.var)
+    init_trs_adata = AnnData(_init_trs_weight_, obs=adata.obs, var=overlap_adata.var)
     del _init_trs_weight_
 
     if not is_simple:
-        init_trs_adata.layers["init_trs_ncw"] = to_sparse(_init_trs_ncw_)
+        init_trs_adata.layers["init_trs_ncw"] = _init_trs_ncw_
         init_trs_adata.layers["cell_type_weight"] = to_sparse(_cell_type_weight_)
-        init_trs_adata.uns["cluster_weight_factor"] = to_sparse(cluster_weight_factor)
+        init_trs_adata.uns["cluster_weight_factor"] = da_peaks_adata.obsm["cluster_weight"]
 
     del _init_trs_ncw_, _cell_type_weight_
 
     init_trs_adata.uns["is_sample"] = is_simple
-    init_trs_adata.uns["top_rate"] = top_rate
-    init_trs_adata.uns["top_peak_count"] = top_peak_count
     return init_trs_adata
 
 
@@ -1195,8 +1189,9 @@ def obtain_cell_cell_network(
             "the `poisson_vi` function."
         )
 
-    _latent_name_ = "latent" if adata.uns["poisson_vi"]["latent_name"] is None else adata.uns["poisson_vi"][
-        "latent_name"]
+    _latent_name_ = "latent" if adata.uns["poisson_vi"]["latent_name"] is None \
+        else adata.uns["poisson_vi"]["latent_name"]
+
     latent = adata.obsm[_latent_name_]
     del _latent_name_
     cell_anno = adata.obs
