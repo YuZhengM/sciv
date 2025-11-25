@@ -29,7 +29,7 @@ def filter_data(
     is_min_peak: bool = False
 ) -> AnnData:
     """
-    Filter scATAC data
+    Filter scATAC-seq data
     :param adata: scATAC-seq data
     :param min_peaks_counts: Minimum number of counts required for a peak to pass filtering
     :param min_cells: Minimum number of cells expressed required for a peak to pass filtering
@@ -44,9 +44,9 @@ def filter_data(
     :param is_min_peak: Whether to screen peaks
     :return: scATAC-seq data
     """
-    ul.log(__name__).info("Filter scATAC data")
-
     import scanpy as sc
+
+    ul.log(__name__).info("Filter scATAC-seq data")
 
     if adata.shape[0] == 0:
         ul.log(__name__).error("The scATAC data is empty")
