@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 [project]
 name = "sciv"
-version = "0.0.59"
+version = "0.0.60"
 authors = [
     { name = "Zheng-Min Yu", email = "yuzmbio@163.com" },
 ]
@@ -25,6 +25,7 @@ dependencies = [
     "seaborn==0.11.2",
     "scipy==1.14.1",
     "scanpy==1.9.6",
+    "anndata==0.11.4",
     "scikit-learn==1.5.2",
     "networkx==3.3",
     "palettable==3.3.3",

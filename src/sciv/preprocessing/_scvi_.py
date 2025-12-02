@@ -19,6 +19,11 @@ __name__: str = "preprocessing_scvi"
 def poisson_vi(
     adata: AnnData,
     max_epochs: int = 500,
+    lr: float = 1e-4,
+    batch_size: int = 128,
+    eps: float = 1e-08,
+    early_stopping: bool = True,
+    early_stopping_patience: int = 50,
     batch_key: Optional[str] = None,
     resolution: float = 0.5,
     dp_delta: float = 0.05,
@@ -29,6 +34,11 @@ def poisson_vi(
     PoissonVI processing of the data results in the current sample representation and peak difference data after Leiden clustering.
     :param adata: processing data;
     :param max_epochs: The maximum number of epochs for PoissonVI training;
+    :param lr: Learning rate for optimization;
+    :param batch_size: Minibatch size to use during training;
+    :param eps: Optimizer eps;
+    :param early_stopping: Whether to perform early stopping with respect to the validation set;
+    :param early_stopping_patience: How many epochs to wait for improvement before early stopping;
     :param batch_key: Batch information in scATAC-seq data;
     :param resolution: Resolution of the Leiden Cluster;
     :param dp_delta: PeakVI method in differential analysis empirical effect size threshold;
@@ -74,6 +84,11 @@ def poisson_vi(
                     devices=-1,
                     datasplitter_kwargs=data_splitter_kwargs,
                     strategy="ddp_notebook_find_unused_parameters_true",
+                    lr=lr,
+                    batch_size=batch_size,
+                    eps=eps,
+                    early_stopping=early_stopping,
+                    early_stopping_patience=early_stopping_patience
                 )
         except Exception as ex:
 
@@ -81,13 +96,30 @@ def poisson_vi(
                 ul.log(__name__).warning(f"Multiple GPU failed to run, attempting to run on one card.\n {ex}")
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore")
-                    _model_.train(max_epochs=max_epochs, check_val_every_n_epoch=1)
+                    _model_.train(
+                        max_epochs=max_epochs,
+                        check_val_every_n_epoch=1,
+                        lr=lr,
+                        batch_size=batch_size,
+                        eps=eps,
+                        early_stopping=early_stopping,
+                        early_stopping_patience=early_stopping_patience
+                    )
             except Exception as exc:
                 ul.log(__name__).warning(f"GPU failed to run, try to switch to CPU running.\n {exc}")
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore")
                     _model_.to_device('cpu')
-                    _model_.train(max_epochs=max_epochs, check_val_every_n_epoch=1, accelerator="cpu")
+                    _model_.train(
+                        max_epochs=max_epochs,
+                        check_val_every_n_epoch=1,
+                        lr=lr,
+                        batch_size=batch_size,
+                        eps=eps,
+                        early_stopping=early_stopping,
+                        early_stopping_patience=early_stopping_patience,
+                        accelerator="cpu"
+                    )
 
         return _model_
 

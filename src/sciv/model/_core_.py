@@ -65,6 +65,11 @@ def _check_and_run_two_step_(
     cell_rate: Optional[float] = None,
     peak_rate: Optional[float] = None,
     max_epochs: int = 500,
+    lr: float = 1e-4,
+    batch_size: int = 128,
+    eps: float = 1e-08,
+    early_stopping: bool = True,
+    early_stopping_patience: int = 50,
     batch_key: Optional[str] = None,
     resolution: float = 0.5,
     k: int = 30,
@@ -214,6 +219,11 @@ def _check_and_run_two_step_(
         "peak_rate": peak_rate,
         "single_chunk_size": single_chunk_size,
         "max_epochs": max_epochs,
+        "lr": lr,
+        "batch_size": batch_size,
+        "eps": eps,
+        "early_stopping": early_stopping,
+        "early_stopping_patience": early_stopping_patience,
         "batch_key": batch_key,
         "resolution": resolution,
         "k": k,
@@ -292,12 +302,34 @@ def _check_and_run_two_step_(
             da_peaks = read_h5ad(da_peaks_save_file)
             da_peaks_is_read = True
         else:
-            da_peaks = poisson_vi(adata, max_epochs=max_epochs, batch_key=batch_key, resolution=resolution, model_dir=model_dir)
+            # PoissonVI
+            da_peaks = poisson_vi(
+                adata,
+                max_epochs=max_epochs,
+                lr=lr,
+                batch_size=batch_size,
+                eps=eps,
+                early_stopping=early_stopping,
+                early_stopping_patience=early_stopping_patience,
+                batch_key=batch_key,
+                resolution=resolution,
+                model_dir=model_dir
+            )
 
     else:
         filter_data(adata, cell_rate=cell_rate, peak_rate=peak_rate)
-        # PoissonVI
-        da_peaks = poisson_vi(adata, max_epochs=max_epochs, batch_key=batch_key, resolution=resolution, model_dir=model_dir)
+        da_peaks = poisson_vi(
+            adata,
+            max_epochs=max_epochs,
+            lr=lr,
+            batch_size=batch_size,
+            eps=eps,
+            early_stopping=early_stopping,
+            early_stopping_patience=early_stopping_patience,
+            batch_key=batch_key,
+            resolution=resolution,
+            model_dir=model_dir
+        )
 
     if save_path is not None:
         if not adata_is_read:
@@ -335,6 +367,11 @@ def core(
     cell_rate: Optional[float] = None,
     peak_rate: Optional[float] = None,
     max_epochs: int = 500,
+    lr: float = 1e-4,
+    batch_size: int = 128,
+    eps: float = 1e-08,
+    early_stopping: bool = True,
+    early_stopping_patience: int = 50,
     batch_key: Optional[str] = None,
     resolution: float = 0.5,
     k: int = 30,
@@ -382,6 +419,11 @@ def core(
     :param peak_rate: Removing the percentage of peak count in total peak count only takes effect when the min_peaks
         parameter is None;
     :param max_epochs: The maximum number of epochs for PoissonVI training;
+    :param lr: Learning rate for optimization;
+    :param batch_size: Minibatch size to use during training;
+    :param eps: Optimizer eps;
+    :param early_stopping: Whether to perform early stopping with respect to the validation set;
+    :param early_stopping_patience: How many epochs to wait for improvement before early stopping;
     :param batch_key: Batch information in scATAC-seq data;
     :param resolution: Resolution of the Leiden Cluster. The recommended values are any one of 0.4, 0.9, 1.3, 1.5;
     :param k: When building an mKNN network, the number of nodes connected by each node (and operation);
@@ -456,6 +498,11 @@ def core(
         cell_rate=cell_rate,
         peak_rate=peak_rate,
         max_epochs=max_epochs,
+        lr=lr,
+        batch_size=batch_size,
+        eps=eps,
+        early_stopping=early_stopping,
+        early_stopping_patience=early_stopping_patience,
         batch_key=batch_key,
         resolution=resolution,
         k=k,
@@ -961,6 +1008,11 @@ def knock(
         cell_rate=params["cell_rate"] if "cell_rate" in params else None,
         peak_rate=params["peak_rate"] if "peak_rate" in params else None,
         max_epochs=params["max_epochs"],
+        lr=params["lr"] if "lr" in params else None,
+        batch_size=params["batch_size"] if "batch_size" in params else None,
+        eps=params["eps"] if "eps" in params else None,
+        early_stopping=params["early_stopping"] if "early_stopping" in params else None,
+        early_stopping_patience=params["early_stopping_patience"] if "early_stopping_patience" in params else None,
         batch_key=params["batch_key"] if "batch_key" in params else None,
         resolution=params["resolution"],
         k=params["k"],
