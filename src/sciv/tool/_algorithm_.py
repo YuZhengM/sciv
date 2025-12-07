@@ -1002,7 +1002,9 @@ def calculate_fragment_weighted_accessibility(input_data: dict, block_size: int 
 
     del row_sum, col_sum
 
-    global_scale_data.data = global_scale_data.data / all_sum
+    global_scale_data = sparse_matrix_operation_memory_efficient(
+        global_scale_data, all_sum, chunk_size=block_size, operation="/"
+    )
 
     del all_sum
 
@@ -1046,12 +1048,12 @@ def calculate_init_score_weight(
     """
     if "is_overlap" not in overlap_adata.uns:
         ul.log(__name__).warning(
-            "The `is_overlap` is not in `overlap_data.uns`. (Need to execute function `tl.overlap_sum`)"
+            "The `is_overlap` is not in `overlap_data.uns`. (Suggest using the 'tl.overlap_stum' function to obtain the result.)"
         )
 
     if "dp_delta" not in da_peaks_adata.uns:
         ul.log(__name__).warning(
-            "The `dp_delta` is not in `da_peaks_adata.uns`. (Need to execute function `pp.poisson_vi`)"
+            "The `dp_delta` is not in `da_peaks_adata.uns`. (Suggest using the 'pp.poisson_vi' function to obtain the result.)"
         )
 
     fragments = adata.layers["fragments"]
