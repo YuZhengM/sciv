@@ -598,7 +598,7 @@ def sparse_matrix_operation_memory_efficient(
     """
     n, m = data1.shape
 
-    if isinstance(data1, matrix_data):
+    if isinstance(data2, matrix_data):
 
         n1, m1 = data2.shape
 
@@ -628,7 +628,7 @@ def sparse_matrix_operation_memory_efficient(
         elif operation == '/':
             dense_data1 = to_dense(data1)
 
-            if isinstance(data1, matrix_data):
+            if isinstance(data2, matrix_data):
                 dense_data2 = to_dense(data2)
                 dense_data2[dense_data2 == 0] = default
             else:
@@ -643,7 +643,7 @@ def sparse_matrix_operation_memory_efficient(
 
     data1 = to_sparse(data1)
 
-    if isinstance(data1, matrix_data):
+    if isinstance(data2, matrix_data):
         data2 = to_sparse(data2)
 
     result = sparse.lil_matrix(data1.shape)
@@ -653,7 +653,7 @@ def sparse_matrix_operation_memory_efficient(
 
         chunk1 = data1[i:i_end, :]
 
-        if isinstance(data1, matrix_data):
+        if isinstance(data2, matrix_data):
             chunk2 = data2[i:i_end, :]
         else:
             chunk2 = data2
@@ -668,7 +668,7 @@ def sparse_matrix_operation_memory_efficient(
             # Sparse matrix division: convert to dense, perform element-wise division, then convert back to sparse
             dense_chunk1 = chunk1.todense()
 
-            if isinstance(data1, matrix_data):
+            if isinstance(data2, matrix_data):
                 dense_chunk2 = chunk2.todense()
                 dense_chunk2[dense_chunk2 == 0] = default
             else:
