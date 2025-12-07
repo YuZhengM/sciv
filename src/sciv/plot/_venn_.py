@@ -1,10 +1,11 @@
 # -*- coding: UTF-8 -*-
 
-from matplotlib import pyplot as plt
+from typing import Any
+
 from matplotlib_venn import venn3, venn3_circles, venn2, venn2_circles
 
 from .. import util as ul
-from ..util import path, collection, type_set_colors, plot_end
+from ..util import path, collection, type_set_colors, plot_end, plot_start
 
 __name__: str = "plot_venn"
 
@@ -18,46 +19,42 @@ def three_venn(
     name3: str = "Set3",
     width: float = 2,
     height: float = 2,
+    bottom: float = 0,
     colors: list = None,
+    x_name: str = None,
+    y_name: str = None,
     title: str = None,
     output: path = None,
-    show: bool = True
+    show: bool = True,
+    **kwargs: Any
 ) -> None:
-    if output is None and not show:
-        ul.log(__name__).warning(f"At least one of the `output` and `show` parameters is required")
-    else:
-        fig = plt.figure(figsize=(width, height))
+    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
 
-        if title is not None:
-            plt.title(title)
+    if colors is None:
+        colors = type_set_colors[:3]
 
-        if colors is None:
-            colors = type_set_colors[:3]
+    if len(colors) < 3:
+        ul.log(__name__).info(f"The value of colors requires three elements.")
+        raise ValueError(f"The value of colors requires three elements.")
+    elif len(colors) > 3:
+        colors = colors[:3]
 
-        if len(colors) < 3:
-            ul.log(__name__).info(f"The value of colors requires three elements.")
-            raise ValueError(f"The value of colors requires three elements.")
-        elif len(colors) > 3:
-            colors = colors[:3]
+    set1 = set(set1)
+    set2 = set(set2)
+    set3 = set(set3)
 
-        ax1 = fig.add_subplot()
+    subsets = (set1, set2, set3)
 
-        set1 = set(set1)
-        set2 = set(set2)
-        set3 = set(set3)
+    venn3(subsets=subsets, set_labels=(name1, name2, name3), ax=ax, set_colors=colors, **kwargs)
 
-        subsets = (set1, set2, set3)
+    # noinspection PyTypeChecker
+    venn3_circles(subsets=subsets, linestyle='dashed', linewidth=1, color="grey", ax=ax)
 
-        venn3(subsets=subsets, set_labels=(name1, name2, name3), ax=ax1, set_colors=colors)
+    ax.legend(loc='upper right')
 
-        # noinspection PyTypeChecker
-        venn3_circles(subsets=subsets, linestyle='dashed', linewidth=1, color="grey", ax=ax1)
+    ax.axis('off')
 
-        ax1.legend(loc='upper right')
-
-        ax1.axis('off')
-
-        plot_end(fig, output, show)
+    plot_end(fig, output, show)
 
 
 def two_venn(
@@ -67,40 +64,36 @@ def two_venn(
     name2: str = "Set2",
     width: float = 2,
     height: float = 2,
+    bottom: float = 0,
     colors: list = None,
+    x_name: str = None,
+    y_name: str = None,
     title: str = None,
     output: path = None,
-    show: bool = True
+    show: bool = True,
+    **kwargs: Any
 ) -> None:
-    if output is None and not show:
-        ul.log(__name__).warning(f"At least one of the `output` and `show` parameters is required")
-    else:
-        fig = plt.figure(figsize=(width, height))
+    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
 
-        if title is not None:
-            plt.title(title)
+    if colors is None:
+        colors = type_set_colors[:2]
 
-        if colors is None:
-            colors = type_set_colors[:2]
+    if len(colors) < 2:
+        ul.log(__name__).info(f"The value of colors requires three elements.")
+        raise ValueError(f"The value of colors requires three elements.")
+    elif len(colors) > 2:
+        colors = colors[:2]
 
-        if len(colors) < 2:
-            ul.log(__name__).info(f"The value of colors requires three elements.")
-            raise ValueError(f"The value of colors requires three elements.")
-        elif len(colors) > 2:
-            colors = colors[:2]
+    set1 = set(set1)
+    set2 = set(set2)
 
-        ax1 = fig.add_subplot()
+    venn2((set1, set2), set_labels=(name1, name2), ax=ax, set_colors=colors, **kwargs)
 
-        set1 = set(set1)
-        set2 = set(set2)
+    # noinspection PyTypeChecker
+    venn2_circles(subsets=(set1, set2), linestyle='dashed', linewidth=1, color="grey", ax=ax)
 
-        venn2((set1, set2), set_labels=(name1, name2), ax=ax1, set_colors=colors)
+    ax.legend(loc='upper right')
 
-        # noinspection PyTypeChecker
-        venn2_circles(subsets=(set1, set2), linestyle='dashed', linewidth=1, color="grey", ax=ax1)
+    ax.axis('off')
 
-        ax1.legend(loc='upper right')
-
-        ax1.axis('off')
-
-        plot_end(fig, output, show)
+    plot_end(fig, output, show)

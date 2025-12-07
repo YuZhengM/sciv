@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
 
-from typing import Optional, Union, Tuple
+from typing import Optional, Union, Tuple, Any
 
 import pandas as pd
 from anndata import AnnData
@@ -12,7 +12,7 @@ from pandas import DataFrame
 import seaborn as sns
 
 from .. import util as ul
-from ..util import path, type_20_colors, type_50_colors, plot_end
+from ..util import path, type_20_colors, type_50_colors, plot_end, plot_start
 
 __name__: str = "plot_heat_map"
 
@@ -42,13 +42,9 @@ def heatmap_annotation(
     cluster_metric: str = "correlation",
     row_names_side: str = "left",
     col_names_side: str = "bottom",
-    top: float = 0.05,
-    right: float = 0.15,
-    bottom: float = 0.05,
-    left: float = 0.05,
+    bottom: float = 0.01,
     label_size: float = 9,
     fontsize: float = 9,
-    is_position: bool = False,
     level_bar_height: float = None,
     anno_specific_labels: list = None,
     x_label_rotation: float = 245,
@@ -109,13 +105,9 @@ def heatmap_annotation(
     :param cluster_metric: If `row_cluster` or `col_cluster` is true, the clustering method will be used;
     :param row_names_side: Direction of row names display. Effective when `row_names_side` is `true`;
     :param col_names_side: Direction of column names display. Effective when `col_show_names` is `true`;
-    :param top: The gap at the top in the picture. Effective when `is_position` is `true`;
-    :param right: The gap at the right in the picture. Effective when `is_position` is `true`;
-    :param bottom: The gap at the bottom in the picture. Effective when `is_position` is `true`;
-    :param left: The gap at the left in the picture. Effective when `is_position` is `true`;
+    :param bottom: The gap at the bottom in the picture.
     :param label_size: The size of the font for row or column names. Effective when `row_names_side` or `col_show_names` is `true`;
     :param fontsize: The size of the row or column title. Effective when `x_name` or `y_name` not is `None`;
-    :param is_position: Set to true, customize the distance of surrounding gaps in the image;
     :param x_label_rotation: The degree of rotation for row names. Effective when `row_names_side` is `true`;
     :param y_label_rotation: The degree of rotation for column names. Effective when `col_show_names` is `true`;
     :param row_color_start_index: Row annotation specifies the starting index of different colors;
@@ -142,172 +134,169 @@ def heatmap_annotation(
     :return: Display of image or saved file.
     """
 
-    if output is None and not show:
-        ul.log(__name__).info(f"At least one of the `output` and `show` parameters is required.")
+    ul.log(__name__).info("Start plotting the heatmap")
+    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
+
+    data = adata.copy()
+
+    # judge layers
+    if layer is not None:
+
+        if layer not in list(data.layers):
+            ul.log(__name__).error("The `layer` parameter needs to include in `adata.layers`")
+            raise ValueError(f"The `{layer}` parameter needs to include in `adata.layers`")
+
+        data.X = data.layers[layer]
+
+    if is_sort:
+        data = data[data.obs.sort_values(row_name).index, data.var.sort_values(col_name).index]
+
+    # DataFrame
+    df: DataFrame = data.to_df()
+
+    row_anno: DataFrame = data.obs.copy()
+
+    col_anno: DataFrame = data.var.copy()
+
+    if row_names is not None:
+        df.index = data.obs[row_names].astype(str)
+        row_anno.index = data.obs[row_names].astype(str)
+
+    if col_names is not None:
+        df.columns = data.var[col_names].astype(str)
+        col_anno.index = data.var[col_names].astype(str)
+
+    if row_name is not None:
+        row_colors = type_20_colors[row_color_start_index:] if len(
+            list(set(row_anno[row_name]))) + row_color_start_index <= 20 else type_50_colors[row_color_start_index:]
     else:
-        ul.log(__name__).info("Start plotting the heatmap")
-        # noinspection DuplicatedCode
-        fig, ax = plt.subplots(figsize=(width, height))
-        data = adata.copy()
+        row_colors = "cmap50"
 
-        # judge layers
-        if layer is not None:
+    if col_name is not None:
+        col_colors = type_20_colors[col_color_start_index:] if len(
+            list(set(col_anno[col_name]))) + col_color_start_index <= 20 else type_50_colors[col_color_start_index:]
+    else:
+        col_colors = "cmap50"
 
-            if layer not in list(data.layers):
-                ul.log(__name__).error("The `layer` parameter needs to include in `adata.layers`")
-                raise ValueError(f"The `{layer}` parameter needs to include in `adata.layers`")
+    df_rows = None
+    if anno_specific_labels is not None:
+        df_rows = df.apply(lambda x: x.name if x.name in anno_specific_labels else None, axis=1)
+        df_rows.name = "Selected"
 
-            data.X = data.layers[layer]
+    # noinspection PyTypeChecker
+    row_ha = HeatmapAnnotation(
+        label=anno_label(
+            row_anno[row_name], cmap=ListedColormap(row_colors), merge=True, height=anno_label_height
+        ) if row_anno_label else None,
+        RowCategory=anno_simple(
+            row_anno[row_name],
+            cmap=ListedColormap(row_colors),
+            height=category_height,
+            legend=row_legend,
+            add_text=row_anno_text,
+            text_kws=dict(color="black", rotation=0, fontsize=label_size),
+        ) if row_name is not None else None,
+        axis=0,
+        verbose=0,
+        legend_gap=5,
+        hgap=0.5,
+        label_kws=dict(color="black", rotation=90, horizontalalignment="left")
+    )
 
-        if is_sort:
-            data = data[data.obs.sort_values(row_name).index, data.var.sort_values(col_name).index]
+    # noinspection PyTypeChecker
+    row_ha_right = HeatmapAnnotation(
+        AssociationScore=anno_barplot(row_anno[[row_score_name]], legend=True, height=level_bar_height,
+                                      **dict(edgecolor='none')) if row_score_name in row_anno.columns else None,
+        selected=anno_label(df_rows, relpos=relpos, frac=frac,
+                            height=selected_anno_label_height) if anno_specific_labels is not None else None,
+        axis=0,
+        verbose=0,
+        legend_gap=5,
+        hgap=0.5,
+        label_kws=dict(color="black", rotation=90, horizontalalignment="left")
+    )
 
-        # DataFrame
-        df: DataFrame = data.to_df()
+    col_ha_args = {"rotation": 90}
+    # noinspection PyTypeChecker
+    col_ha = HeatmapAnnotation(
+        label=anno_label(
+            col_anno[col_name], cmap=ListedColormap(col_colors), merge=True, height=anno_label_height, **col_ha_args
+        ) if col_anno_label else None,
+        ColCategory=anno_simple(
+            col_anno[col_name],
+            cmap=ListedColormap(col_colors),
+            height=category_height,
+            add_text=col_anno_text,
+            legend=col_legend,
+            text_kws={'fontsize': label_size}
+        ) if col_name is not None else None,
+        axis=1,
+        verbose=0,
+        legend_gap=5,
+        hgap=0.5,
+        label_side='left',
+        label_kws=dict(color="black", rotation=0, horizontalalignment="right")
+    )
 
-        row_anno: DataFrame = data.obs.copy()
+    """
+    It is worth noting here that, `row_cluster_metric="correlation"`, When the default parameter 
+    `row_cluster_metric` in method `ClusterMapPlotter` is passed into method `distance.pdist`, 
+    that is `metric='correlation'`, and this method derives from this 
+    `https://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.spatial.distance.pdist.html`,
+    it can be inferred that there is a division formula in one step, which may result in the possibility of `NA`.
+    
+    For example, in this scATAC-seq data, if there are two or more traits without any intersection, 
+    the denominator will appear as zero.
+    
+    Therefore, use the `"median"` value for parameter `row_cluster_method`
+    Therefore, use the `"euclidean"` value for parameter `row_cluster_metric`
+    """
 
-        col_anno: DataFrame = data.var.copy()
+    ClusterMapPlotter(
+        data=df,
+        top_annotation=col_ha if col_name is not None else None,
+        left_annotation=row_ha if row_name is not None else None,
+        right_annotation=row_ha_right if anno_specific_labels is not None or row_score_name in row_anno.columns else None,
+        label=label,
+        row_cluster_method=cluster_method,
+        row_cluster_metric=cluster_metric,
+        col_cluster_method=cluster_method,
+        col_cluster_metric=cluster_metric,
+        show_rownames=row_show_names,
+        show_colnames=col_show_names,
+        row_names_side=row_names_side,
+        col_names_side=col_names_side,
+        col_split=col_split,
+        row_split=row_split,
+        row_split_order=row_split_order,
+        col_split_order=col_split_order,
+        col_split_gap=col_split_gap,
+        row_split_gap=row_split_gap,
+        xticklabels_kws=dict(labelrotation=x_label_rotation, labelcolor='black', labelsize=label_size),
+        yticklabels_kws=dict(labelrotation=y_label_rotation, labelcolor='black', labelsize=label_size),
+        cmap=cmap,
+        tree_kws={'row_cmap': 'Dark2'},
+        xlabel=x_name,
+        ylabel=y_name,
+        xlabel_kws=dict(color='black', fontsize=fontsize),
+        ylabel_kws=dict(color='black', fontsize=fontsize),
+        col_cluster=col_cluster,
+        row_cluster=row_cluster,
+        col_dendrogram=col_cluster,
+        row_dendrogram=row_cluster,
+        **kwargs
+    )
 
-        if row_names is not None:
-            df.index = data.obs[row_names].astype(str)
-            row_anno.index = data.obs[row_names].astype(str)
-
-        if col_names is not None:
-            df.columns = data.var[col_names].astype(str)
-            col_anno.index = data.var[col_names].astype(str)
-
-        if is_position:
-            plt.subplots_adjust(left=left, right=1 - right, top=1 - top, bottom=bottom)
-
-        if row_name is not None:
-            row_colors = type_20_colors[row_color_start_index:] if len(list(set(row_anno[row_name]))) + row_color_start_index <= 20 else type_50_colors[row_color_start_index:]
-        else:
-            row_colors = "cmap50"
-
-        if col_name is not None:
-            col_colors = type_20_colors[col_color_start_index:] if len(list(set(col_anno[col_name]))) + col_color_start_index <= 20 else type_50_colors[col_color_start_index:]
-        else:
-            col_colors = "cmap50"
-
-        if title is not None:
-            plt.title(title)
-
-        df_rows = None
-        if anno_specific_labels is not None:
-            df_rows = df.apply(lambda x: x.name if x.name in anno_specific_labels else None, axis=1)
-            df_rows.name = "Selected"
-
-        # noinspection PyTypeChecker
-        row_ha = HeatmapAnnotation(
-            label=anno_label(
-                row_anno[row_name], cmap=ListedColormap(row_colors), merge=True, height=anno_label_height
-            ) if row_anno_label else None,
-            RowCategory=anno_simple(
-                row_anno[row_name],
-                cmap=ListedColormap(row_colors),
-                height=category_height,
-                legend=row_legend,
-                add_text=row_anno_text,
-                text_kws=dict(color="black", rotation=0, fontsize=label_size),
-            ) if row_name is not None else None,
-            axis=0,
-            verbose=0,
-            legend_gap=5,
-            hgap=0.5,
-            label_kws=dict(color="black", rotation=90, horizontalalignment="left")
-        )
-
-        # noinspection PyTypeChecker
-        row_ha_right = HeatmapAnnotation(
-            AssociationScore=anno_barplot(row_anno[[row_score_name]], legend=True, height=level_bar_height, **dict(edgecolor='none')) if row_score_name in row_anno.columns else None,
-            selected=anno_label(df_rows, relpos=relpos, frac=frac, height=selected_anno_label_height) if anno_specific_labels is not None else None,
-            axis=0,
-            verbose=0,
-            legend_gap=5,
-            hgap=0.5,
-            label_kws=dict(color="black", rotation=90, horizontalalignment="left")
-        )
-
-        col_ha_args = {"rotation": 90}
-        # noinspection PyTypeChecker
-        col_ha = HeatmapAnnotation(
-            label=anno_label(
-                col_anno[col_name], cmap=ListedColormap(col_colors), merge=True, height=anno_label_height, **col_ha_args
-            ) if col_anno_label else None,
-            ColCategory=anno_simple(
-                col_anno[col_name],
-                cmap=ListedColormap(col_colors),
-                height=category_height,
-                add_text=col_anno_text,
-                legend=col_legend,
-                text_kws={'fontsize': label_size}
-            ) if col_name is not None else None,
-            axis=1,
-            verbose=0,
-            legend_gap=5,
-            hgap=0.5,
-            label_side='left',
-            label_kws=dict(color="black", rotation=0, horizontalalignment="right")
-        )
-
-        """
-        It is worth noting here that, `row_cluster_metric="correlation"`, When the default parameter 
-        `row_cluster_metric` in method `ClusterMapPlotter` is passed into method `distance.pdist`, 
-        that is `metric='correlation'`, and this method derives from this 
-        `https://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.spatial.distance.pdist.html`,
-        it can be inferred that there is a division formula in one step, which may result in the possibility of `NA`.
-        
-        For example, in this scATAC-seq data, if there are two or more traits without any intersection, 
-        the denominator will appear as zero.
-        
-        Therefore, use the `"median"` value for parameter `row_cluster_method`
-        Therefore, use the `"euclidean"` value for parameter `row_cluster_metric`
-        """
-
-        ClusterMapPlotter(
-            data=df,
-            top_annotation=col_ha if col_name is not None else None,
-            left_annotation=row_ha if row_name is not None else None,
-            right_annotation=row_ha_right if anno_specific_labels is not None or row_score_name in row_anno.columns else None,
-            label=label,
-            row_cluster_method=cluster_method,
-            row_cluster_metric=cluster_metric,
-            col_cluster_method=cluster_method,
-            col_cluster_metric=cluster_metric,
-            show_rownames=row_show_names,
-            show_colnames=col_show_names,
-            row_names_side=row_names_side,
-            col_names_side=col_names_side,
-            col_split=col_split,
-            row_split=row_split,
-            row_split_order=row_split_order,
-            col_split_order=col_split_order,
-            col_split_gap=col_split_gap,
-            row_split_gap=row_split_gap,
-            xticklabels_kws=dict(labelrotation=x_label_rotation, labelcolor='black', labelsize=label_size),
-            yticklabels_kws=dict(labelrotation=y_label_rotation, labelcolor='black', labelsize=label_size),
-            cmap=cmap,
-            tree_kws={'row_cmap': 'Dark2'},
-            xlabel=x_name,
-            ylabel=y_name,
-            xlabel_kws=dict(color='black', fontsize=fontsize),
-            ylabel_kws=dict(color='black', fontsize=fontsize),
-            col_cluster=col_cluster,
-            row_cluster=row_cluster,
-            col_dendrogram=col_cluster,
-            row_dendrogram=row_cluster,
-            **kwargs
-        )
-
-        plot_end(fig, output, show)
+    plot_end(fig, output, show)
 
 
 def heatmap(
     adata: AnnData,
     layer: str = None,
+    title: Optional[str] = None,
     width: float = 4,
     height: float = 4,
+    bottom: float = 0,
     annot: bool = False,
     square: bool = True,
     is_cluster: bool = False,
@@ -318,45 +307,34 @@ def heatmap(
     x_name: str = None,
     y_name: str = None,
     output: path = None,
-    show: bool = True
+    show: bool = True,
+    **kwargs: Any
 ) -> None:
-    if output is None and not show:
-        ul.log(__name__).warning(f"At least one of the `output` and `show` parameters is required")
+    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
+
+    data = adata.copy()
+
+    # judge layers
+    if layer is not None:
+
+        if layer not in list(data.layers):
+            ul.log(__name__).error("The `layer` parameter needs to include in `adata.layers`")
+            raise ValueError("The `layer` parameter needs to include in `adata.layers`")
+
+        data.X = data.layers[layer]
+
+    # DataFrame
+    ul.log(__name__).info(f"to DataFrame")
+    df: DataFrame = data.to_df()
+    # seaborn
+    heat_map: Axes = sns.clustermap(data=df, square=square, annot=annot, cmap=cmap, fmt=fmt, **kwargs) \
+        if is_cluster else \
+        sns.heatmap(data=df, square=square, annot=annot, cmap=cmap, linewidths=line_widths, fmt=fmt, **kwargs)
+
+    if not is_cluster:
+        plt.setp(heat_map.get_xticklabels(), rotation=rotation, ha="right", rotation_mode="anchor")
     else:
-        # noinspection DuplicatedCode
-        fig, ax = plt.subplots(figsize=(width, height))
-        data = adata.copy()
+        # noinspection PyUnresolvedReferences
+        plt.setp(heat_map.ax_heatmap.get_xticklabels(), rotation=rotation)
 
-        # judge layers
-        if layer is not None:
-
-            if layer not in list(data.layers):
-                ul.log(__name__).error("The `layer` parameter needs to include in `adata.layers`")
-                raise ValueError("The `layer` parameter needs to include in `adata.layers`")
-
-            data.X = data.layers[layer]
-
-        # DataFrame
-        ul.log(__name__).info(f"to DataFrame")
-        df: DataFrame = data.to_df()
-        # seaborn
-        heat_map: Axes = sns.clustermap(data=df, square=square, annot=annot, cmap=cmap, fmt=fmt) \
-            if is_cluster else \
-            sns.heatmap(data=df, square=square, annot=annot, cmap=cmap, linewidths=line_widths, fmt=fmt)
-
-        if not is_cluster:
-            plt.subplots_adjust(left=0, bottom=0)
-            plt.setp(
-                heat_map.get_xticklabels(), rotation=rotation, ha="right", rotation_mode="anchor"
-            )
-        else:
-            # noinspection PyUnresolvedReferences
-            plt.setp(heat_map.ax_heatmap.get_xticklabels(), rotation=rotation)
-
-        if x_name is not None:
-            plt.xlabel(x_name)
-
-        if y_name is not None:
-            plt.ylabel(y_name)
-
-        plot_end(fig, output, show)
+    plot_end(fig, output, show)

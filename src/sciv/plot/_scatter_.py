@@ -1,18 +1,17 @@
 # -*- coding: UTF-8 -*-
 
 import os.path
-from typing import Union, Tuple, Optional
+from typing import Union, Tuple, Optional, Any
 
 import matplotlib
 import numpy as np
 from anndata import AnnData
 from matplotlib import pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
 from pandas import DataFrame
 import seaborn as sns
 
 from .. import util as ul
-from ..util import path, collection, type_50_colors, type_20_colors, chrtype, type_set_colors, plot_end
+from ..util import path, collection, type_50_colors, type_20_colors, chrtype, type_set_colors, plot_end, plot_start
 
 __name__: str = "plot_pie"
 
@@ -25,131 +24,130 @@ def scatter_base(
     y: str,
     hue: str = None,
     hue_order: list = None,
+    x_name: str = None,
+    y_name: str = None,
     title: str = None,
     bar_label: str = None,
     cmap: str = "Oranges",
     width: float = 2,
     height: float = 2,
     right: float = 0.9,
+    bottom: float = 0,
     text_fontsize: float = 7,
     legend_fontsize: float = 7,
     start_color_index: int = 0,
     color_step_size: int = 0,
     type_colors: collection = None,
+    edge_color: str = None,
     size: Union[float, collection] = 1.0,
     legend: dict = None,
     number: bool = False,
     is_text: bool = False,
     output: path = None,
-    show: bool = True
+    show: bool = True,
+    **kwargs: Any
 ) -> None:
-    if output is None and not show:
-        ul.log(__name__).warning(f"At least one of the `output` and `show` parameters is required")
+    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
+
+    # scatter
+    if number:
+        norm = plt.Normalize(df[hue].min(), df[hue].max())
+        sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+        sm.set_array([])
+        plt.colorbar(sm, label=bar_label)
+        sns.scatterplot(
+            data=df,
+            x=x,
+            y=y,
+            palette=cmap,
+            hue=hue,
+            s=size,
+            legend=False,
+            edgecolor=edge_color,
+            **kwargs
+        )
     else:
-        fig, ax = plt.subplots(figsize=(width, height))
-        fig.subplots_adjust(right=right)
+        __hue_order__ = list(np.sort(list(set(df[hue]))))
 
-        if title is not None:
-            plt.title(title)
+        if type_colors is None:
+            type_colors = type_20_colors if len(__hue_order__) <= 20 else type_50_colors
 
-        # scatter
-        if number:
-            norm = plt.Normalize(df[hue].min(), df[hue].max())
-            sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
-            sm.set_array([])
-            plt.colorbar(sm, label=bar_label)
-            sns.scatterplot(
-                data=df,
-                x=x,
-                y=y,
-                palette=cmap,
-                hue=hue,
-                s=size,
-                legend=False
-            )
-        else:
-            __hue_order__ = list(np.sort(list(set(df[hue]))))
+        colors = {}
 
-            if type_colors is None:
-                type_colors = type_20_colors if len(__hue_order__) <= 20 else type_50_colors
+        if legend is not None:
+            df.loc[:, "__hue__"] = df[hue].copy()
 
-            colors = {}
-
+        i = 0
+        for elem in __hue_order__:
             if legend is not None:
-                df.loc[:, "__hue__"] = df[hue].copy()
-
-            i = 0
-            for elem in __hue_order__:
-                if legend is not None:
-                    df.loc[df[df["__hue__"] == elem].index, "__hue__"] = legend[elem]
-                    colors.update({legend[elem]: type_colors[start_color_index + i * color_step_size + __hue_order__.index(elem)]})
-                else:
-                    colors.update(
-                        {
-                            elem: type_colors[start_color_index + i * color_step_size + __hue_order__.index(elem)]
-                        }
-                    )
-                i += 1
-
-            if legend is not None:
-                if hue_order is None:
-                    hue_order = list(np.sort(list(set(df["__hue__"]))))
+                df.loc[df[df["__hue__"] == elem].index, "__hue__"] = legend[elem]
+                colors.update(
+                    {legend[elem]: type_colors[start_color_index + i * color_step_size + __hue_order__.index(elem)]})
             else:
-                if hue_order is None:
-                    hue_order = __hue_order__
+                colors.update(
+                    {
+                        elem: type_colors[start_color_index + i * color_step_size + __hue_order__.index(elem)]
+                    }
+                )
+            i += 1
 
-            sns.scatterplot(
-                data=df,
-                x=x,
-                y=y,
-                edgecolor=None,
-                palette=colors,
-                hue="__hue__" if legend is not None else hue,
-                hue_order=hue_order,
-                s=size
-            )
+        if legend is not None:
+            if hue_order is None:
+                hue_order = list(np.sort(list(set(df["__hue__"]))))
+        else:
+            if hue_order is None:
+                hue_order = __hue_order__
 
-            if is_text:
+        sns.scatterplot(
+            data=df,
+            x=x,
+            y=y,
+            edgecolor=edge_color,
+            palette=colors,
+            hue="__hue__" if legend is not None else hue,
+            hue_order=hue_order,
+            s=size,
+            **kwargs
+        )
 
-                df_anno = df[[hue, x, y]].groupby(hue, as_index=False).mean()
+        if is_text:
 
-                for txt, i, j in zip(df_anno[hue], df_anno[x], df_anno[y]):
-                    plt.annotate(
-                        txt,
-                        xy=(i, j),
-                        xytext=(-10, 0),
-                        textcoords="offset points",
-                        bbox=dict(
-                            boxstyle="round,pad=0.2",
-                            fc="white",
-                            ec="k",
-                            lw=1,
-                            alpha=0.8
-                        ),
-                        fontsize=text_fontsize
-                    )
+            df_anno = df[[hue, x, y]].groupby(hue, as_index=False).mean()
 
-            ax.legend(
-                loc="center left",
-                bbox_to_anchor=(right, 0.5),
-                bbox_transform=fig.transFigure,
-                fontsize=legend_fontsize
-            )
+            for txt, i, j in zip(df_anno[hue], df_anno[x], df_anno[y]):
+                plt.annotate(
+                    txt,
+                    xy=(i, j),
+                    xytext=(-10, 0),
+                    textcoords="offset points",
+                    bbox=dict(
+                        boxstyle="round,pad=0.2",
+                        fc="white",
+                        ec="k",
+                        lw=1,
+                        alpha=0.8
+                    ),
+                    fontsize=text_fontsize
+                )
 
-        # Remove scales and labels on the coordinate axis
-        ax.set_xticks([])
-        ax.set_yticks([])
+        ax.legend(
+            loc="center left",
+            bbox_to_anchor=(right, 0.5),
+            bbox_transform=fig.transFigure,
+            fontsize=legend_fontsize
+        )
 
-        # Remove the bounding box of the coordinate axis
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        ax.spines['bottom'].set_visible(False)
-        ax.spines['left'].set_visible(False)
+    # Remove scales and labels on the coordinate axis
+    ax.set_xticks([])
+    ax.set_yticks([])
 
-        ax.set_xlabel(x)
-        ax.set_ylabel(y)
+    # Remove the bounding box of the coordinate axis
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    ax.spines['left'].set_visible(False)
 
-        plot_end(fig, output, show)
+    plot_end(fig, output, show)
 
 
 def scatter_atac(
@@ -159,15 +157,19 @@ def scatter_atac(
     hue_order: list = None,
     width: float = 2,
     height: float = 2,
+    x_name: str = None,
+    y_name: str = None,
     start_color_index: int = 0,
     color_step_size: int = 0,
     type_colors: collection = None,
+    edge_color: str = None,
     size: float = 1.0,
     text_fontsize: float = 7,
     legend_fontsize: float = 7,
     is_text: bool = False,
     output: path = None,
-    show: bool = True
+    show: bool = True,
+    **kwargs: Any
 ) -> None:
     # DataFrame
     df: DataFrame = adata.obs.copy()
@@ -181,16 +183,20 @@ def scatter_atac(
         width=width,
         height=height,
         size=size,
+        x_name=x_name,
+        y_name=y_name,
         hue_order=hue_order,
         start_color_index=start_color_index,
         color_step_size=color_step_size,
         type_colors=type_colors,
+        edge_color=edge_color,
         is_text=is_text,
         text_fontsize=text_fontsize,
         legend_fontsize=legend_fontsize,
         output=output,
         show=show,
-        right=0.75
+        right=0.75,
+        **kwargs
     )
 
 
@@ -205,7 +211,10 @@ def scatter_trait(
     width: float = 2,
     height: float = 2,
     right: float = 0.9,
+    x_name: str = None,
+    y_name: str = None,
     number: bool = True,
+    edge_color: str = None,
     size: Union[float, collection] = 1.0,
     text_fontsize: float = 7,
     legend_fontsize: float = 7,
@@ -215,34 +224,9 @@ def scatter_trait(
     is_text: bool = False,
     legend: dict = None,
     output: path = None,
-    show: bool = True
+    show: bool = True,
+    **kwargs: Any
 ) -> None:
-    """
-    Scatter plot of cell scores for traits/diseases
-    :param legend_fontsize:
-    :param text_fontsize:
-    :param size:
-    :param type_colors:
-    :param right:
-    :param height:
-    :param width:
-    :param legend:
-    :param color_step_size:
-    :param start_color_index:
-    :param is_text:
-    :param number:
-    :param cmap:
-    :param bar_label:
-    :param title:
-    :param columns:
-    :param trait_adata: data
-    :param trait_name: trait/disease name or All, 'All' show all traits/diseases
-    :param layers: Matrix information used in drawing
-    :param output: Image output path
-    :param show: Whether to display pictures
-    :return: None
-    """
-
     data: AnnData = trait_adata.copy()
 
     # judge layers
@@ -288,16 +272,20 @@ def scatter_trait(
             right=right,
             number=number,
             size=size,
+            x_name=x_name,
+            y_name=y_name,
             type_colors=type_colors,
             text_fontsize=text_fontsize,
             legend_fontsize=legend_fontsize,
             start_color_index=start_color_index,
             color_step_size=color_step_size,
+            edge_color=edge_color,
             is_text=is_text,
             output=os.path.join(
                 output, f"cell_{trait_}_score_{layer_}.pdf" if layer_ is not None else f"cell_{trait_}_score.pdf"
             ) if output is not None else None,
-            show=show
+            show=show,
+            **kwargs
         )
 
     def handle_plot(layer_: str = None):
@@ -308,7 +296,8 @@ def scatter_trait(
 
         # judge trait
         if trait_name != "All" and trait_name not in trait_list:
-            ul.log(__name__).error(f"The {trait_name} trait/disease is not in the trait/disease list (trait_adata.var_names)")
+            ul.log(__name__).error(
+                f"The {trait_name} trait/disease is not in the trait/disease list (trait_adata.var_names)")
             raise ValueError(f"The {trait_name} trait/disease is not in the trait/disease list (trait_adata.var_names)")
 
         new_data: AnnData = AnnData(data.layers[layer], var=data.var, obs=data.obs) if layer_ is not None else data
@@ -337,6 +326,7 @@ def volcano_base(
     palette: Optional[list] = None,
     width: float = 2,
     height: float = 2,
+    bottom: float = 0,
     y_min: float = 0,
     axh_value: float = -np.log10(1e-3),
     axv_left_value: float = -1,
@@ -345,47 +335,24 @@ def volcano_base(
     x_name: Optional[str] = None,
     y_name: Optional[str] = None,
     output: path = None,
-    show: bool = True
+    show: bool = True,
+    **kwargs: Any
 ):
-    if output is None and not show:
-        ul.log(__name__).warning(f"At least one of the `output` and `show` parameters is required")
-    else:
+    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
 
-        if palette is None:
-            palette = ["#01c5c4", "#686d76", "#ff414d"]
+    if palette is None:
+        palette = ["#01c5c4", "#686d76", "#ff414d"]
 
-        fig, ax = plt.subplots(figsize=(width, height))
+    sns.set_theme(style="ticks")
+    sns.set_palette(sns.color_palette(palette))
+    sns.scatterplot(data=df, x=x, y=y, hue=hue, s=size, ax=ax, **kwargs)
+    ax.set_ylim(y_min, max(df[y]) * 1.1)
 
-        if title is not None:
-            plt.title(title)
+    plt.axhline(axh_value, color='grey', linestyle='--')
+    plt.axvline(axv_left_value, color='grey', linestyle='--')
+    plt.axvline(axv_right_value, color='grey', linestyle='--')
 
-        sns.set_theme(style="ticks")
-        sns.set_palette(sns.color_palette(palette))
-        sns.scatterplot(data=df, x=x, y=y, hue=hue, s=size, ax=ax)
-        ax.set_ylim(y_min, max(df[y]) * 1.1)
-
-        if x_name is not None:
-            ax.set_xlabel(x_name)
-
-        if y_name is not None:
-            ax.set_ylabel(y_name)
-
-        plt.axhline(axh_value, color='grey', linestyle='--')
-        plt.axvline(axv_left_value, color='grey', linestyle='--')
-        plt.axvline(axv_right_value, color='grey', linestyle='--')
-
-        # noinspection DuplicatedCode
-        if output is not None:
-            output_pdf = output if output.endswith(".pdf") else f"{output}.pdf"
-            # plt.savefig(output_pdf, dpi=300)
-            with PdfPages(output_pdf) as pdf:
-                pdf.savefig(fig)
-
-        if show:
-            plt.grid(True)
-            plt.show()
-
-        plt.close()
+    plot_end(fig, output, show)
 
 
 def manhattan_causal_variant(
@@ -398,6 +365,7 @@ def manhattan_causal_variant(
     colors: Optional[list] = None,
     width: float = 8,
     height: float = 2,
+    bottom: float = 0,
     title: str = None,
     is_sort: bool = True,
     line_width: float = 0.5,
@@ -406,75 +374,64 @@ def manhattan_causal_variant(
     y_name: Optional[str] = "pp",
     y_limit: Tuple[float, float] = (0, 1),
     output: path = None,
-    show: bool = True
+    show: bool = True,
+    **kwargs: Any
 ):
-    if output is None and not show:
-        ul.log(__name__).warning(f"At least one of the `output` and `show` parameters is required")
-    else:
 
-        df[chr_name] = df[chr_name].astype(chrtype)
+    df[chr_name] = df[chr_name].astype(chrtype)
 
-        if is_sort:
-            df = df.sort_values(chr_name)
+    if is_sort:
+        df = df.sort_values(chr_name)
 
-        df['ind'] = range(len(df))
-        df_grouped = df.groupby(chr_name)
+    df['ind'] = range(len(df))
+    df_grouped = df.groupby(chr_name)
 
-        if colors is None:
-            colors = type_20_colors.copy()
-            colors.extend(type_set_colors)
+    if colors is None:
+        colors = type_20_colors.copy()
+        colors.extend(type_set_colors)
 
-        fig, ax = plt.subplots(figsize=(width, height))
+    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
 
-        if title is not None:
-            plt.title(title)
+    x_labels = []
+    x_labels_pos = []
+    # Track the last index to draw lines between chromosomes
+    last_ind = 0
 
-        x_labels = []
-        x_labels_pos = []
-        # Track the last index to draw lines between chromosomes
-        last_ind = 0
+    chr_unique = df[chr_name].unique()
 
-        chr_unique = df[chr_name].unique()
+    for num, (name, group) in enumerate(df_grouped):
 
-        for num, (name, group) in enumerate(df_grouped):
+        if name not in chr_unique:
+            continue
 
-            if name not in chr_unique:
-                continue
+        group.plot(kind='scatter', x='ind', y=y, color=colors[num], s=size, ax=ax)
+        x_labels.append(name)
+        x_labels_pos.append((group['ind'].iloc[-1] - (group['ind'].iloc[-1] - group['ind'].iloc[0]) / 2))
 
-            group.plot(kind='scatter', x='ind', y=y, color=colors[num], s=size, ax=ax)
-            x_labels.append(name)
-            x_labels_pos.append((group['ind'].iloc[-1] - (group['ind'].iloc[-1] - group['ind'].iloc[0]) / 2))
+        # Draw a vertical line between chromosomes
+        if num > 0:
+            # Skip the first chromosome
+            ax.axvline(x=last_ind + 0.5, color='gray', linestyle='--', linewidth=line_width, **kwargs)
 
-            # Draw a vertical line between chromosomes
-            if num > 0:
-                # Skip the first chromosome
-                ax.axvline(x=last_ind + 0.5, color='gray', linestyle='--', linewidth=line_width)
+        # Label specific mutations
+        if labels is not None:
+            for index, row in group.iterrows():
+                if row[label] in labels:
+                    ax.text(row['ind'], row[y], row[label], ha='left', va='bottom')
+                    ax.text(row['ind'], row[y], f"{y}={round(row[y], y_round)}", ha='left', va='top')
 
-            # Label specific mutations
-            if labels is not None:
-                for index, row in group.iterrows():
-                    if row[label] in labels:
-                        ax.text(row['ind'], row[y], row[label], ha='left', va='bottom')
-                        ax.text(row['ind'], row[y], f"{y}={round(row[y], y_round)}", ha='left', va='top')
+        last_ind = group['ind'].iloc[-1]
 
-            last_ind = group['ind'].iloc[-1]
+    # add grid
+    ax.grid(axis="y", linestyle="--", linewidth=line_width, color="gray")
+    ax.set_xticks(x_labels_pos)
+    ax.set_xticklabels(x_labels)
 
-        # add grid
-        ax.grid(axis="y", linestyle="--", linewidth=line_width, color="gray")
-        ax.set_xticks(x_labels_pos)
-        ax.set_xticklabels(x_labels)
+    # Hide the borders above and to the right
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
 
-        # Hide the borders above and to the right
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
+    ax.set_xlim([0, len(df)])
+    ax.set_ylim(y_limit)
 
-        ax.set_xlim([0, len(df)])
-        ax.set_ylim(y_limit)
-
-        if x_name is not None:
-            ax.set_xlabel(x_name)
-
-        if y_name is not None:
-            ax.set_ylabel(y_name)
-
-        plot_end(fig, output, show)
+    plot_end(fig, output, show)

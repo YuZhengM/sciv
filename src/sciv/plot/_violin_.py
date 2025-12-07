@@ -1,14 +1,13 @@
 # -*- coding: UTF-8 -*-
 
 import os
-from typing import Tuple, Union, Literal
+from typing import Tuple, Union, Literal, Any
 
-from matplotlib import pyplot as plt
 from pandas import DataFrame
 import seaborn as sns
 
 from .. import util as ul
-from ..util import path, plot_end
+from ..util import path, plot_end, plot_start
 
 __name__: str = "plot_violin"
 
@@ -34,30 +33,24 @@ def violin_base(
     is_sort: bool = True,
     order_names: list = None,
     output: path = None,
-    show: bool = True
+    show: bool = True,
+    **kwargs: Any
 ) -> None:
-    if output is None and not show:
-        ul.log(__name__).warning(f"At least one of the `output` and `show` parameters is required")
-        return
-
     # judge
-    # noinspection DuplicatedCode
     df_columns = list(df.columns)
 
     if value not in df_columns:
-        ul.log(__name__).error(f"The `value` ({value}) parameter must be in the `df` parameter data column name ({df_columns})")
-        raise ValueError(f"The `value` ({value}) parameter must be in the `df` parameter data column name ({df_columns})")
+        ul.log(__name__).error(
+            f"The `value` ({value}) parameter must be in the `df` parameter data column name ({df_columns})")
+        raise ValueError(
+            f"The `value` ({value}) parameter must be in the `df` parameter data column name ({df_columns})")
 
     if hue is not None and hue not in df_columns:
-        ul.log(__name__).error(f"The `hue` ({hue}) parameter must be in the `df` parameter data column name ({df_columns})")
+        ul.log(__name__).error(
+            f"The `hue` ({hue}) parameter must be in the `df` parameter data column name ({df_columns})")
         raise ValueError(f"The `hue` ({hue}) parameter must be in the `df` parameter data column name ({df_columns})")
 
-    # noinspection DuplicatedCode
-    fig, ax = plt.subplots(figsize=(width, height))
-    fig.subplots_adjust(bottom=bottom)
-
-    if title is not None:
-        plt.title(title)
+    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
 
     group_columns = [clusters]
 
@@ -100,7 +93,8 @@ def violin_base(
         order=y_names,
         split=split,
         linewidth=line_width,
-        palette=palette if palette is not None else (colors if "color" in df_columns else None)
+        palette=palette if palette is not None else (colors if "color" in df_columns else None),
+        **kwargs
     )
 
     # set coordinate
@@ -111,11 +105,6 @@ def violin_base(
         ax.spines['left'].set_linewidth(line_width)
         # Set the rotation angle of the x-axis labels
         ax.tick_params(axis='x', rotation=rotation)
-
-    if x_name is not None:
-        plt.xlabel(x_name)
-
-    plt.ylabel(y_name)
 
     plot_end(fig, output, show)
 
@@ -140,32 +129,9 @@ def violin_trait(
     order_names: list = None,
     title: str = None,
     output: path = None,
-    show: bool = True
+    show: bool = True,
+    **kwargs: Any
 ) -> None:
-    """
-    Violin plot of cell scores for traits/diseases
-    :param palette:
-    :param is_sort:
-    :param order_names:
-    :param bottom:
-    :param rotation:
-    :param line_width:
-    :param height:
-    :param kind:
-    :param x_name:
-    :param clusters:
-    :param width:
-    :param title:
-    :param y_name:
-    :param split:
-    :param value:
-    :param trait_column_name:
-    :param trait_df: data
-    :param trait_name: trait/disease name or All, 'All' show all traits/diseases
-    :param output: Image output path
-    :param show: Whether to display pictures
-    :return: None
-    """
 
     data: DataFrame = trait_df.copy()
 
@@ -179,7 +145,9 @@ def violin_trait(
         ul.log(__name__).info("Plotting box {}".format(", ".join(trait_)))
         # get gene score
         _filename_: str = trait_ if isinstance(trait_, str) else "_".join(trait_)
-        trait_score = atac_cell_df_[atac_cell_df_[trait_column_name] == trait_ if isinstance(trait_, str) else atac_cell_df_[trait_column_name].isin(trait_)]
+        trait_score = atac_cell_df_[
+            atac_cell_df_[trait_column_name] == trait_ if isinstance(trait_, str) else atac_cell_df_[
+                trait_column_name].isin(trait_)]
         # Sort gene scores from small to large
         violin_base(
             df=trait_score,
@@ -200,7 +168,8 @@ def violin_trait(
             clusters=clusters,
             title=f"{title} {_filename_}" if title is not None else title,
             output=os.path.join(output, f"cell_{_filename_}_score_cat_{kind}.pdf") if output is not None else None,
-            show=show
+            show=show,
+            **kwargs
         )
 
     # noinspection DuplicatedCode

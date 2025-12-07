@@ -1,14 +1,13 @@
 # -*- coding: UTF-8 -*-
 
 import os
-from typing import Tuple, Union
+from typing import Tuple, Union, Any
 
 from pandas import DataFrame
-from matplotlib import pyplot as plt
 import seaborn as sns
 
 from .. import util as ul
-from ..util import path, plot_end
+from ..util import path, plot_end, plot_start
 
 __name__: str = "plot_box"
 
@@ -33,94 +32,82 @@ def box_base(
     is_sort: bool = True,
     order_names: list = None,
     output: path = None,
-    show: bool = True
+    show: bool = True,
+    **kwargs: Any
 ) -> None:
-    if output is None and not show:
-        ul.log(__name__).warning(f"At least one of the `output` and `show` parameters is required")
-    else:
-        # judge
-        # noinspection DuplicatedCode
-        df_columns = list(df.columns)
 
-        if value not in df_columns:
-            ul.log(__name__).error(f"The `value` ({value}) parameter must be in the `df` parameter data column name ({df_columns})")
-            raise ValueError(f"The `value` ({value}) parameter must be in the `df` parameter data column name ({df_columns})")
+    # judge
+    df_columns = list(df.columns)
 
-        fig, ax = plt.subplots(figsize=(width, height))
-        # noinspection DuplicatedCode
-        fig.subplots_adjust(bottom=bottom)
+    if value not in df_columns:
+        ul.log(__name__).error(f"The `value` ({value}) parameter must be in the `df` parameter data column name ({df_columns})")
+        raise ValueError(f"The `value` ({value}) parameter must be in the `df` parameter data column name ({df_columns})")
 
-        if title is not None:
-            plt.title(title)
+    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
 
-        group_columns = [clusters]
+    group_columns = [clusters]
 
-        new_df: DataFrame = df.groupby(group_columns, as_index=False)[value].median()
+    new_df: DataFrame = df.groupby(group_columns, as_index=False)[value].median()
 
+    if "color" in df_columns:
+        new_df_color: DataFrame = df.groupby(group_columns, as_index=False)["color"].first()
+
+        new_df = new_df.merge(new_df_color, how="left", on=clusters)
+
+    colors: list = []
+
+    # sort
+    if is_sort:
+        new_df.sort_values([value], ascending=False, inplace=True)
+        y_names: Union[list, None] = list(new_df[clusters])
         if "color" in df_columns:
-            new_df_color: DataFrame = df.groupby(group_columns, as_index=False)["color"].first()
-
-            new_df = new_df.merge(new_df_color, how="left", on=clusters)
-
-        colors: list = []
-
-        # sort
-        if is_sort:
-            new_df.sort_values([value], ascending=False, inplace=True)
-            y_names: Union[list, None] = list(new_df[clusters])
+            colors = new_df["color"]
+    else:
+        new_df.index = new_df[clusters]
+        if order_names is not None:
+            y_names: list = order_names
+            if "color" in df_columns:
+                for i in order_names:
+                    for j, c in zip(new_df[clusters], new_df["color"]):
+                        if i == j:
+                            colors.append(c)
+                            break
+        else:
+            y_names = new_df[clusters]
             if "color" in df_columns:
                 colors = new_df["color"]
-        else:
-            new_df.index = new_df[clusters]
-            if order_names is not None:
-                y_names: list = order_names
-                if "color" in df_columns:
-                    for i in order_names:
-                        for j, c in zip(new_df[clusters], new_df["color"]):
-                            if i == j:
-                                colors.append(c)
-                                break
-            else:
-                y_names = new_df[clusters]
-                if "color" in df_columns:
-                    colors = new_df["color"]
 
-        # scatter
-        ax1 = sns.boxplot(
-            data=df,
-            x=clusters,
-            y=value,
-            order=y_names,
-            showfliers=show_fliers,
-            fliersize=marker_size,
-            orient=orient,
-            whis=whis,
-            flierprops={'marker': 'o', 'markersize': marker_size},
-            boxprops={'linestyle': '-', 'linewidth': line_width},
-            whiskerprops={'linestyle': '-', 'linewidth': line_width},
-            medianprops={'linestyle': '-', 'linewidth': line_width},
-            palette=palette if palette is not None else (colors if "color" in df_columns else None)
-        )
+    # scatter
+    ax1 = sns.boxplot(
+        data=df,
+        x=clusters,
+        y=value,
+        order=y_names,
+        showfliers=show_fliers,
+        fliersize=marker_size,
+        orient=orient,
+        whis=whis,
+        flierprops={'marker': 'o', 'markersize': marker_size},
+        boxprops={'linestyle': '-', 'linewidth': line_width},
+        whiskerprops={'linestyle': '-', 'linewidth': line_width},
+        medianprops={'linestyle': '-', 'linewidth': line_width},
+        palette=palette if palette is not None else (colors if "color" in df_columns else None),
+        **kwargs
+    )
 
-        lines = ax1.lines
+    lines = ax1.lines
 
-        for line in lines:
-            line.set_linewidth(line_width)
+    for line in lines:
+        line.set_linewidth(line_width)
 
-        # set coordinate
-        # noinspection DuplicatedCode
-        ax.set_xticklabels(labels=y_names, rotation=rotation)
-        ax.spines['top'].set_linewidth(line_width)
-        ax.spines['bottom'].set_linewidth(line_width)
-        ax.spines['left'].set_linewidth(line_width)
-        ax.spines['right'].set_linewidth(line_width)
+    # set coordinate
+    ax.set_xticklabels(labels=y_names, rotation=rotation)
+    ax.spines['top'].set_linewidth(line_width)
+    ax.spines['bottom'].set_linewidth(line_width)
+    ax.spines['left'].set_linewidth(line_width)
+    ax.spines['right'].set_linewidth(line_width)
 
-        if x_name is not None:
-            plt.xlabel(x_name)
-
-        plt.ylabel(y_name)
-
-        plot_end(fig, output, show)
+    plot_end(fig, output, show)
 
 
 def box_trait(
@@ -145,7 +132,8 @@ def box_trait(
     order_names: list = None,
     title: str = None,
     output: path = None,
-    show: bool = True
+    show: bool = True,
+    **kwargs: Any
 ) -> None:
 
     data: DataFrame = trait_df.copy()
@@ -181,7 +169,8 @@ def box_trait(
             clusters=clusters,
             title=f"{title} {trait_}" if title is not None else title,
             output=os.path.join(output, f"cell_{trait_}_score_box.pdf") if output is not None else None,
-            show=show
+            show=show,
+            **kwargs
         )
 
     # noinspection DuplicatedCode

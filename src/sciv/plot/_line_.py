@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
 
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple, Union, Any
 
 from pandas import DataFrame
 from anndata import AnnData
@@ -10,7 +10,7 @@ import seaborn as sns
 
 from .. import util as ul
 from ..preprocessing import adata_map_df
-from ..util import path, plot_color_types, collection, plot_end
+from ..util import path, plot_color_types, collection, plot_end, plot_start
 
 __name__: str = "plot_line"
 
@@ -22,6 +22,7 @@ def stability_line(
     layer: Optional[str] = None,
     width: float = 2,
     height: float = 2,
+    bottom: float = 0,
     title: Optional[str] = None,
     x_name: Optional[str] = None,
     y_name: Optional[str] = None,
@@ -38,97 +39,87 @@ def stability_line(
     y_limit: Tuple[float, float] = (0, 1),
     output: Optional[path] = None,
     is_str: bool = True,
-    show: bool = True
+    show: bool = True,
+    **kwargs: Any
 ) -> None:
-    if output is None and not show:
-        ul.log(__name__).warning(f"At least one of the `output` and `show` parameters is required")
+
+    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
+
+    new_data = data.copy()
+
+    if isinstance(new_data, AnnData):
+
+        if legend_list is not None:
+
+            index_list = []
+            label_list = list(new_data.var[label])
+
+            for lab in range(len(label_list)):
+                if legend_list.count(label_list[lab]) > 0:
+                    index_list.append(lab)
+
+            if legend_list is not None:
+                new_data = new_data[:, index_list]
+
+        # judge layers
+        if layer is not None:
+
+            if layer not in list(new_data.layers):
+                ul.log(__name__).error("The `layer` parameter needs to include in `adata.layers`")
+                raise ValueError("The `layer` parameter needs to include in `adata.layers`")
+
+            new_data.X = new_data.layers[layer]
+
+        # DataFrame
+        ul.log(__name__).info(f"to DataFrame")
+        df: DataFrame = adata_map_df(new_data, column="value")
+
+    elif isinstance(new_data, DataFrame):
+
+        if legend_list is not None:
+            df: DataFrame = new_data[new_data[label].isin(legend_list)].copy()
+        else:
+            df: DataFrame = new_data.copy()
+
     else:
-        # noinspection DuplicatedCode
-        fig, ax = plt.subplots(figsize=(width, height))
-        new_data = data.copy()
+        ul.log(__name__).error(f"The `data` parameter only support `AnnData` and `DataFrame` class types.")
+        raise ValueError(f"The `data` parameter only support `AnnData` and `DataFrame` class types.")
 
-        if isinstance(new_data, AnnData):
+    if legend is None:
+        legend = "category"
 
-            if legend_list is not None:
+    df[legend] = df[label].copy()
+    new_data_columns = list(df.columns)
 
-                index_list = []
-                label_list = list(new_data.var[label])
+    hue_types = list(set(df[legend]))
 
-                for lab in range(len(label_list)):
-                    if legend_list.count(label_list[lab]) > 0:
-                        index_list.append(lab)
-
-                if legend_list is not None:
-                    new_data = new_data[:, index_list]
-
-            # judge layers
-            if layer is not None:
-
-                if layer not in list(new_data.layers):
-                    ul.log(__name__).error("The `layer` parameter needs to include in `adata.layers`")
-                    raise ValueError("The `layer` parameter needs to include in `adata.layers`")
-
-                new_data.X = new_data.layers[layer]
-
-            # DataFrame
-            ul.log(__name__).info(f"to DataFrame")
-            df: DataFrame = adata_map_df(new_data, column="value")
-
-        elif isinstance(new_data, DataFrame):
-
-            if legend_list is not None:
-                df: DataFrame = new_data[new_data[label].isin(legend_list)].copy()
-            else:
-                df: DataFrame = new_data.copy()
-
+    # noinspection DuplicatedCode
+    if colors is not None:
+        palette = colors
+    else:
+        if "color" in new_data_columns:
+            palette = df["color"]
         else:
-            ul.log(__name__).error(f"The `data` parameter only support `AnnData` and `DataFrame` class types.")
-            raise ValueError(f"The `data` parameter only support `AnnData` and `DataFrame` class types.")
+            palette = []
 
-        if legend is None:
-            legend = "category"
+            for i in range(len(hue_types)):
+                palette.append(plot_color_types[color_type][start_color_index + i * color_step_size + i])
 
-        df[legend] = df[label].copy()
-        new_data_columns = list(df.columns)
+    # sns.set_theme(style="whitegrid")
+    ax.set(ylim=y_limit)
+    sns.despine()
 
-        hue_types = list(set(df[legend]))
+    if is_str:
+        df[x] = df[x].astype(str)
 
-        # noinspection DuplicatedCode
-        if colors is not None:
-            palette = colors
-        else:
-            if "color" in new_data_columns:
-                palette = df["color"]
-            else:
-                palette = []
+    chart = sns.lineplot(data=df, ax=ax, x=x, y=y, hue=legend, palette=palette, linewidth=line_width, **kwargs)
 
-                for i in range(len(hue_types)):
-                    palette.append(plot_color_types[color_type][start_color_index + i * color_step_size + i])
+    if is_str:
+        locator = mdates.DayLocator(interval=1)
+        chart.xaxis.set_major_locator(locator)
 
-        if x_name is not None:
-            plt.xlabel(x_name)
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=x_name_rotation)
+    else:
+        plt.xticks(x_ticks, rotation=x_name_rotation)
 
-        if y_name is not None:
-            plt.ylabel(y_name, rotation=90)
-
-        if title is not None:
-            plt.title(title)
-
-        # sns.set_theme(style="whitegrid")
-        ax.set(ylim=y_limit)
-        sns.despine()
-
-        if is_str:
-            df[x] = df[x].astype(str)
-
-        chart = sns.lineplot(data=df, ax=ax, x=x, y=y, hue=legend, palette=palette, linewidth=line_width)
-
-        if is_str:
-            locator = mdates.DayLocator(interval=1)
-            chart.xaxis.set_major_locator(locator)
-
-            ax.set_xticklabels(ax.get_xticklabels(), rotation=x_name_rotation)
-        else:
-            plt.xticks(x_ticks, rotation=x_name_rotation)
-
-        plot_end(fig, output, show)
+    plot_end(fig, output, show)

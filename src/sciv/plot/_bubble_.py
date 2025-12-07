@@ -1,12 +1,12 @@
 # -*- coding: UTF-8 -*-
 
+from typing import Any
+
 import numpy as np
-from matplotlib import pyplot as plt
 import seaborn as sns
 from pandas import DataFrame
 
-from .. import util as ul
-from ..util import path, plot_end
+from ..util import path, plot_end, plot_start
 
 __name__: str = "plot_bubble"
 
@@ -17,36 +17,36 @@ def bubble(
     y: str,
     hue: str = None,
     size: str = None,
+    x_name: str = None,
+    y_name: str = None,
+    title: str = None,
     width: float = 2,
     height: float = 2,
-    title: str = None,
+    bottom: float = 0,
     output: path = None,
-    show: bool = True
+    show: bool = True,
+    **kwargs: Any
 ):
-    if output is None and not show:
-        ul.log(__name__).warning(f"At least one of the `output` and `show` parameters is required")
+
+    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
+
+    if size is not None:
+        _size_ = df[size].values
+        sizes = (np.array(_size_).min(), np.array(_size_).max())
     else:
-        fig, ax = plt.subplots(figsize=(width, height))
+        sizes = None
 
-        if title is not None:
-            plt.title(title)
+    sns.relplot(
+        data=df,
+        x=x,
+        y=y,
+        hue=hue,
+        size=size,
+        sizes=sizes,
+        alpha=.5,
+        palette="muted",
+        height=6,
+        **kwargs
+    )
 
-        if size is not None:
-            _size_ = df[size].values
-            sizes = (np.array(_size_).min(), np.array(_size_).max())
-        else:
-            sizes = None
-
-        sns.relplot(
-            x=x,
-            y=y,
-            hue=hue,
-            size=size,
-            sizes=sizes,
-            alpha=.5,
-            palette="muted",
-            height=6,
-            data=df
-        )
-
-        plot_end(fig, output, show)
+    plot_end(fig, output, show)

@@ -969,7 +969,7 @@ def plot_start(
     height: float = 2,
     bottom: float = 0,
     output: str = None,
-    show: bool = True,
+    show: bool = True
 ):
     if output is None and not show:
         ul.log(__name__).error(f"At least one of the `output` and `show` parameters is required")

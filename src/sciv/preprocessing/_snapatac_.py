@@ -3,7 +3,7 @@
 import os
 import shutil
 import warnings
-from typing import Optional, Union, List
+from typing import Optional, Union, List, Literal
 
 import pandas as pd
 from pandas import DataFrame
@@ -31,6 +31,7 @@ def _process_sc_atac_(
     sorted_by_barcode: bool = False,
     bin_size: int = 500,
     min_tsse: float = 5.0,
+    counting_strategy: Literal['fragment', 'insertion', 'paired-insertion'] = 'paired-insertion',
     is_filter_doublets: bool = True,
     need_features: Optional[Union[int | float]] = None
 ):
@@ -64,7 +65,7 @@ def _process_sc_atac_(
         ul.log(__name__).info(f"Shape: {data.shape}")
 
     ul.log(__name__).info(f"Add tile matrix.")
-    snap.pp.add_tile_matrix(data, bin_size=bin_size)
+    snap.pp.add_tile_matrix(data, bin_size=bin_size, counting_strategy=counting_strategy)
 
     if isinstance(fragment_file, path):
         ul.log(__name__).info(f"Shape: {data.shape}")
@@ -119,6 +120,7 @@ def get_sc_atac(
     sorted_by_barcode: bool = False,
     bin_size: int = 500,
     min_tsse: float = 5.0,
+    counting_strategy: Literal['fragment', 'insertion', 'paired-insertion'] = 'paired-insertion',
     need_features: Optional[Union[int | float]] = None,
     is_filter_doublets: bool = True
 ):
@@ -153,6 +155,7 @@ def get_sc_atac(
             sorted_by_barcode=sorted_by_barcode,
             bin_size=bin_size,
             min_tsse=min_tsse,
+            counting_strategy=counting_strategy,
             is_filter_doublets=is_filter_doublets,
             need_features=need_features
         )
@@ -181,6 +184,7 @@ def merge_sc_atac(
     sorted_by_barcode: bool = False,
     bin_size: int = 500,
     min_tsse: float = 5.0,
+    counting_strategy: Literal['fragment', 'insertion', 'paired-insertion'] = 'paired-insertion',
     max_iter_harmony: int = 20,
     harmony_groupby: Optional[Union[str | list[str]]] = None,
     is_selected: bool = False,
@@ -244,6 +248,7 @@ def merge_sc_atac(
             sorted_by_barcode=sorted_by_barcode,
             bin_size=bin_size,
             min_tsse=min_tsse,
+            counting_strategy=counting_strategy,
             need_features=need_features
         )
 

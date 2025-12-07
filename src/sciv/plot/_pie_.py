@@ -1,15 +1,13 @@
 # -*- coding: UTF-8 -*-
 
 import os
-from typing import Union
+from typing import Union, Any
 
 import numpy as np
-from matplotlib import pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
 from pandas import DataFrame
 
 from .. import util as ul
-from ..util import path, collection, get_real_predict_label, type_20_colors, type_50_colors
+from ..util import path, collection, get_real_predict_label, type_20_colors, type_50_colors, plot_start, plot_end
 
 __name__: str = "plot_pie"
 
@@ -17,58 +15,46 @@ __name__: str = "plot_pie"
 def base_pie(
     values: list,
     labels: list,
+    x_name: str = None,
+    y_name: str = None,
+    title: str = None,
     width: float = 2,
     height: float = 2,
+    bottom: float = 0,
     pct_distance: float = 0.6,
     label_distance: float = 1.1,
     colors: list = None,
-    title: str = None,
     autopct: str = '%1.2f%%',
     output: path = None,
-    show: bool = True
+    show: bool = True,
+    **kwargs: Any
 ) -> None:
-    if output is None and not show:
-        ul.log(__name__).warning(f"At least one of the `output` and `show` parameters is required")
-    else:
-        fig = plt.figure(figsize=(width, height))
+    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
 
-        if title is not None:
-            plt.title(title)
+    size = len(values)
 
-        size = len(values)
+    if size is not len(labels):
+        ul.log(__name__).error(f"The parameter lengths of `values`({size}) and `labels`({len(labels)}) must be equal.")
+        raise ValueError(f"The parameter lengths of `values`({size}) and `labels`({len(labels)}) must be equal.")
 
-        if size is not len(labels):
-            ul.log(__name__).error(f"The parameter lengths of `values`({size}) and `labels`({len(labels)}) must be equal.")
-            raise ValueError(f"The parameter lengths of `values`({size}) and `labels`({len(labels)}) must be equal.")
+    if colors is None:
+        colors = type_20_colors[:len(labels)] if size <= 20 else type_50_colors[:len(labels)]
 
-        if colors is None:
-            colors = type_20_colors[:len(labels)] if size <= 20 else type_50_colors[:len(labels)]
+    ax.set_axis_off()
 
-        ax1 = fig.add_subplot()
+    ax.pie(
+        values,
+        labels=labels,
+        colors=colors,
+        autopct=autopct,
+        labeldistance=label_distance,
+        pctdistance=pct_distance,
+        **kwargs
+    )
 
-        ax1.set_axis_off()
+    ax.axis('off')
 
-        ax1.pie(
-            values,
-            labels=labels,
-            colors=colors,
-            autopct=autopct,
-            labeldistance=label_distance,
-            pctdistance=pct_distance
-        )
-
-        ax1.axis('off')
-
-        if output is not None:
-            output_pdf = output if output.endswith(".pdf") else f"{output}.pdf"
-            # plt.savefig(output_pdf, dpi=300)
-            with PdfPages(output_pdf) as pdf:
-                pdf.savefig(fig)
-
-        if show:
-            plt.show()
-
-        plt.close()
+    plot_end(fig, output, show)
 
 
 def pie_label(
@@ -76,83 +62,73 @@ def pie_label(
     map_cluster: Union[str, collection],
     value: str = "value",
     clusters: str = "clusters",
+    x_name: str = None,
+    y_name: str = None,
+    title: str = None,
     width: float = 2,
     height: float = 2,
+    bottom: float = 0,
     radius: float = 0.6,
     fontsize: float = 17,
     pct_distance: float = 0.6,
     label_distance: float = 1.1,
     colors: list = None,
-    title: str = None,
     output: path = None,
-    show: bool = True
+    show: bool = True,
+    **kwargs: Any
 ) -> None:
-    if output is None and not show:
-        ul.log(__name__).warning(f"At least one of the `output` and `show` parameters is required")
-    else:
-        # judge
-        df_columns = list(df.columns)
+    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
 
-        if value not in df_columns:
-            ul.log(__name__).error(f"The `value` ({value}) parameter must be in the `df` parameter data column name ({df_columns})")
-            raise ValueError(
-                f"The `value` ({value}) parameter must be in the `df` parameter data column name ({df_columns})"
-            )
+    # judge
+    df_columns = list(df.columns)
 
-        df_sort, cluster_size, cluster_list = get_real_predict_label(
-            df=df,
-            map_cluster=map_cluster,
-            clusters=clusters,
-            value=value
+    if value not in df_columns:
+        ul.log(__name__).error(
+            f"The `value` ({value}) parameter must be in the `df` parameter data column name ({df_columns})")
+        raise ValueError(
+            f"The `value` ({value}) parameter must be in the `df` parameter data column name ({df_columns})"
         )
 
-        # top value
-        top_predict_cluster = list(df_sort["true_label"])[:cluster_size]
-        top_x = [top_predict_cluster.count(1), top_predict_cluster.count(0)]
+    df_sort, cluster_size, cluster_list = get_real_predict_label(
+        df=df,
+        map_cluster=map_cluster,
+        clusters=clusters,
+        value=value
+    )
 
-        fig = plt.figure(figsize=(width, height))
+    # top value
+    top_predict_cluster = list(df_sort["true_label"])[:cluster_size]
+    top_x = [top_predict_cluster.count(1), top_predict_cluster.count(0)]
 
-        if title is not None:
-            plt.title(title)
+    if colors is None:
+        colors = type_20_colors[:2]
 
-        if colors is None:
-            colors = type_20_colors[:2]
+    top_sum = np.array(top_x).sum()
 
-        ax1 = fig.add_subplot()
+    ax.set_axis_off()
+    ax.pie(
+        top_x,
+        labels=[", ".join(cluster_list), "Other"],
+        colors=colors,
+        startangle=90,
+        labeldistance=label_distance,
+        pctdistance=pct_distance,
+        **kwargs
+    )
+    ax.pie(
+        [np.array(top_x).sum()],
+        colors=['white'],
+        radius=radius,
+        startangle=90,
+        wedgeprops=dict(width=radius, edgecolor='w'),
+        **kwargs
+    )
+    ax.text(0, 0, "{:.2f}%".format(top_x[0] / top_sum * 100), ha='center', va='center', fontsize=fontsize)
+    ax.legend(loc='upper right')
 
-        top_sum = np.array(top_x).sum()
+    ax.axis('off')
 
-        ax1.set_axis_off()
-        ax1.pie(
-            top_x,
-            labels=[", ".join(cluster_list), "Other"],
-            colors=colors,
-            startangle=90,
-            labeldistance=label_distance,
-            pctdistance=pct_distance
-        )
-        ax1.pie(
-            [np.array(top_x).sum()],
-            colors=['white'],
-            radius=radius,
-            startangle=90,
-            wedgeprops=dict(width=radius, edgecolor='w')
-        )
-        ax1.text(0, 0, "{:.2f}%".format(top_x[0] / top_sum * 100), ha='center', va='center', fontsize=fontsize)
-        ax1.legend(loc='upper right')
-
-        ax1.axis('off')
-
-        if output is not None:
-            output_pdf = output if output.endswith(".pdf") else f"{output}.pdf"
-            # plt.savefig(output_pdf, dpi=300)
-            with PdfPages(output_pdf) as pdf:
-                pdf.savefig(fig)
-
-        if show:
-            plt.show()
-
-        plt.close()
+    plot_end(fig, output, show)
 
 
 def pie_trait(
@@ -162,6 +138,9 @@ def pie_trait(
     clusters: str = "clusters",
     trait_column_name: str = "id",
     value: str = "value",
+    x_name: str = None,
+    y_name: str = None,
+    title: str = None,
     width: float = 2,
     height: float = 2,
     radius: float = 0.6,
@@ -169,30 +148,10 @@ def pie_trait(
     pct_distance: float = 0.6,
     label_distance: float = 1.1,
     colors: list = None,
-    title: str = None,
     output: path = None,
-    show: bool = True
+    show: bool = True,
+    **kwargs: Any
 ) -> None:
-    """
-    Violin plot of cell scores for traits/diseases
-    :param fontsize:
-    :param radius:
-    :param colors:
-    :param label_distance:
-    :param pct_distance:
-    :param height:
-    :param width:
-    :param clusters:
-    :param trait_cluster_map:
-    :param title:
-    :param value:
-    :param trait_column_name:
-    :param trait_df: data
-    :param trait_name: trait/disease name or All, 'All' show all traits/diseases
-    :param output: Image output path
-    :param show: Whether to display pictures
-    :return: None
-    """
     trait_cluster_map_key_list = list(trait_cluster_map.keys())
 
     data: DataFrame = trait_df.copy()
@@ -205,7 +164,8 @@ def pie_trait(
         :return: None
         """
         if trait_ not in trait_cluster_map_key_list:
-            ul.log(__name__).error(f"The key in `trait_cluster_map` does not contain the `{trait_}` trait and needs to be added")
+            ul.log(__name__).error(
+                f"The key in `trait_cluster_map` does not contain the `{trait_}` trait and needs to be added")
             raise ValueError(
                 f"The key in `trait_cluster_map` does not contain the `{trait_}` trait and needs to be added"
             )
@@ -219,6 +179,8 @@ def pie_trait(
             map_cluster=trait_cluster_map[trait_],
             value=value,
             clusters=clusters,
+            x_name=x_name,
+            y_name=y_name,
             width=width,
             height=height,
             radius=radius,
@@ -228,7 +190,8 @@ def pie_trait(
             colors=colors,
             title=f"{title} {trait_}" if title is not None else title,
             output=os.path.join(output, f"cell_{trait_}_score_pie.pdf") if output is not None else None,
-            show=show
+            show=show,
+            **kwargs
         )
 
     # noinspection DuplicatedCode

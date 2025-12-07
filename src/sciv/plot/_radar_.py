@@ -1,7 +1,7 @@
 # -*- coding: UTF-8 -*-
 
 import os
-from typing import Optional, Union, Tuple
+from typing import Optional, Union, Tuple, Any
 
 import numpy as np
 import pandas as pd
@@ -10,7 +10,7 @@ from matplotlib import pyplot as plt
 from pandas import DataFrame
 
 from .. import util as ul
-from ..util import path, collection, plot_end
+from ..util import path, collection, plot_end, plot_start
 
 __name__: str = "plot_radar"
 
@@ -18,10 +18,13 @@ __name__: str = "plot_radar"
 def radar(
     ax_x: collection,
     ax_y: collection,
+    x_name: str = None,
+    y_name: str = None,
     title: str = None,
     colors: collection = None,
     width: float = 4,
     height: float = 4,
+    bottom: float = 0,
     center_text: str = None,
     rotation: float = 25,
     value_top: float = 0.1,
@@ -31,73 +34,69 @@ def radar(
     y_limit: Tuple = (-0.5, 1),
     y_axis_scale: Tuple = (0, 1),
     output: path = None,
-    show: bool = True
+    show: bool = True,
+    **kwargs: Any
 ):
-    if output is None and not show:
-        ul.log(__name__).warning(f"At least one of the `output` and `show` parameters is required")
-    else:
-        fig, ax = plt.subplots(figsize=(width, height), subplot_kw=dict(polar=True))
 
-        ax_x = list(ax_x)
-        ax_y = list(ax_y)
+    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
 
-        # Create a circular bar chart
-        theta = np.linspace(0, 2 * np.pi, len(ax_x), endpoint=False).tolist()
-        ax_y += ax_y[:1]
-        theta += theta[:1]
+    ax_x = list(ax_x)
+    ax_y = list(ax_y)
 
-        width = 2 * 2.7 / len(ax_x)
+    # Create a circular bar chart
+    theta = np.linspace(0, 2 * np.pi, len(ax_x), endpoint=False).tolist()
+    ax_y += ax_y[:1]
+    theta += theta[:1]
 
-        bars = ax.bar(theta, ax_y, width=width, color=colors, edgecolor='none', alpha=0.8, zorder=3)
+    width = 2 * 2.7 / len(ax_x)
 
-        # Add category labels
-        ax.set_xticks(theta)
-        ax.set_xticklabels([])
+    bars = ax.bar(theta, ax_y, width=width, color=colors, edgecolor='none', alpha=0.8, zorder=3, **kwargs)
 
-        # Set y-axis range
-        ax.set_ylim(y_limit[0], y_limit[1])
+    # Add category labels
+    ax.set_xticks(theta)
+    ax.set_xticklabels([])
 
-        # Remove the scale value of the circle
-        ax.set_yticks(np.linspace(y_axis_scale[0], y_axis_scale[1], 6))  # Set the y-axis scale position
-        ax.set_yticklabels([])  # Do not display scale values
-        ax.set_theta_zero_location('N')  # Set polar axis position
-        ax.set_theta_direction(-1)  # The angle increases counterclockwise
+    # Set y-axis range
+    ax.set_ylim(y_limit[0], y_limit[1])
 
-        # Add numerical labels
-        for i, bar in enumerate(bars):
-            height = bar.get_height()
-            angle = np.degrees(theta[i])
-            label_position = theta[i]
-            ax.text(label_position, height + value_top if not is_fixed else value_top, round(height, 3), ha='center', va='center', color='#1f1f1f', rotation=-angle + rotation if is_angle else rotation)
+    # Remove the scale value of the circle
+    ax.set_yticks(np.linspace(y_axis_scale[0], y_axis_scale[1], 6))  # Set the y-axis scale position
+    ax.set_yticklabels([])  # Do not display scale values
+    ax.set_theta_zero_location('N')  # Set polar axis position
+    ax.set_theta_direction(-1)  # The angle increases counterclockwise
 
-        # Add radar line
-        ax.plot(theta, ax_y, color='gray', linewidth=1, zorder=1)
-        # Draw radar map
-        ax.fill(theta, ax_y, color='#DDDDDD', alpha=0.1, zorder=2)
+    # Add numerical labels
+    for i, bar in enumerate(bars):
+        height = bar.get_height()
+        angle = np.degrees(theta[i])
+        label_position = theta[i]
+        ax.text(label_position, height + value_top if not is_fixed else value_top, round(height, 3), ha='center', va='center', color='#1f1f1f', rotation=-angle + rotation if is_angle else rotation)
 
-        if center_text is not None:
-            ax.text(0, y_limit[0], center_text, ha='center', va='center', fontsize=14, color='black', zorder=11)
+    # Add radar line
+    ax.plot(theta, ax_y, color='gray', linewidth=1, zorder=1)
+    # Draw radar map
+    ax.fill(theta, ax_y, color='#DDDDDD', alpha=0.1, zorder=2)
 
-        if title is not None:
-            ax.set_title(title, va='bottom')
+    if center_text is not None:
+        ax.text(0, y_limit[0], center_text, ha='center', va='center', fontsize=14, color='black', zorder=11)
 
-        # Set the y-axis scale line color to light gray
-        ax.tick_params('y', colors='#DDDDDD', grid_alpha=0.6, zorder=8)
+    # Set the y-axis scale line color to light gray
+    ax.tick_params('y', colors='#DDDDDD', grid_alpha=0.6, zorder=8)
 
-        # Set the color of the outermost circle line
-        ax.spines['polar'].set_color('#DDDDDD')
+    # Set the color of the outermost circle line
+    ax.spines['polar'].set_color('#DDDDDD')
 
-        plt.grid(axis='x', linestyle='-', alpha=0.4, zorder=9)
+    plt.grid(axis='x', linestyle='-', alpha=0.4, zorder=9)
 
-        # Draw peripheral category labels
-        for i, label in enumerate(ax_x):
-            angle = np.degrees(theta[i])
-            ax.text(theta[i], text_top, label, ha='center', va='center', color='#1f1f1f', zorder=20, rotation=-angle + rotation if is_angle else rotation)
+    # Draw peripheral category labels
+    for i, label in enumerate(ax_x):
+        angle = np.degrees(theta[i])
+        ax.text(theta[i], text_top, label, ha='center', va='center', color='#1f1f1f', zorder=20, rotation=-angle + rotation if is_angle else rotation)
 
-        # Adjust the layout to prevent label overlap
-        plt.tight_layout()
+    # Adjust the layout to prevent label overlap
+    plt.tight_layout()
 
-        plot_end(fig, output, show)
+    plot_end(fig, output, show)
 
 
 def radar_trait(
@@ -119,7 +118,8 @@ def radar_trait(
     y_limit: Tuple = (-0.5, 1),
     y_axis_scale: Tuple = (0, 1),
     output: path = None,
-    show: bool = True
+    show: bool = True,
+    **kwargs: Any
 ):
 
     def trait_plot(trait_: str, cell_df_: DataFrame) -> None:
@@ -165,7 +165,8 @@ def radar_trait(
             y_axis_scale=y_axis_scale,
             center_text=trait_,
             output=os.path.join(output, f"{trait_}_enrichment_radar.pdf") if output is not None else None,
-            show=show
+            show=show,
+            **kwargs
         )
 
     trait_list = list(set(trait_df[trait_column_name]))
