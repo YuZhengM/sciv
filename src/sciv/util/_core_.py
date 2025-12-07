@@ -639,7 +639,7 @@ def sparse_matrix_operation_memory_efficient(
             log(__name__).error(f"Unsupported operation: {operation}")
             raise ValueError(f"Unsupported operation: {operation}")
 
-        return to_dense(result_data)
+        return to_sparse(result_data)
 
     data1 = to_sparse(data1)
 
