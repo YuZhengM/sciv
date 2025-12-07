@@ -685,6 +685,7 @@ def core(
             _chunk_atac_overlap_adata_all_: AnnData = ad.concat(_chunk_atac_overlap_adata_list_, axis=1)
             del _chunk_atac_overlap_adata_list_
             _chunk_atac_overlap_adata_all_.var = trait_info.copy()
+            _chunk_atac_overlap_adata_all_.uns["is_overlap"] = True
             save_h5ad(_chunk_atac_overlap_adata_all_, atac_overlap_save_file)
             del _chunk_atac_overlap_adata_all_
 

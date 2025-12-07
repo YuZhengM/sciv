@@ -581,7 +581,7 @@ def matrix_multiply_block_storage(
 
 def sparse_matrix_operation_memory_efficient(
     data1: matrix_data,
-    data2: matrix_data,
+    data2: Union[matrix_data, float, int],
     chunk_size: int = 10000,
     default: float = 1e+8,
     operation: Literal['+', '-', '*', '/'] = '*'
@@ -597,15 +597,54 @@ def sparse_matrix_operation_memory_efficient(
     :return: Result sparse matrix (CSR format)
     """
     n, m = data1.shape
-    n1, m1 = data2.shape
 
-    # Element-wise operations follow below
-    if n != n1 or m != m1:
-        log(__name__).error(f"Need to satisfy the element-wise operation principle in matrices. ({(n, m)} != {n1, m1})")
-        raise ValueError(f"Need to satisfy the element-wise operation principle in matrices. ({(n, m)} != {n1, m1})")
+    if isinstance(data1, matrix_data):
+
+        n1, m1 = data2.shape
+
+        # Element-wise operations follow below
+        if n != n1 or m != m1:
+            log(__name__).error(f"Need to satisfy the element-wise operation principle in matrices. ({(n, m)} != {n1, m1})")
+            raise ValueError(f"Need to satisfy the element-wise operation principle in matrices. ({(n, m)} != {n1, m1})")
+    else:
+
+        if operation == "/" and data2 == 0:
+
+            if default == 0:
+                log(__name__).error(f"The denominator (`data2`) cannot be zero.")
+                raise ValueError(f"The denominator (`data2`) cannot be zero.")
+
+            log(__name__).warning(f"The denominator (`data2`) cannot be zero, it defaults to the `default` parameter value.")
+            data2 = default
+
+    if chunk_size <= 0:
+
+        if operation == '+':
+            result_data = data1 + data2
+        elif operation == '-':
+            result_data = data1 - data2
+        elif operation == '*':
+            result_data = data1.multiply(data2)
+        elif operation == '/':
+            dense_data1 = to_dense(data1)
+
+            if isinstance(data1, matrix_data):
+                dense_data2 = to_dense(data2)
+                dense_data2[dense_data2 == 0] = default
+            else:
+                dense_data2 = data2
+
+            result_data = dense_data1 / dense_data2
+        else:
+            log(__name__).error(f"Unsupported operation: {operation}")
+            raise ValueError(f"Unsupported operation: {operation}")
+
+        return to_dense(result_data)
 
     data1 = to_sparse(data1)
-    data2 = to_sparse(data2)
+
+    if isinstance(data1, matrix_data):
+        data2 = to_sparse(data2)
 
     result = sparse.lil_matrix(data1.shape)
 
@@ -613,7 +652,11 @@ def sparse_matrix_operation_memory_efficient(
         i_end = min(i + chunk_size, data1.shape[0])
 
         chunk1 = data1[i:i_end, :]
-        chunk2 = data2[i:i_end, :]
+
+        if isinstance(data1, matrix_data):
+            chunk2 = data2[i:i_end, :]
+        else:
+            chunk2 = data2
 
         if operation == '+':
             result_chunk = chunk1 + chunk2
@@ -624,9 +667,13 @@ def sparse_matrix_operation_memory_efficient(
         elif operation == '/':
             # Sparse matrix division: convert to dense, perform element-wise division, then convert back to sparse
             dense_chunk1 = chunk1.todense()
-            dense_chunk2 = chunk2.todense()
-            # Avoid division by zero
-            dense_chunk2[dense_chunk2 == 0] = default
+
+            if isinstance(data1, matrix_data):
+                dense_chunk2 = chunk2.todense()
+                dense_chunk2[dense_chunk2 == 0] = default
+            else:
+                dense_chunk2 = data2
+
             result_chunk = dense_chunk1 / dense_chunk2
             result_chunk = sparse.csr_matrix(result_chunk)
         else:

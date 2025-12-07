@@ -1103,7 +1103,9 @@ def calculate_init_score_weight(
 
     del row_sum, col_sum
 
-    global_scale_data.data = global_scale_data.data / all_sum
+    global_scale_data = sparse_matrix_operation_memory_efficient(
+        global_scale_data, all_sum, chunk_size=block_size, operation="/"
+    )
 
     del all_sum
 
