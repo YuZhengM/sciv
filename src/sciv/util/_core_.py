@@ -626,15 +626,14 @@ def sparse_matrix_operation_memory_efficient(
         elif operation == '*':
             result_data = data1.multiply(data2)
         elif operation == '/':
-            dense_data1 = to_dense(data1)
 
             if isinstance(data2, matrix_data):
-                dense_data2 = to_dense(data2)
-                dense_data2[dense_data2 == 0] = default
+                data1 = to_dense(data1)
+                data2 = to_dense(data2)
+                data2[data2 == 0] = default
+                result_data = data1 / data2
             else:
-                dense_data2 = data2
-
-            result_data = dense_data1 / dense_data2
+                result_data = to_sparse(data1).data / data2
         else:
             log(__name__).error(f"Unsupported operation: {operation}")
             raise ValueError(f"Unsupported operation: {operation}")
