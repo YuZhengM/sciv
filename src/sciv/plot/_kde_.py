@@ -8,7 +8,8 @@ import seaborn as sns
 from tqdm import tqdm
 
 from .. import util as ul
-from ..util import path, down_sampling_data, check_adata_get, plot_end, plot_start
+from ..tool import down_sampling_data
+from ..util import path, check_adata_get, plot_end, plot_start
 
 __name__: str = "plot_kde"
 

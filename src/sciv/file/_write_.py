@@ -49,17 +49,19 @@ def save_h5(data: dict, save_file: path, group_name: str = "matrix") -> None:
     file.close()
 
 
-def save_pkl(data, save_file: path) -> None:
+def save_pkl(data, save_file: path, is_verbose: bool = False) -> None:
     """
     Save pkl data.
     :param data: data
     :param save_file: save file
+    :param is_verbose: Set true to print log;
     :return: pkl file
     """
-    ul.log(__name__).info("Saving data to {}".format(save_file))
+    if is_verbose:
+        ul.log(__name__).info("Saving data to {}".format(save_file))
 
     with open(str(save_file), 'wb') as f:
-        pickle.dump(data, f)
+        pickle.dump(data, f) # type: ignore
 
 
 def to_meta(

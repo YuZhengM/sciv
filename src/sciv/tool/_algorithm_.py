@@ -12,6 +12,11 @@ from anndata import AnnData
 import pandas as pd
 from pandas import DataFrame
 
+from ._matrix_ import (
+    matrix_dot_block_storage,
+    sparse_matrix_operation_memory_efficient
+)
+
 from .. import util as ul
 from ..util import (
     matrix_data,
@@ -22,8 +27,6 @@ from ..util import (
     number,
     collection,
     get_index,
-    matrix_dot_block_storage,
-    sparse_matrix_operation_memory_efficient,
     difference_peak_optional
 )
 
@@ -751,7 +754,7 @@ def euclidean_distances(data1: matrix_data, data2: matrix_data = None, block_siz
     data2_sum_sq = __data1_sum_sq__ if data2 is None else np.power(data2, 2).sum(axis=1)
     del __data1_sum_sq__
 
-    distances = data1_sum_sq + data2_sum_sq - 2 * matrix_dot_block_storage(data1, data2.transpose(), block_size)
+    distances = data1_sum_sq + data2_sum_sq - 2 * to_dense(matrix_dot_block_storage(data1, data2.transpose(), block_size))
     del data1_sum_sq, data2_sum_sq
 
     distances[distances < 0] = 0.0
@@ -997,19 +1000,23 @@ def calculate_fragment_weighted_accessibility(input_data: dict, block_size: int 
     del matrix
 
     ul.log(__name__).info("Calculate expected counts matrix ===> (numerator)")
-    global_scale_data = sparse.csr_matrix(row_sum.reshape(-1, 1)).dot(sparse.csr_matrix(col_sum.reshape(1, -1)))
-    global_scale_data.data = global_scale_data.data.astype(np.float32)
+    row_col_multiply = sparse.csr_matrix(row_sum.reshape(-1, 1)).dot(sparse.csr_matrix(col_sum.reshape(1, -1)))
+    row_col_multiply.data = row_col_multiply.data.astype(np.float32)
 
     del row_sum, col_sum
 
-    global_scale_data = sparse_matrix_operation_memory_efficient(
-        global_scale_data, all_sum, chunk_size=block_size, operation="/"
+    row_col_multiply = sparse_matrix_operation_memory_efficient(
+        row_col_multiply, all_sum, chunk_size=block_size, operation="/"
     )
 
     del all_sum
 
     ul.log(__name__).info("Calculate fragment weighted accessibility ===> (denominator)")
-    global_scale_data = global_scale_data.dot(overlap_matrix)
+    global_scale_data = matrix_dot_block_storage(
+        "row_col_multiply", "overlap_matrix", block_size=block_size, is_return_sparse=True
+    )
+    # global_scale_data = global_scale_data.dot(overlap_matrix)
+    # del overlap_matrix
 
     min_nz = global_scale_data.data.min() / 2
 
@@ -1100,20 +1107,23 @@ def calculate_init_score_weight(
     del fragments
 
     ul.log(__name__).info("Calculate expected counts matrix ===> (numerator)")
-    global_scale_data = sparse.csr_matrix(row_sum.reshape(-1, 1)).dot(sparse.csr_matrix(col_sum.reshape(1, -1)))
-    global_scale_data.data = global_scale_data.data.astype(np.float32)
+    row_col_multiply = sparse.csr_matrix(row_sum.reshape(-1, 1)).dot(sparse.csr_matrix(col_sum.reshape(1, -1)))
+    row_col_multiply.data = row_col_multiply.data.astype(np.float32)
 
     del row_sum, col_sum
 
-    global_scale_data = sparse_matrix_operation_memory_efficient(
-        global_scale_data, all_sum, chunk_size=block_size, operation="/"
+    row_col_multiply = sparse_matrix_operation_memory_efficient(
+        row_col_multiply, all_sum, chunk_size=block_size, operation="/"
     )
 
     del all_sum
 
     ul.log(__name__).info("Calculate fragment weighted accessibility ===> (denominator)")
-    global_scale_data = global_scale_data.dot(overlap_matrix)
-    del overlap_matrix
+    global_scale_data: sparse_matrix = matrix_dot_block_storage(
+        "row_col_multiply", "overlap_matrix", block_size=block_size, is_return_sparse=True
+    )
+    # global_scale_data = global_scale_data.dot(overlap_matrix)
+    # del overlap_matrix
 
     min_nz = global_scale_data.data.min() / 2
 

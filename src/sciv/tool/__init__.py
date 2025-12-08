@@ -46,6 +46,18 @@ from ._random_walk_ import (
     RandomWalk,
 )
 
+from ._matrix_ import (
+    split_matrix,
+    merge_matrix,
+    down_sampling_data,
+    matrix_dot_block_storage,
+    matrix_multiply_block_storage,
+    sparse_matrix_operation_memory_efficient,
+    vector_multiply_block_storage,
+    matrix_division_block_storage,
+    matrix_callback_block_storage
+)
+
 __all__ = [
     "sigmoid",
     "tf_idf",
@@ -86,5 +98,14 @@ __all__ = [
     "calculate_init_score_weight",
     "obtain_cell_cell_network",
     "perturb_data",
-    "add_noise"
+    "add_noise",
+    "split_matrix",
+    "merge_matrix",
+    "down_sampling_data",
+    "matrix_dot_block_storage",
+    "matrix_multiply_block_storage",
+    "sparse_matrix_operation_memory_efficient",
+    "vector_multiply_block_storage",
+    "matrix_division_block_storage",
+    "matrix_callback_block_storage"
 ]

@@ -144,10 +144,11 @@ class TraitDataParallel(nn.DataParallel):
 
     def gather(self, outputs, output_device):
         """
-        收集并行处理后的结果，检查是否存在结果，并将结果按列合并（每个结果矩阵，行数一样，列数不一样）
-        :param outputs: 各个设备的输出结果
-        :param output_device: 输出设备
-        :return: 收集并按列合并后的结果
+        Collect the results after parallel processing, check for the existence of results,
+        and merge the results by column (each result matrix has the same number of rows but different numbers of columns)
+        :param outputs: Output results of each device
+        :param output_device: output device
+        :return: Collect and merge the results by column
         """
         return torch.nn.parallel.scatter_gather.gather(outputs, output_device, dim=1)
 
