@@ -57,7 +57,7 @@ def to_dense(sm: matrix_data, is_array: bool = False) -> dense_data:
     return np.array(dense_sm) if is_array else dense_sm
 
 
-def to_sparse(dm: dense_data, way_callback=sparse.csr_matrix, is_matrix: bool = True) -> sparse_matrix:
+def to_sparse(dm: dense_data, way_callback=sparse.csr_matrix, is_matrix: bool = False) -> sparse_matrix:
     """
     Convert dense matrix to sparse matrix
     :param dm: dense matrix
@@ -617,37 +617,58 @@ def sparse_matrix_operation_memory_efficient(
             log(__name__).warning(f"The denominator (`data2`) cannot be zero, it defaults to the `default` parameter value.")
             data2 = default
 
+    data1 = to_sparse(data1)
+
     if chunk_size <= 0:
 
         if operation == '+':
-            result_data = data1 + data2
+
+            if isinstance(data2, matrix_data):
+                data2 = to_sparse(data2)
+                return data1 + data2
+            else:
+                data1.data = data1.data + data2
+                return data1
+
         elif operation == '-':
-            result_data = data1 - data2
+
+            if isinstance(data2, matrix_data):
+                data2 = to_sparse(data2)
+                return data1 - data2
+            else:
+                data1.data = data1.data - data2
+                return data1
+
         elif operation == '*':
-            result_data = data1.multiply(data2)
+
+            if isinstance(data2, matrix_data):
+                data2 = to_sparse(data2)
+                return data1.multiply(data2)
+            else:
+                data1.data = data1.data * data2
+                return data1
+
         elif operation == '/':
 
             if isinstance(data2, matrix_data):
                 data1 = to_dense(data1)
                 data2 = to_dense(data2)
                 data2[data2 == 0] = default
-                result_data = data1 / data2
+                return to_sparse(data1 / data2)
             else:
-                result_data = to_sparse(data1).data / data2
+                data1.data = data1.data / data2
+                return data1
+
         else:
             log(__name__).error(f"Unsupported operation: {operation}")
             raise ValueError(f"Unsupported operation: {operation}")
-
-        return to_sparse(result_data)
-
-    data1 = to_sparse(data1)
 
     if isinstance(data2, matrix_data):
         data2 = to_sparse(data2)
 
     result = sparse.lil_matrix(data1.shape)
 
-    for i in range(0, data1.shape[0], chunk_size):
+    for i in tqdm(range(0, data1.shape[0], chunk_size)):
         i_end = min(i + chunk_size, data1.shape[0])
 
         chunk1 = data1[i:i_end, :]

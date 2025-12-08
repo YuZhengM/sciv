@@ -535,8 +535,62 @@ def core(
     # Quantity of traits
     trait_size: int = trait_info.shape[0]
 
+    # Determine whether it is necessary to read the file
+    overlap_is_read: bool = is_file_exist_loading and os.path.exists(atac_overlap_save_file)
+    init_score_is_read: bool = is_file_exist_loading and os.path.exists(init_score_save_file)
+
     # Number of Blocks
     chunk_size: int = int(np.ceil(trait_size / single_chunk_size))
+
+    overlap_adata: Union[AnnData, None] = None
+    init_score: Union[AnnData, None] = None
+
+    # overlap
+    if overlap_is_read:
+        overlap_adata: AnnData = read_h5ad(atac_overlap_save_file)
+
+        if chunk_size > 1:
+
+            if overlap_adata.var.shape[0] != _trait_count_:
+                ul.log(__name__).error(
+                    f"The number of diseases read from file `atac_overlap.h5ad` are inconsistent with the input ({overlap_adata.var.shape[0]} != {_trait_count_}). "
+                    f"Please check and verify. If the verification is not as expected, file `atac_overlap.h5ad` needs to be moved or deleted."
+                )
+                raise ValueError(
+                    f"The number of diseases read from file `atac_overlap.h5ad` are inconsistent with the input ({overlap_adata.var.shape[0]} != {_trait_count_}). "
+                    f"Please check and verify. If the verification is not as expected, file `atac_overlap.h5ad` needs to be moved or deleted."
+                )
+
+        else:
+
+            if overlap_adata.var.shape[0] != _trait_count_:
+                ul.log(__name__).warning(
+                    f"The number of diseases read from file `atac_overlap.h5ad` are inconsistent with the input ({overlap_adata.var.shape[0]} != {_trait_count_}). "
+                    f"Please check and verify. If the verification is not as expected, file `atac_overlap.h5ad` needs to be moved or deleted."
+                )
+
+    if init_score_is_read:
+        init_score: AnnData = read_h5ad(init_score_save_file)
+
+        if chunk_size > 1:
+
+            if init_score.var.shape[0] != _trait_count_:
+                ul.log(__name__).warning(
+                    f"The number of diseases read from file `init_score.h5ad` are inconsistent with the input ({init_score.var.shape[0]} != {_trait_count_}). "
+                    f"Please check and verify. If the verification is not as expected, file `init_score.h5ad` needs to be moved or deleted."
+                )
+                raise ValueError(
+                    f"The number of diseases read from file `init_score.h5ad` are inconsistent with the input ({init_score.var.shape[0]} != {_trait_count_}). "
+                    f"Please check and verify. If the verification is not as expected, file `init_score.h5ad` needs to be moved or deleted."
+                )
+
+        else:
+
+            if init_score.var.shape[0] != _trait_count_:
+                ul.log(__name__).warning(
+                    f"The number of diseases read from file `init_score.h5ad` are inconsistent with the input ({init_score.var.shape[0]} != {_trait_count_}). "
+                    f"Please check and verify. If the verification is not as expected, file `init_score.h5ad` needs to be moved or deleted."
+                )
 
     if chunk_size > 1:
 
@@ -580,7 +634,9 @@ def core(
             """
 
             # overlap
-            if _chunk_overlap_is_read_:
+            if overlap_is_read:
+                _chunk_overlap_adata_: AnnData = overlap_adata[:, _start_:_end_]
+            elif _chunk_overlap_is_read_:
                 _chunk_overlap_adata_: AnnData = read_h5ad(_chunk_atac_overlap_save_file_)
 
                 if _chunk_overlap_adata_.var.shape[0] != (_end_ - _start_):
@@ -599,7 +655,10 @@ def core(
             4. Calculate the initial trait- or disease-related cell score with weight
             """
 
-            if _chunk_init_score_is_read_:
+            # overlap
+            if init_score_is_read:
+                _chunk_init_score_: AnnData = init_score[:, _start_:_end_]
+            elif _chunk_init_score_is_read_:
                 _chunk_init_score_: AnnData = read_h5ad(_chunk_init_score_save_file_)
 
                 if _chunk_init_score_.var.shape[0] != (_end_ - _start_):
@@ -785,19 +844,8 @@ def core(
         in a region as the values for that region
         """
 
-        overlap_is_read: bool = is_file_exist_loading and os.path.exists(atac_overlap_save_file)
-
         # overlap
-        if overlap_is_read:
-            overlap_adata: AnnData = read_h5ad(atac_overlap_save_file)
-
-            if overlap_adata.var.shape[0] != _trait_count_:
-                ul.log(__name__).warning(
-                    f"The number of diseases read from file `atac_overlap.h5ad` are inconsistent with the input ({overlap_adata.var.shape[0]} != {_trait_count_}). "
-                    f"Please check and verify. If the verification is not as expected, file `atac_overlap.h5ad` needs to be moved or deleted."
-                )
-
-        else:
+        if not overlap_is_read:
             overlap_adata: AnnData = overlap_sum(adata, variants, trait_info)
 
         if save_path is not None and not overlap_is_read:
@@ -809,18 +857,7 @@ def core(
         4. Calculate the initial trait- or disease-related cell score with weight
         """
 
-        init_score_is_read: bool = is_file_exist_loading and os.path.exists(init_score_save_file)
-
-        if init_score_is_read:
-            init_score: AnnData = read_h5ad(init_score_save_file)
-
-            if init_score.var.shape[0] != _trait_count_:
-                ul.log(__name__).warning(
-                    f"The number of diseases read from file `init_score.h5ad` are inconsistent with the input ({init_score.var.shape[0]} != {_trait_count_}). "
-                    f"Please check and verify. If the verification is not as expected, file `init_score.h5ad` needs to be moved or deleted."
-                )
-
-        else:
+        if not init_score_is_read:
             # intermediate score data, integration data
             init_score: AnnData = calculate_init_score_weight(
                 adata=adata,
