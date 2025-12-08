@@ -824,8 +824,9 @@ def _overlap_(regions_sort: DataFrame, variants: DataFrame) -> DataFrame:
                     variants_overlap_info["start"] = start
                     variants_overlap_info["end"] = end
                     variants_overlap_info.index = (
-                        variants_overlap_info["variant_id"].astype(str) + "_" + variants_overlap_info[
-                        "index"].astype(str))
+                        variants_overlap_info["variant_id"].astype(str) + "_"
+                        + variants_overlap_info["index"].astype(str)
+                    )
                     variants_overlap_info_list.append(variants_overlap_info)
 
     # merge result

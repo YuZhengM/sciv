@@ -419,7 +419,13 @@ class RandomWalk:
                 self.seed_cell_weight_en_ncw
             ) = self._get_seed_cell_(init_data=init_status_no_weight, info="ablation")
 
-    def _random_walk_(self, seed_cell_data: matrix_data, weight: matrix_data = None, gamma: float = 0.05, device: str = 'auto') -> matrix_data:
+    def _random_walk_(
+        self,
+        seed_cell_data: matrix_data,
+        weight: matrix_data = None,
+        gamma: float = 0.05,
+        device: str = 'auto'
+    ) -> matrix_data:
         """
         Perform a random walk
         :param seed_cell_data: seed cells;
