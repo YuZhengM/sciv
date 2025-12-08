@@ -180,8 +180,8 @@ def down_sampling_data(data: Union[matrix_data | collection], sample_number: int
 
 
 def matrix_dot_block_storage(
-    data1: Union[matrix_data, str],
-    data2: Union[matrix_data, str],
+    data1: matrix_data,
+    data2: matrix_data,
     block_size: int = 10000,
     is_return_sparse: bool = False,
     data: matrix_data = None
@@ -198,18 +198,15 @@ def matrix_dot_block_storage(
     :return: Cartesian product result
     """
 
-    matrix1 = globals()[data1] if isinstance(data1, str) else data1
-    matrix2 = globals()[data2] if isinstance(data2, str) else data2
-
-    n, m = matrix1.shape
-    p, q = matrix2.shape
+    n, m = data1.shape
+    p, q = data2.shape
 
     if m != p:
         ul.log(__name__).error(f"Need to meet the principle of matrix multiplication. ({m} != {p})")
         raise ValueError(f"Need to meet the principle of matrix multiplication. ({m} != {p})")
 
     if block_size <= 0 or n <= block_size and m <= block_size and q <= block_size:
-        return np.dot(matrix1, matrix2)
+        return to_sparse(np.dot(data1, data2)) if is_return_sparse else np.dot(data1, data2)
 
     n_range = range(0, n, block_size)
     q_range = range(0, q, block_size)
@@ -229,19 +226,13 @@ def matrix_dot_block_storage(
                     j_max = min(j + block_size, q)
                     k_max = min(k + block_size, m)
 
-                    _matrix_ = np.dot(matrix1[i:i_max, k:k_max], matrix2[k:k_max, j:j_max]).astype(np.float32)
+                    _matrix_ = np.dot(data1[i:i_max, k:k_max], data2[k:k_max, j:j_max]).astype(np.float32)
                     save_pkl(_matrix_, os.path.join(_cache_path_, str(i) + str(j) + str(k) + ".pkl"))
                     del _matrix_
 
                     pbar.update(1)
 
-    if isinstance(data1, str):
-        del globals()[data1]
-
-    if isinstance(data2, str):
-        del globals()[data2]
-
-    del data1, data2, matrix1, matrix2
+    del data1, data2
 
     if data is None or data.shape != (n, q):
         data = sparse.lil_matrix((n, q)).astype(np.float32) if is_return_sparse else np.zeros((n, q)).astype(np.float32)

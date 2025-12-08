@@ -1000,23 +1000,19 @@ def calculate_fragment_weighted_accessibility(input_data: dict, block_size: int 
     del matrix
 
     ul.log(__name__).info("Calculate expected counts matrix ===> (numerator)")
-    row_col_multiply = sparse.csr_matrix(row_sum.reshape(-1, 1)).dot(sparse.csr_matrix(col_sum.reshape(1, -1)))
-    row_col_multiply.data = row_col_multiply.data.astype(np.float32)
+    global_scale_data = sparse.csr_matrix(row_sum.reshape(-1, 1)).dot(sparse.csr_matrix(col_sum.reshape(1, -1)))
+    global_scale_data.data = global_scale_data.data.astype(np.float32)
 
     del row_sum, col_sum
 
-    row_col_multiply = sparse_matrix_operation_memory_efficient(
-        row_col_multiply, all_sum, chunk_size=block_size, operation="/"
+    global_scale_data = sparse_matrix_operation_memory_efficient(
+        global_scale_data, all_sum, chunk_size=block_size, operation="/"
     )
 
     del all_sum
 
     ul.log(__name__).info("Calculate fragment weighted accessibility ===> (denominator)")
-    global_scale_data = matrix_dot_block_storage(
-        "row_col_multiply", "overlap_matrix", block_size=block_size, is_return_sparse=True
-    )
-    # global_scale_data = global_scale_data.dot(overlap_matrix)
-    # del overlap_matrix
+    global_scale_data = global_scale_data.dot(overlap_matrix)
 
     min_nz = global_scale_data.data.min() / 2
 
@@ -1107,23 +1103,20 @@ def calculate_init_score_weight(
     del fragments
 
     ul.log(__name__).info("Calculate expected counts matrix ===> (numerator)")
-    row_col_multiply = sparse.csr_matrix(row_sum.reshape(-1, 1)).dot(sparse.csr_matrix(col_sum.reshape(1, -1)))
-    row_col_multiply.data = row_col_multiply.data.astype(np.float32)
+    global_scale_data = sparse.csr_matrix(row_sum.reshape(-1, 1)).dot(sparse.csr_matrix(col_sum.reshape(1, -1)))
+    global_scale_data.data = global_scale_data.data.astype(np.float32)
 
     del row_sum, col_sum
 
-    row_col_multiply = sparse_matrix_operation_memory_efficient(
-        row_col_multiply, all_sum, chunk_size=block_size, operation="/"
+    global_scale_data = sparse_matrix_operation_memory_efficient(
+        global_scale_data, all_sum, chunk_size=block_size, operation="/"
     )
 
     del all_sum
 
     ul.log(__name__).info("Calculate fragment weighted accessibility ===> (denominator)")
-    global_scale_data: sparse_matrix = matrix_dot_block_storage(
-        "row_col_multiply", "overlap_matrix", block_size=block_size, is_return_sparse=True
-    )
-    # global_scale_data = global_scale_data.dot(overlap_matrix)
-    # del overlap_matrix
+    global_scale_data = global_scale_data.dot(overlap_matrix)
+    del overlap_matrix
 
     min_nz = global_scale_data.data.min() / 2
 
