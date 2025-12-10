@@ -9,6 +9,7 @@ from pandas import DataFrame
 
 from .. import util as ul
 from ..file import save_h5ad
+from ..tool import lsi, tf_idf
 from ..util import add_cluster_info, matrix_data, set_inf_value
 
 __name__: str = "preprocessing_scanpy"
@@ -199,3 +200,77 @@ def get_difference_genes(
         save_h5ad(diff_genes_adata, diff_genes_file)
 
     return diff_genes_adata
+
+
+def paga_trajectory(
+    adata: AnnData,
+    layer: Optional[str] = None,
+    latent: str = "X_pca",
+    groups: str = "louvain",
+    lsi_components: int = 50,
+    n_neighbors: int = 15,
+    resolution: float = 1.0,
+    is_denoise: bool = False,
+):
+    import scanpy as sc
+
+    fixed_name: str = "X_pca"
+
+    is_run: bool = latent not in adata.obsm
+
+    status: int = 0
+
+    if is_run:
+
+        if layer is None:
+            counts = adata.X
+        else:
+
+            if layer not in adata.layers:
+                ul.log(__name__).error("The `layer` parameter needs to include in `adata.layers`")
+                raise ValueError("The `layer` parameter needs to include in `adata.layers`")
+
+            counts = adata.obs[layer]
+
+        tf_idf_matrix = tf_idf(counts)
+        del counts
+
+        lsi_matrix = lsi(tf_idf_matrix, n_components=lsi_components)
+        adata.obsm['X_pca'] = lsi_matrix
+        del tf_idf_matrix, lsi_matrix
+
+        status = 1
+
+    else:
+
+        if latent != fixed_name:
+            adata.obsm['X_pca'] = adata.obsm[latent]
+            status = 2
+
+    ul.log(__name__).info("Compute a neighborhood graph of observations.")
+    sc.pp.neighbors(adata, n_neighbors=n_neighbors)
+
+    if is_denoise:
+        ul.log(__name__).info("Run denoising")
+        sc.tl.diffmap(adata)
+
+    if groups not in adata.obs.columns:
+
+        if groups == "louvain":
+            ul.log(__name__).info("Run louvain")
+            sc.tl.louvain(adata, resolution=resolution)
+        else:
+            ul.log(__name__).error("The value of the `groups` parameter is 'louvain' or needs to be included in `adata.obs.columns`.")
+            raise ValueError("The value of the `groups` parameter is 'louvain' or needs to be included in `adata.obs.columns`.")
+
+    ul.log(__name__).info("Run PAGA")
+    sc.tl.paga(adata, groups=groups)
+
+    sc.tl.draw_graph(adata, init_pos="paga")
+
+    if status == 1:
+        adata.obsm['lsi'] = adata.obsm.pop('X_pca')
+    elif status == 2:
+        adata.obsm.pop('X_pca')
+    else:
+        pass

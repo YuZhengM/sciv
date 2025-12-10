@@ -311,7 +311,7 @@ def lsi(data: matrix_data, n_components: int = 50, is_to_dense: bool = False) ->
         return data_x
     else:
         ul.log(__name__).info("Start LSI")
-        svd = TruncatedSVD(n_components=n_components)
+        svd = TruncatedSVD(n_components=n_components, algorithm='randomized')
         svd_data = svd.fit_transform(data_x)
         ul.log(__name__).info("End LSI")
         return svd_data
