@@ -211,7 +211,7 @@ def paga_trajectory(
     n_neighbors: int = 15,
     resolution: float = 1.0,
     is_denoise: bool = False,
-):
+) -> None:
     import scanpy as sc
 
     fixed_name: str = "X_pca"
