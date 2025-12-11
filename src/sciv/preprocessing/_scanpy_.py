@@ -209,9 +209,10 @@ def paga_trajectory(
     groups: str = "louvain",
     position: Optional[collection] = None,
     lsi_components: int = 50,
+    root_cluster: Optional[str] = None,
     n_neighbors: int = 15,
     resolution: float = 1.0,
-    is_denoise: bool = False,
+    is_denoise: bool = True,
 ) -> None:
     import scanpy as sc
 
@@ -277,12 +278,16 @@ def paga_trajectory(
     ul.log(__name__).info("Run PAGA")
     sc.tl.paga(adata, groups=groups)
 
-    if position is not None:
-        adata.uns['paga']['pos'] = adata.obs[list(position)].values
-    else:
-        sc.pl.draw_graph(adata, show=False)
+    sc.pl.draw_graph(adata, show=False)
 
-    sc.tl.draw_graph(adata, init_pos="paga")
+    if position is not None:
+        adata.obsm['X_draw_graph_fr'] = adata.obs[list(position)].values
+    else:
+        sc.tl.draw_graph(adata, init_pos="paga")
+
+    if root_cluster is not None:
+        adata.uns["iroot"] = np.flatnonzero(adata.obs[groups] == root_cluster)[0]
+        sc.tl.dpt(adata)
 
     if status == 1:
         adata.obsm['lsi'] = adata.obsm.pop('X_pca')
