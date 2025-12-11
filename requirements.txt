@@ -28,3 +28,4 @@ louvain==0.8.2
 snapatac2==2.7.1
 numba==0.60.0
 pynndescent==0.5.13
+fa2-modified==0.4

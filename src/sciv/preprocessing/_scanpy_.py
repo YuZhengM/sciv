@@ -265,6 +265,7 @@ def paga_trajectory(
     if is_denoise:
         ul.log(__name__).info("Run denoising")
         sc.tl.diffmap(adata)
+        sc.pp.neighbors(adata, n_neighbors=n_neighbors, use_rep="X_diffmap")
 
     if groups not in adata.obs.columns:
 
