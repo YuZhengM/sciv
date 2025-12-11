@@ -242,7 +242,7 @@ def paga_trajectory(
                 ul.log(__name__).error("The value of the `layer` parameter must be one of the keys in `adata.layers`.")
                 raise ValueError("The value of the `layer` parameter must be one of the keys in `adata.layers`.")
 
-            counts = adata.obs[layer]
+            counts = adata.layers[layer]
 
         tf_idf_matrix = tf_idf(counts)
         del counts
@@ -278,12 +278,12 @@ def paga_trajectory(
     ul.log(__name__).info("Run PAGA")
     sc.tl.paga(adata, groups=groups)
 
-    sc.pl.draw_graph(adata, show=False)
+    sc.pl.paga(adata, show=False)
+    sc.tl.draw_graph(adata, init_pos="paga")
 
     if position is not None:
+        adata.obsm['X_draw_graph_fr_old'] = adata.obsm['X_draw_graph_fr']
         adata.obsm['X_draw_graph_fr'] = adata.obs[list(position)].values
-    else:
-        sc.tl.draw_graph(adata, init_pos="paga")
 
     if root_cluster is not None:
         adata.uns["iroot"] = np.flatnonzero(adata.obs[groups] == root_cluster)[0]

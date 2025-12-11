@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 [project]
 name = "sciv"
-version = "0.0.67"
+version = "0.0.69"
 authors = [
     { name = "Zheng-Min Yu", email = "yuzmbio@163.com" },
 ]
@@ -48,7 +48,6 @@ dependencies = [
     "louvain==0.8.2",
     "numba==0.60.0",
     "pynndescent==0.5.13"
-
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
