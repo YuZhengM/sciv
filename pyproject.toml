@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 [project]
 name = "sciv"
-version = "0.0.65"
+version = "0.0.66"
 authors = [
     { name = "Zheng-Min Yu", email = "yuzmbio@163.com" },
 ]
@@ -21,18 +21,18 @@ license = { file = "LICENSE" }
 requires-python = ">=3.10"
 dependencies = [
     "numpy==1.26.4",
-    "pandas==1.5.3",
+    "pandas==2.0.0",
     "matplotlib==3.7.5",
     "matplotlib-venn==1.1.2",
     "seaborn==0.13.2",
-    "scipy==1.14.1",
+    "scipy==1.11.4",
     "scanpy==1.11.5",
     "scikit-learn==1.5.2",
     "networkx==3.3",
     "palettable==3.3.3",
     "colormap==1.0.4",
     "easydev==0.13.2",
-    "h5py==3.12.1",
+    "h5py==3.7.0",
     "mudata==0.3.2",
     "PyComplexHeatmap==1.6.1",
     "statannotations==0.7.2",
@@ -45,7 +45,10 @@ dependencies = [
     "gseapy==1.1.9",
     "anndata==0.11.0",
     "forceatlas2-python==1.1",
-    "louvain==0.8.2"
+    "louvain==0.8.2",
+    "numba==0.60.0",
+    "pynndescent==0.5.13"
+
 ]
 classifiers = [
     "Programming Language :: Python :: 3",

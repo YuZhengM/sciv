@@ -10,7 +10,7 @@ from pandas import DataFrame
 from .. import util as ul
 from ..file import save_h5ad
 from ..tool import lsi, tf_idf
-from ..util import add_cluster_info, matrix_data, set_inf_value
+from ..util import add_cluster_info, matrix_data, set_inf_value, collection
 
 __name__: str = "preprocessing_scanpy"
 
@@ -207,12 +207,23 @@ def paga_trajectory(
     layer: Optional[str] = None,
     latent: str = "X_pca",
     groups: str = "louvain",
+    position: Optional[collection] = None,
     lsi_components: int = 50,
     n_neighbors: int = 15,
     resolution: float = 1.0,
     is_denoise: bool = False,
 ) -> None:
     import scanpy as sc
+
+    if position is not None:
+
+        if len(position) != 2:
+            ul.log(__name__).error("The `position` parameter must contain two elements, for example: `(UMAP1, UMAP2)`.")
+            raise ValueError("The `position` parameter must contain two elements, for example: `(UMAP1, UMAP2)`.")
+
+        if position[0] not in adata.obs.columns or position[1] not in adata.obs.columns:
+            ul.log(__name__).error("The value in the `position` parameter must be one of the column names in `adata.obs`.")
+            raise ValueError("The value in the `position` parameter must be one of the column names in `adata.obs`.")
 
     fixed_name: str = "X_pca"
 
@@ -227,8 +238,8 @@ def paga_trajectory(
         else:
 
             if layer not in adata.layers:
-                ul.log(__name__).error("The `layer` parameter needs to include in `adata.layers`")
-                raise ValueError("The `layer` parameter needs to include in `adata.layers`")
+                ul.log(__name__).error("The value of the `layer` parameter must be one of the keys in `adata.layers`.")
+                raise ValueError("The value of the `layer` parameter must be one of the keys in `adata.layers`.")
 
             counts = adata.obs[layer]
 
@@ -265,6 +276,11 @@ def paga_trajectory(
 
     ul.log(__name__).info("Run PAGA")
     sc.tl.paga(adata, groups=groups)
+
+    if position is not None:
+        adata.uns['paga']['pos'] = adata.obs[list(position)].values
+    else:
+        sc.pl.draw_graph(adata, show=False)
 
     sc.tl.draw_graph(adata, init_pos="paga")
 
