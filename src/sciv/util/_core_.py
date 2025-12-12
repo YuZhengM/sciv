@@ -435,7 +435,7 @@ def plot_start(
         plt.title(title)
 
     if x_name is not None:
-        plt.xlabel(x_name)
+        plt.xlabel(x_name, rotation=0)
 
     if y_name is not None:
         plt.xlabel(y_name, rotation=90)

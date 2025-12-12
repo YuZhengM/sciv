@@ -4,7 +4,16 @@ import matplotlib
 
 from ._graph_ import graph, communities_graph, network_two_types
 from ._heat_map_ import heatmap, heatmap_annotation
-from ._scatter_ import scatter_base, scatter_atac, scatter_trait, volcano_base, manhattan_causal_variant
+
+from ._scatter_ import (
+    scatter_base,
+    scatter_atac,
+    scatter_trait,
+    volcano_base,
+    manhattan_causal_variant,
+    pseudo_time_score
+)
+
 from ._violin_ import violin_base, violin_trait
 from ._box_ import box_base, box_trait
 from ._kde_ import kde
@@ -43,6 +52,7 @@ __all__ = [
     "violin_base",
     "violin_trait",
     "manhattan_causal_variant",
+    "pseudo_time_score",
     "barcode_base",
     "barcode_trait",
     "box_base",

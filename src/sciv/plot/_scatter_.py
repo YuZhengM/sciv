@@ -435,3 +435,51 @@ def manhattan_causal_variant(
     ax.set_ylim(y_limit)
 
     plot_end(fig, output, show)
+
+
+def pseudo_time_score(
+    df: DataFrame,
+    x: str,
+    y: str,
+    x_name: str = None,
+    y_name: str = None,
+    title: str = None,
+    width: float = 2,
+    height: float = 1.2,
+    bottom: float = 0,
+    alpha: float = 0.65,
+    line_width: float = 1.5,
+    step_length: int = 5,
+    polyorder: int = 1,
+    size: Union[float, collection] = 1.0,
+    output: path = None,
+    show: bool = True,
+    **kwargs: Any
+):
+    from scipy.signal import savgol_filter
+
+    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
+
+    pseudo_times = df[x].values
+    scores = df[y].values
+
+    x_len = len(pseudo_times)
+
+    colors = plt.cm.viridis(np.linspace(0, 1, x_len))
+
+    ax.scatter(
+        pseudo_times,
+        scores,
+        c=colors,
+        alpha=alpha,
+        s=size,
+        **kwargs
+    )
+
+    smoothed_scores = savgol_filter(scores, window_length=int(x_len / step_length), polyorder=polyorder)
+
+    ax.plot(pseudo_times, smoothed_scores, color='black', linewidth=line_width)
+
+    plt.tight_layout()
+
+    plot_end(fig, output, show)

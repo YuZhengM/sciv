@@ -75,9 +75,9 @@ plot_cmap_20 = ListedColormap(type_20_colors)
 type_set_colors = [
     "#66c2a5", "#fc8d62", "#8da0cb", "#e78ac3", "#a6d854", "#f4d037",
     "#e5c494", "#f2f0a7", "#9a60b4", "#c16772", "#c1c167", "#b3b3b3",
-    '#4b0082', '#cd853f', '#008080', '#808000', '#ff00ff', '#2f4f4f',
-    '#d3b48b', '#8b4513', '#7fff00', '#ff69b4', '#66cdaa', '#a52a2a',
-    '#daa520',
+    "#4b0082", "#cd853f", "#008080", "#808000", "#ff00ff", "#2f4f4f",
+    "#d3b48b", "#8b4513", "#7fff00", "#ff69b4", "#66cdaa", "#a52a2a",
+    "#daa520"
 ]
 plot_cmap_set = ListedColormap(type_set_colors)
 
