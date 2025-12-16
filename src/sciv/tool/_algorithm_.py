@@ -438,13 +438,15 @@ def semi_mutual_knn_weight(
     # Work directly on the sparse matrix to avoid a full dense copy
     if sparse.issparse(data):
         # Keep sparse, set diagonal to 0 efficiently
-        data = to_sparse(data)
+        data = to_sparse(data).astype(np.float32)
         data.setdiag(0)
         data.eliminate_zeros()
         new_data = data
+        del data
     else:
         # Dense case: in-place diagonal zeroing
-        new_data = to_dense(data)
+        new_data = to_dense(data).astype(np.float32)
+        del data
         np.fill_diagonal(new_data, 0)
 
     def _knn(_mat: matrix_data, k: int) -> matrix_data:
@@ -452,21 +454,26 @@ def semi_mutual_knn_weight(
         Return k-nearest-neighbor 0/1 adjacency matrix (int8 to save memory).
         Supports both sparse and dense inputs.
         """
+
         if sparse.issparse(_mat):
             # Sparse path: sort each row's data to find the k-th largest
             _mat = _mat.tocsr(copy=False)
             n_rows = _mat.shape[0]
             adj = sparse.lil_matrix((n_rows, n_rows), dtype=np.int8)
+
             for i in range(n_rows):
                 row = _mat[i].toarray().ravel()
+
                 if row.size <= k:
                     adj[i, :] = 1
                     adj[i, i] = 0
                     continue
+
                 kth = np.partition(row, -k)[-k]
                 mask = row >= kth
                 mask[i] = False  # remove self
                 adj[i, mask] = 1
+
             return adj.tocsr()
         else:
             # Dense path: vectorized thresholding
@@ -476,33 +483,24 @@ def semi_mutual_knn_weight(
             return adj
 
     # Compute adjacency matrices for AND/OR logic
-    adj_and = _knn(new_data, neighbors)
+    adj_and = to_sparse(_knn(new_data, neighbors))
+
     if neighbors == or_neighbors:
         adj_or = adj_and
     else:
-        adj_or = _knn(new_data, or_neighbors)
+        adj_or = to_sparse(_knn(new_data, or_neighbors))
 
     # Symmetrize
-    if sparse.issparse(adj_and):
-        adj_and = adj_and.minimum(adj_and.T)
-        adj_or = adj_or.maximum(adj_or.T)
-    else:
-        adj_and = np.minimum(adj_and, adj_and.T)
-        adj_or = np.maximum(adj_or, adj_or.T)
+    adj_and = adj_and.minimum(adj_and.T)
+    adj_or = adj_or.maximum(adj_or.T)
 
     # Weighted combination, float32 is sufficient
-    if sparse.issparse(adj_and):
-        adj_weight = (1 - weight) * adj_and.astype(np.float32) + weight * adj_or.astype(np.float32)
-    else:
-        adj_weight = (1 - weight) * adj_and.astype(np.float32) + weight * adj_or.astype(np.float32)
+    adj_weight = (1 - weight) * adj_and.astype(np.float32) + weight * adj_or.astype(np.float32)
 
     # Ensure full connectivity if required
-    if is_mknn_fully_connected:
-        adj_1nn = _knn(new_data, 1)
-        if sparse.issparse(adj_and):
-            adj_and = adj_and.maximum(adj_1nn)
-        else:
-            adj_and = np.maximum(adj_and, adj_1nn)
+    if is_mknn_fully_connected and (or_neighbors == 0 or weight == 0):
+        adj_1nn = to_sparse(_knn(new_data, 1))
+        adj_and = adj_and.maximum(adj_1nn)
 
     ul.log(__name__).info("End semi-mutual KNN")
     return adj_weight, adj_and
@@ -754,7 +752,8 @@ def euclidean_distances(data1: matrix_data, data2: matrix_data = None, block_siz
     data2_sum_sq = __data1_sum_sq__ if data2 is None else np.power(data2, 2).sum(axis=1)
     del __data1_sum_sq__
 
-    distances = data1_sum_sq + data2_sum_sq - 2 * to_dense(matrix_dot_block_storage(data1, data2.transpose(), block_size))
+    distances = data1_sum_sq + data2_sum_sq - 2 * to_dense(
+        matrix_dot_block_storage(data1, data2.transpose(), block_size))
     del data1_sum_sq, data2_sum_sq
 
     distances[distances < 0] = 0.0
