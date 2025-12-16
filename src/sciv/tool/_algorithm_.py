@@ -483,24 +483,32 @@ def semi_mutual_knn_weight(
             return adj
 
     # Compute adjacency matrices for AND/OR logic
-    adj_and = to_sparse(_knn(new_data, neighbors))
+    adj_and = _knn(new_data, neighbors)
 
     if neighbors == or_neighbors:
         adj_or = adj_and
     else:
-        adj_or = to_sparse(_knn(new_data, or_neighbors))
+        adj_or = _knn(new_data, or_neighbors)
 
     # Symmetrize
-    adj_and = adj_and.minimum(adj_and.T)
-    adj_or = adj_or.maximum(adj_or.T)
+    if sparse.issparse(adj_and):
+        adj_and = adj_and.minimum(adj_and.T)
+        adj_or = adj_or.maximum(adj_or.T)
+    else:
+        adj_and = np.minimum(adj_and, adj_and.T)
+        adj_or = np.maximum(adj_or, adj_or.T)
 
     # Weighted combination, float32 is sufficient
     adj_weight = (1 - weight) * adj_and.astype(np.float32) + weight * adj_or.astype(np.float32)
 
     # Ensure full connectivity if required
     if is_mknn_fully_connected and (or_neighbors == 0 or weight == 0):
-        adj_1nn = to_sparse(_knn(new_data, 1))
-        adj_and = adj_and.maximum(adj_1nn)
+        adj_1nn = _knn(new_data, 1)
+
+        if sparse.issparse(adj_and):
+            adj_and = adj_and.maximum(adj_1nn)
+        else:
+            adj_and = np.maximum(adj_and, adj_1nn)
 
     ul.log(__name__).info("End semi-mutual KNN")
     return adj_weight, adj_and
@@ -1205,7 +1213,7 @@ def obtain_cell_cell_network(
 
     ul.log(__name__).info("Laplacian kernel")
     # Laplacian kernel
-    cell_affinity = laplacian_kernel(latent, gamma=gamma)
+    cell_affinity = to_sparse(laplacian_kernel(latent, gamma=gamma))
 
     # Define KNN network
     cell_mutual_knn_weight, cell_mutual_knn = semi_mutual_knn_weight(
@@ -1218,7 +1226,7 @@ def obtain_cell_cell_network(
 
     # cell-cell graph
     cc_data: AnnData = AnnData(to_sparse(cell_mutual_knn_weight), var=cell_anno, obs=cell_anno)
-    cc_data.layers["cell_affinity"] = to_sparse(cell_affinity)
+    cc_data.layers["cell_affinity"] = cell_affinity
 
     if not is_simple:
         cc_data.layers["cell_mutual_knn"] = to_sparse(cell_mutual_knn)
