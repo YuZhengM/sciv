@@ -415,6 +415,7 @@ def semi_mutual_knn_weight(
     neighbors: int = 30,
     or_neighbors: int = 1,
     weight: float = 0.1,
+    is_for: bool = True,
     is_mknn_fully_connected: bool = True
 ) -> Tuple[matrix_data, matrix_data]:
     """
@@ -423,6 +424,8 @@ def semi_mutual_knn_weight(
     :param neighbors: The number of nearest neighbors;
     :param or_neighbors: The number of or nearest neighbors;
     :param weight: The weight of interactions or operations;
+    :param is_for: Obtain the nearest neighbors of each node from each row of the for loop matrix;
+        Setting it to True is very suitable for situations with large samples and insufficient memory.
     :param is_mknn_fully_connected: Is the network of MKNN an all connected graph?
         If the value is True, it ensures that a node is connected to at least the node that is not closest to itself.
         This parameter does not affect the result of SM-KNN (the first result), but only affects the result of
@@ -449,6 +452,28 @@ def semi_mutual_knn_weight(
         del data
         np.fill_diagonal(new_data, 0)
 
+    def _knn_k_(_mat: matrix_data, k: int):
+        n_rows = _mat.shape[0]
+        adj = sparse.lil_matrix((n_rows, n_rows), dtype=np.int8)
+
+        ul.log(__name__).info("Calculate the k-nearest neighbors of each node.")
+
+        for i in tqdm(range(n_rows)):
+            row = np.array(_mat[i]).ravel()
+
+            if row.size <= k:
+                adj[i, :] = 1
+                adj[i, i] = 0
+                continue
+
+            # Partial sorting
+            kth = np.partition(row, -k)[-k]
+            mask = row >= kth
+            mask[i] = False  # remove self
+            adj[i, mask] = 1
+
+        return adj.tocsr()
+
     def _knn(_mat: matrix_data, k: int) -> matrix_data:
         """
         Return k-nearest-neighbor 0/1 adjacency matrix (int8 to save memory).
@@ -458,29 +483,17 @@ def semi_mutual_knn_weight(
         if sparse.issparse(_mat):
             # Sparse path: sort each row's data to find the k-th largest
             _mat = _mat.tocsr(copy=False)
-            n_rows = _mat.shape[0]
-            adj = sparse.lil_matrix((n_rows, n_rows), dtype=np.int8)
-
-            for i in range(n_rows):
-                row = _mat[i].toarray().ravel()
-
-                if row.size <= k:
-                    adj[i, :] = 1
-                    adj[i, i] = 0
-                    continue
-
-                kth = np.partition(row, -k)[-k]
-                mask = row >= kth
-                mask[i] = False  # remove self
-                adj[i, mask] = 1
-
-            return adj.tocsr()
+            return _knn_k_(_mat, k)
         else:
-            # Dense path: vectorized thresholding
-            kth_val = np.sort(_mat, axis=1)[:, -(k + 1)]
-            adj = (_mat >= kth_val[:, None]).astype(np.int8)
-            np.fill_diagonal(adj, 0)
-            return adj
+
+            if is_for:
+                return _knn_k_(_mat, k)
+            else:
+                # Dense path: vectorized thresholding
+                kth_val = np.sort(_mat, axis=1)[:, -(k + 1)]
+                adj = (_mat >= kth_val[:, None]).astype(np.int8)
+                np.fill_diagonal(adj, 0)
+                return adj
 
     # Compute adjacency matrices for AND/OR logic
     adj_and = _knn(new_data, neighbors)
@@ -1207,25 +1220,28 @@ def obtain_cell_cell_network(
     _latent_name_ = "latent" if adata.uns["poisson_vi"]["latent_name"] is None \
         else adata.uns["poisson_vi"]["latent_name"]
 
-    latent = adata.obsm[_latent_name_]
+    latent = adata.obsm[_latent_name_].astype(np.float32)
     del _latent_name_
     cell_anno = adata.obs
+    del adata
 
     ul.log(__name__).info("Laplacian kernel")
     # Laplacian kernel
-    cell_affinity = to_sparse(laplacian_kernel(latent, gamma=gamma))
+    cell_affinity = laplacian_kernel(latent, gamma=gamma).astype(np.float32)
 
     # Define KNN network
     cell_mutual_knn_weight, cell_mutual_knn = semi_mutual_knn_weight(
         cell_affinity,
         neighbors=k,
         or_neighbors=or_k,
-        weight=weight,
-        is_mknn_fully_connected=False
+        weight=weight
     )
 
+    if is_simple:
+        del cell_mutual_knn
+
     # cell-cell graph
-    cc_data: AnnData = AnnData(to_sparse(cell_mutual_knn_weight), var=cell_anno, obs=cell_anno)
+    cc_data: AnnData = AnnData(cell_mutual_knn_weight, var=cell_anno, obs=cell_anno)
     cc_data.layers["cell_affinity"] = cell_affinity
 
     if not is_simple:

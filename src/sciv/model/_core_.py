@@ -2,6 +2,7 @@
 
 import os.path
 import shutil
+import time
 from typing import Optional, Union, Literal, Tuple
 
 import numpy as np
@@ -473,6 +474,9 @@ def core(
     :return: `trs`, (obs: cells, var: traits/diseases) This is the final TRS data.
     """
 
+    # start time
+    start_time = time.time()
+
     if len(variants.keys()) == 0:
         ul.log(__name__).error("The number of mutations is empty.")
         raise ValueError("The number of mutations is empty.")
@@ -799,7 +803,11 @@ def core(
         trs.obs = adata.obs.copy()
         trs.var = trait_info.copy()
 
+        # start time
+        elapsed_time = time.time() - start_time
+
         params.update({"chunk_size": chunk_size})
+        params.update({"elapsed_time": elapsed_time})
         # Save parameters
         trs.uns["params"] = params
         trs.uns["variants"] = variants
@@ -854,7 +862,7 @@ def core(
         del overlap_is_read
 
         """
-        4. Calculate the initial trait- or disease-related cell score with weight
+        4. Calculate the initial trait relevance scores for each cell
         """
 
         if not init_score_is_read:
@@ -906,7 +914,11 @@ def core(
 
         trs = _run_random_walk_(random_walk, is_ablation, is_simple)
 
+        # start time
+        elapsed_time = time.time() - start_time
+
         params.update({"chunk_size": chunk_size})
+        params.update({"elapsed_time": elapsed_time})
         # Save parameters
         trs.uns["params"] = params
         trs.uns["variants"] = variants
