@@ -701,7 +701,7 @@ class RandomWalk:
                     if trait_value_min != trait_value_max:
                         # seed cell weight
                         random_seed_cell[random_seed_index] = 1 / self.cell_size
-                        random_seed_cell_matrix = random_seed_cell
+                        random_seed_cell_matrix[:, i] = random_seed_cell
 
                     pbar.update(1)
 

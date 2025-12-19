@@ -1081,6 +1081,10 @@ def calculate_init_score_weight(
         )
 
     fragments = adata.layers["fragments"]
+    cell_anno = adata.obs
+    del adata
+
+    fragments = to_sparse(fragments.astype(np.int32))
     overlap_matrix = to_dense(overlap_adata.X)
 
     ul.log(__name__).info("Calculate cell type weight")
@@ -1111,7 +1115,6 @@ def calculate_init_score_weight(
             "'all'} values."
         )
 
-    fragments = to_sparse(fragments.astype(np.int32))
     overlap_matrix = to_sparse(overlap_matrix.astype(np.float32))
 
     row_sum = np.asarray(fragments.sum(axis=1)).ravel()
@@ -1153,9 +1156,9 @@ def calculate_init_score_weight(
     del _cluster_weight_
 
     ul.log(__name__).info("Broadcasting the weight factor to the cellular level")
-    _cell_type_weight_ = np.zeros((adata.shape[0], da_peaks_adata.obsm["cluster_weight"].shape[1]), dtype=np.float32)
+    _cell_type_weight_ = np.zeros((cell_anno.shape[0], da_peaks_adata.obsm["cluster_weight"].shape[1]), dtype=np.float32)
 
-    cluster_series = adata.obs["clusters"]
+    cluster_series = cell_anno["clusters"]
 
     for cluster in da_peaks_adata.obs_names:
         mask = cluster_series == cluster
@@ -1169,7 +1172,7 @@ def calculate_init_score_weight(
     )
     _init_trs_weight_.data = _init_trs_weight_.data.astype(np.float32)
 
-    init_trs_adata = AnnData(_init_trs_weight_, obs=adata.obs, var=overlap_adata.var)
+    init_trs_adata = AnnData(_init_trs_weight_, obs=cell_anno, var=overlap_adata.var)
     del _init_trs_weight_
 
     if not is_simple:
