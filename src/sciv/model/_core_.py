@@ -219,7 +219,7 @@ def _check_and_run_two_step_(
         "cell_rate": cell_rate,
         "peak_rate": peak_rate,
         "single_chunk_size": single_chunk_size,
-        "max_epochs": max_epochs,
+        "max_epochs": int(max_epochs),
         "lr": lr,
         "batch_size": batch_size,
         "eps": eps,

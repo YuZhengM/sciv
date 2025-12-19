@@ -61,6 +61,8 @@ plot_rc_config = {
     "axes.labelsize": 7,
     "font.size": 7,
     "legend.fontsize": 7,
+    "pdf.fonttype": 42,
+    "ps.fonttype": 42,
     "axes.unicode_minus": False
 }
 rcParams.update(plot_rc_config)

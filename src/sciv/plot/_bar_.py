@@ -1,7 +1,7 @@
 # -*- coding: UTF-8 -*-
 
 import os
-from typing import Tuple, Union, Optional, Any
+from typing import Tuple, Union, Optional, Any, Literal
 
 import numpy as np
 import pandas as pd
@@ -29,6 +29,7 @@ def bar(
     height: float = 2,
     bottom: float = 0,
     text_left_move: float = 0.1,
+    direction: Literal['vertical', 'horizontal'] = "vertical",
     output: path = None,
     show: bool = True,
     **kwargs: Any
@@ -37,7 +38,14 @@ def bar(
     fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
 
     ax_x = np.array(ax_x).astype(str)
-    ax.bar(ax_x, ax_y, color=color, **kwargs)
+
+    if direction == 'vertical':
+        ax.bar(ax_x, ax_y, color=color, **kwargs)
+    elif direction == 'horizontal':
+        ax.barh(ax_x, ax_y, color=color, **kwargs)
+    else:
+        ul.log(__name__).error("The `direction` must be 'vertical' or 'horizontal'.")
+        raise ValueError("The `direction` must be 'vertical' or 'horizontal'.")
 
     ax.set_xticklabels(labels=list(ax_x), rotation=65)
 
