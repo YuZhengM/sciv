@@ -11,7 +11,17 @@ from tqdm import tqdm
 
 from ..file import save_pkl
 from .. import util as ul
-from ..util import to_dense, to_sparse, sparse_matrix, matrix_data, generate_str, collection, file_method, number
+from ..util import (
+    to_dense,
+    to_sparse,
+    sparse_matrix,
+    matrix_data,
+    generate_str,
+    collection,
+    file_method,
+    number,
+    dense_data
+)
 
 __name__: str = "tool_matrix"
 
@@ -334,7 +344,7 @@ def matrix_multiply_block_storage(
     return data
 
 
-def sparse_matrix_operation_memory_efficient(
+def matrix_operation_memory_efficient(
     data1: matrix_data,
     data2: Union[matrix_data, number],
     chunk_size: int = 10000,
@@ -372,14 +382,12 @@ def sparse_matrix_operation_memory_efficient(
             ul.log(__name__).warning(f"The denominator (`data2`) cannot be zero, it defaults to the `default` parameter value.")
             data2 = default
 
-    data1 = to_sparse(data1)
-
     if chunk_size <= 0:
 
         if operation == '+':
 
-            if isinstance(data2, matrix_data):
-                data2 = to_sparse(data2)
+            if isinstance(data1, matrix_data):
+                data2 = to_dense(data2) if isinstance(data1, dense_data) else to_sparse(data2)
                 return data1 + data2
             else:
                 data1.data = data1.data + data2
@@ -387,8 +395,8 @@ def sparse_matrix_operation_memory_efficient(
 
         elif operation == '-':
 
-            if isinstance(data2, matrix_data):
-                data2 = to_sparse(data2)
+            if isinstance(data1, matrix_data):
+                data2 = to_dense(data2) if isinstance(data1, dense_data) else to_sparse(data2)
                 return data1 - data2
             else:
                 data1.data = data1.data - data2
@@ -396,8 +404,8 @@ def sparse_matrix_operation_memory_efficient(
 
         elif operation == '*':
 
-            if isinstance(data2, matrix_data):
-                data2 = to_sparse(data2)
+            if isinstance(data1, matrix_data):
+                data2 = to_dense(data2) if isinstance(data1, dense_data) else to_sparse(data2)
                 return data1.multiply(data2)
             else:
                 data1.data = data1.data * data2
@@ -405,11 +413,11 @@ def sparse_matrix_operation_memory_efficient(
 
         elif operation == '/':
 
-            if isinstance(data2, matrix_data):
+            if isinstance(data1, matrix_data):
                 data1 = to_dense(data1)
                 data2 = to_dense(data2)
                 data2[data2 == 0] = default
-                return to_sparse(data1 / data2)
+                return (data1 / data2) if isinstance(data1, dense_data) else to_sparse(data1 / data2)
             else:
                 data1.data = data1.data / data2
                 return data1
@@ -418,8 +426,8 @@ def sparse_matrix_operation_memory_efficient(
             ul.log(__name__).error(f"Unsupported operation: {operation}")
             raise ValueError(f"Unsupported operation: {operation}")
 
-    if isinstance(data2, matrix_data):
-        data2 = to_sparse(data2)
+    if isinstance(data1, matrix_data):
+        data2 = to_dense(data2) if isinstance(data1, dense_data) else to_sparse(data2)
 
     result = sparse.lil_matrix(data1.shape).astype(np.float32)
 
@@ -491,11 +499,11 @@ def vector_multiply_block_storage(
     n_range = range(0, n, block_size)
     q_range = range(0, q, block_size)
 
-    _cache_path_ = os.path.join(ul.project_cache_path, generate_str(50))
-    file_method(__name__).makedirs(_cache_path_)
+    # block data
+    ul.log(__name__).info("[vector_multiply_block_storage]: Block calculation...")
 
-    # Store block data
-    ul.log(__name__).info("[vector_multiply_block_storage]: Store block data...")
+    if data is None or data.shape != (n, q):
+        data = np.zeros((n, q))
 
     total_steps = len(n_range) * len(q_range)
     with tqdm(total=total_steps) as pbar:
@@ -504,33 +512,11 @@ def vector_multiply_block_storage(
                 i_max = min(i + block_size, n)
                 j_max = min(j + block_size, q)
 
-                _matrix_ = vector1[i:i_max, :] * vector2[j:j_max]
-                save_pkl(_matrix_, os.path.join(_cache_path_, str(i) + str(j) + ".pkl"))
-                del _matrix_
+                data[i:i_max, j:j_max] += (vector1[i:i_max, :] * vector2[j:j_max]).astype(np.float32)
 
                 pbar.update(1)
 
     del vector1, vector2
-
-    if data is None or data.shape != (n, q):
-        data = np.zeros((n, q))
-
-    # Read data
-    ul.log(__name__).info("[vector_multiply_block_storage]: Read block data...")
-    with tqdm(total=total_steps) as pbar:
-        for i in n_range:
-            for j in q_range:
-                i_max = min(i + block_size, n)
-                j_max = min(j + block_size, q)
-
-                with open(os.path.join(_cache_path_, str(i) + str(j) + ".pkl"), 'rb') as f:
-                    _matrix_ = pickle.load(f)
-                    data[i:i_max, j:j_max] += _matrix_
-                    del _matrix_
-
-                pbar.update(1)
-
-    shutil.rmtree(_cache_path_)
 
     return data
 

@@ -685,30 +685,30 @@ class RandomWalk:
 
                 random_seed_cell_matrix = np.zeros((self.cell_size, self.benchmark_count))
 
-                for _ in range(self.benchmark_count):
+                # Obtain all cell score values in a trait
+                trait_adata: AnnData = self.init_status[:, i]
+                trait_value: collection = to_dense(trait_adata.X, is_array=True).flatten()
+
+                # Obtain the maximum initial score
+                trait_value_max = np.max(trait_value)
+                trait_value_min = np.min(trait_value)
+
+                for j in range(self.benchmark_count):
                     # Set random seed information
                     random_seed_cell = np.zeros(self.cell_size)
                     random_seed_index = np.random.choice(np.arange(0, self.cell_size), size=self.seed_cell_count[i], replace=False)
 
-                    # Obtain all cell score values in a trait
-                    trait_adata: AnnData = self.init_status[:, i]
-                    trait_value: collection = to_dense(trait_adata.X, is_array=True).flatten()
-
-                    # Obtain the maximum initial score
-                    trait_value_max = np.max(trait_value)
-                    trait_value_min = np.min(trait_value)
-
                     if trait_value_min != trait_value_max:
                         # seed cell weight
                         random_seed_cell[random_seed_index] = 1 / self.cell_size
-                        random_seed_cell_matrix[:, i] = random_seed_cell
+                        random_seed_cell_matrix[:, j] = random_seed_cell
 
                     pbar.update(1)
 
                 # Random walk
                 cell_value_matrix = self._random_walk_core_(random_seed_cell_matrix)
                 # Remove the influence of background
-                self.random_seed_cell[:, i] = cell_value_matrix.mean(axis=0)
+                self.random_seed_cell[:, i] = cell_value_matrix.mean(axis=1)
 
         cell_value = self.scale_norm(self.random_seed_cell)
         self.trs_adata.layers["benchmark"] = to_sparse(cell_value)

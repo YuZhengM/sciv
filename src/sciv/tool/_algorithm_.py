@@ -14,7 +14,8 @@ from pandas import DataFrame
 
 from ._matrix_ import (
     matrix_dot_block_storage,
-    sparse_matrix_operation_memory_efficient
+    matrix_operation_memory_efficient,
+    vector_multiply_block_storage
 )
 
 from .. import util as ul
@@ -1016,34 +1017,30 @@ def calculate_fragment_weighted_accessibility(input_data: dict, block_size: int 
     all_sum = row_sum.sum()
 
     ul.log(__name__).info("Calculate fragment weighted accessibility ===> (numerator)")
-    init_score = matrix.dot(overlap_matrix).tocsr()
+    init_score = matrix.dot(overlap_matrix)
 
     del matrix
 
     ul.log(__name__).info("Calculate expected counts matrix ===> (numerator)")
-    global_scale_data = sparse.csr_matrix(row_sum.reshape(-1, 1)).dot(sparse.csr_matrix(col_sum.reshape(1, -1)))
-    global_scale_data.data = global_scale_data.data.astype(np.float32)
+    global_scale_data = vector_multiply_block_storage(row_sum, col_sum, block_size=block_size)
 
     del row_sum, col_sum
 
-    global_scale_data = sparse_matrix_operation_memory_efficient(
-        global_scale_data, all_sum, chunk_size=block_size, operation="/"
-    )
+    global_scale_data /= all_sum
 
     del all_sum
 
     ul.log(__name__).info("Calculate fragment weighted accessibility ===> (denominator)")
+    overlap_matrix = to_dense(overlap_matrix)
     global_scale_data = global_scale_data.dot(overlap_matrix)
 
-    min_nz = global_scale_data.data.min() / 2
+    global_scale_data[global_scale_data != 0] = global_scale_data[global_scale_data != 0].min() / 2
 
     ul.log(__name__).info("Calculate fragment weighted accessibility.")
-    init_score = sparse_matrix_operation_memory_efficient(
-        init_score, global_scale_data, chunk_size=block_size, default=min_nz, operation="/"
-    )
-    init_score.data = init_score.data.astype(np.float32)
+    init_score = to_dense(init_score)
+    init_score /= global_scale_data
 
-    del global_scale_data, min_nz
+    del global_scale_data
 
     return init_score
 
@@ -1086,6 +1083,8 @@ def calculate_init_score_weight(
 
     fragments = to_sparse(fragments.astype(np.int32))
     overlap_matrix = to_dense(overlap_adata.X)
+    trait_anno = overlap_adata.var
+    del overlap_adata
 
     ul.log(__name__).info("Calculate cell type weight")
 
@@ -1127,30 +1126,26 @@ def calculate_init_score_weight(
     del fragments
 
     ul.log(__name__).info("Calculate expected counts matrix ===> (numerator)")
-    global_scale_data = sparse.csr_matrix(row_sum.reshape(-1, 1)).dot(sparse.csr_matrix(col_sum.reshape(1, -1)))
-    global_scale_data.data = global_scale_data.data.astype(np.float32)
+    global_scale_data = vector_multiply_block_storage(row_sum, col_sum, block_size=block_size)
 
     del row_sum, col_sum
 
-    global_scale_data = sparse_matrix_operation_memory_efficient(
-        global_scale_data, all_sum, chunk_size=block_size, operation="/"
-    )
+    global_scale_data /= all_sum
 
     del all_sum
 
     ul.log(__name__).info("Calculate fragment weighted accessibility ===> (denominator)")
+    overlap_matrix = to_dense(overlap_matrix)
     global_scale_data = global_scale_data.dot(overlap_matrix)
     del overlap_matrix
 
-    min_nz = global_scale_data.data.min() / 2
+    global_scale_data[global_scale_data != 0] = global_scale_data[global_scale_data != 0].min() / 2
 
     ul.log(__name__).info("Calculate fragment weighted accessibility.")
-    _init_trs_ncw_ = sparse_matrix_operation_memory_efficient(
-        _init_trs_ncw_, global_scale_data, chunk_size=block_size, default=min_nz, operation="/"
-    )
-    _init_trs_ncw_.data = _init_trs_ncw_.data.astype(np.float32)
+    _init_trs_ncw_ = to_dense(_init_trs_ncw_)
+    _init_trs_ncw_ /= global_scale_data
 
-    del global_scale_data, min_nz
+    del global_scale_data
 
     da_peaks_adata.obsm["cluster_weight"] = to_sparse(_cluster_weight_)
     del _cluster_weight_
@@ -1167,12 +1162,8 @@ def calculate_init_score_weight(
         ).flatten().astype(np.float32)
 
     ul.log(__name__).info("Calculate initial trait relevance scores")
-    _init_trs_weight_ = sparse_matrix_operation_memory_efficient(
-        _init_trs_ncw_, _cell_type_weight_, chunk_size=block_size, operation="*"
-    )
-    _init_trs_weight_.data = _init_trs_weight_.data.astype(np.float32)
-
-    init_trs_adata = AnnData(_init_trs_weight_, obs=cell_anno, var=overlap_adata.var)
+    _init_trs_weight_ = np.multiply(_init_trs_ncw_, _cell_type_weight_)
+    init_trs_adata = AnnData(_init_trs_weight_, obs=cell_anno, var=trait_anno)
     del _init_trs_weight_
 
     if not is_simple:

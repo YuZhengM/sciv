@@ -52,7 +52,7 @@ from ._matrix_ import (
     down_sampling_data,
     matrix_dot_block_storage,
     matrix_multiply_block_storage,
-    sparse_matrix_operation_memory_efficient,
+    matrix_operation_memory_efficient,
     vector_multiply_block_storage,
     matrix_division_block_storage,
     matrix_callback_block_storage
@@ -104,7 +104,7 @@ __all__ = [
     "down_sampling_data",
     "matrix_dot_block_storage",
     "matrix_multiply_block_storage",
-    "sparse_matrix_operation_memory_efficient",
+    "matrix_operation_memory_efficient",
     "vector_multiply_block_storage",
     "matrix_division_block_storage",
     "matrix_callback_block_storage"
