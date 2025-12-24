@@ -24,7 +24,6 @@ from ..util import (
     check_adata_get,
     enrichment_optional,
     check_gpu_availability,
-    dense_data,
     sparse_data
 )
 
@@ -647,8 +646,9 @@ class RandomWalk:
                 _enrichment_end_index_: int = 2 * _seed_cell_size_ if self.cell_size > 2 * _seed_cell_size_ else _seed_cell_size_ - 1
 
                 if _gt0_cell_size_ == _seed_cell_size_:
-                    _enrichment_start_index_ = int(_seed_cell_size_ - self._enrichment_seed_cell_min_count_) if _seed_cell_size_ > self._enrichment_seed_cell_min_count_ else (
-                        (_seed_cell_size_ - 1) if _seed_cell_size_ > 2 else 0)
+                    _enrichment_start_index_ = int(_seed_cell_size_ - self._enrichment_seed_cell_min_count_) \
+                        if _seed_cell_size_ > self._enrichment_seed_cell_min_count_ else \
+                        ((_seed_cell_size_ - 1) if _seed_cell_size_ > 2 else 0)
                     _enrichment_end_index_ = _seed_cell_size_
 
                 _seed_cell_en_index_ = trait_value_sort_index[_enrichment_start_index_:_enrichment_end_index_]

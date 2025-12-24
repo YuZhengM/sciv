@@ -14,7 +14,6 @@ from pandas import DataFrame
 
 from ._matrix_ import (
     matrix_dot_block_storage,
-    matrix_operation_memory_efficient,
     vector_multiply_block_storage
 )
 
