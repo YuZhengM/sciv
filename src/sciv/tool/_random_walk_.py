@@ -477,6 +477,7 @@ class RandomWalk:
             1. The weights used in the iteration of random walk.
             2. Assign different weight matrices to seed cells.
         """
+        ul.log(__name__).info("Obtain transition probability matrix.")
         data_weight = to_dense(cell_cell_matrix, is_array=True)
         cell_sum_weight = data_weight.sum(axis=1)[:, np.newaxis]
         cell_sum_weight[cell_sum_weight == 0] = 1
