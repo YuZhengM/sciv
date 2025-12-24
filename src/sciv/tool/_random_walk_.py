@@ -620,22 +620,13 @@ class RandomWalk:
 
         trait_values_all = to_dense(init_data.X, is_array=True)
 
-        def _process_single_trait(i: int) -> dict:
+        def _process_single_trait(i: int) -> None:
             trait_value = trait_values_all[:, i]
             trait_value_max = trait_value.max()
             trait_value_min = trait_value.min()
 
             if trait_value_min == trait_value_max:
-                return dict(
-                    seed_cell_count=0,
-                    seed_cell_threshold=0.0,
-                    seed_cell_index=None,
-                    seed_cell_weight=None,
-                    seed_cell_en_index=None,
-                    seed_cell_en_weight=None,
-                    seed_cell_matrix=None,
-                    seed_cell_matrix_en=None
-                )
+                return
 
             # Directly obtain descending index
             trait_value_sort_index = np.argpartition(trait_value, -trait_value.size)[::-1]
@@ -645,10 +636,13 @@ class RandomWalk:
 
             _seed_cell_size = self._get_seed_cell_size_(_gt0_cell_size)
 
+            seed_cell_count[i] = _seed_cell_size
+            seed_cell_threshold[i] = trait_value[trait_value_sort_index[_seed_cell_size]]
+
             # Set seed cell index and weight
             _seed_cell_index = trait_value_sort_index[:_seed_cell_size]
-            _seed_cell_weight = np.zeros(n_cells)
-            _seed_cell_weight[_seed_cell_index] = self._get_seed_cell_weight_(
+            seed_cell_index[_seed_cell_index, i] = 1
+            seed_cell_weight[_seed_cell_index, i] = self._get_seed_cell_weight_(
                 seed_cell_index=_seed_cell_index, value=trait_value
             )
 
@@ -661,58 +655,25 @@ class RandomWalk:
                 _enrichment_end = _seed_cell_size
 
             _seed_cell_en_index = trait_value_sort_index[_enrichment_start:_enrichment_end]
-            _seed_cell_en_weight = np.zeros(n_cells)
-            _tmp_weight = self._get_seed_cell_weight_(
+            seed_cell_weight_en[_seed_cell_en_index, i] = self._get_seed_cell_weight_(
                 seed_cell_index=_seed_cell_index if len(_seed_cell_en_index) == len(_seed_cell_index) else _seed_cell_en_index,
                 value=trait_value,
                 seed_cell_index_enrichment=_seed_cell_en_index
             )
-            _seed_cell_en_weight[_seed_cell_en_index] = _tmp_weight
-
-            # Unauthorized version duplication (only calculated when needed)
-            _seed_cell_matrix = None
-            _seed_cell_matrix_en = None
 
             if not self.is_simple and self.is_ablation:
                 seed_cell_value = np.zeros(n_cells)
                 seed_cell_value[_seed_cell_index] = 1
-                _seed_cell_matrix = seed_cell_value / seed_cell_value.sum() if seed_cell_value.sum() else 0
+                seed_cell_matrix[:, i] = seed_cell_value / (1 if seed_cell_value.sum() == 0 else seed_cell_value.sum())
 
                 seed_cell_en_value = np.zeros(n_cells)
                 seed_cell_en_value[_seed_cell_en_index] = 1
-                _seed_cell_matrix_en = seed_cell_en_value / seed_cell_en_value.sum() if seed_cell_en_value.sum() else 0
-
-            return dict(
-                seed_cell_count=_seed_cell_size,
-                seed_cell_threshold=trait_value[trait_value_sort_index[_seed_cell_size]],
-                seed_cell_index=_seed_cell_index,
-                seed_cell_weight=_seed_cell_weight,
-                seed_cell_en_index=_seed_cell_en_index,
-                seed_cell_en_weight=_seed_cell_en_weight,
-                seed_cell_matrix=_seed_cell_matrix,
-                seed_cell_matrix_en=_seed_cell_matrix_en
-            )
+                seed_cell_matrix_en[:, i] = seed_cell_en_value / (1 if seed_cell_en_value.sum() == 0 else seed_cell_en_value.sum())
 
         # Parallel processing of all traits and real-time display of progress
-        results = Parallel(n_jobs=-1, backend="threading")(
+        Parallel(n_jobs=-1, backend="threading")(
             delayed(_process_single_trait)(i) for i in tqdm(self.trait_range, desc="Obtain progress of seed cells with weights")
         )
-
-        # Write the parallel results back to the corresponding array
-        for i, res in enumerate(results):
-
-            if res["seed_cell_index"] is None:
-                continue
-
-            seed_cell_count[i] = res["seed_cell_count"]
-            seed_cell_threshold[i] = res["seed_cell_threshold"]
-            seed_cell_index[res["seed_cell_index"], i] = 1
-            seed_cell_weight[:, i] = res["seed_cell_weight"]
-            seed_cell_weight_en[res["seed_cell_en_index"], i] = res["seed_cell_en_weight"]
-
-            if not self.is_simple and self.is_ablation:
-                seed_cell_matrix[:, i] = res["seed_cell_matrix"]
-                seed_cell_matrix_en[:, i] = res["seed_cell_matrix_en"]
 
         return seed_cell_count, seed_cell_threshold, seed_cell_matrix, seed_cell_weight, seed_cell_index, seed_cell_matrix_en, seed_cell_weight_en
 
