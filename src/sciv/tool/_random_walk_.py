@@ -469,7 +469,7 @@ class RandomWalk:
         return self._random_walk_(seed_cell_data, weight, self.gamma)
 
     @staticmethod
-    def _get_weight_(cell_cell_matrix: matrix_data) -> matrix_data:
+    def _get_weight_(cell_cell_matrix: matrix_data) -> sparse_data:
         """
         Obtain weights in random walk
         :param cell_cell_matrix: Cell to cell connectivity matrix
@@ -480,7 +480,7 @@ class RandomWalk:
         data_weight = to_dense(cell_cell_matrix, is_array=True)
         cell_sum_weight = data_weight.sum(axis=1)[:, np.newaxis]
         cell_sum_weight[cell_sum_weight == 0] = 1
-        return data_weight / cell_sum_weight
+        return to_sparse(data_weight / cell_sum_weight)
 
     def _get_cell_weight_(self, seed_cell_size: int) -> matrix_data:
         _cell_cell_knn_: matrix_data = self.cell_affinity.copy()
