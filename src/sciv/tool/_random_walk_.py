@@ -637,22 +637,22 @@ class RandomWalk:
                     seed_cell_matrix_en=None
                 )
 
-            # 直接获取降序索引
+            # Directly obtain descending index
             trait_value_sort_index = np.argpartition(trait_value, -trait_value.size)[::-1]
 
-            # 计算 >0 的细胞数
+            # Calculate the number of cells with>0
             _gt0_cell_size = (trait_value > 0).sum()
 
             _seed_cell_size = self._get_seed_cell_size_(_gt0_cell_size)
 
-            # 设置种子细胞索引与权重
+            # Set seed cell index and weight
             _seed_cell_index = trait_value_sort_index[:_seed_cell_size]
             _seed_cell_weight = np.zeros(n_cells)
             _seed_cell_weight[_seed_cell_index] = self._get_seed_cell_weight_(
                 seed_cell_index=_seed_cell_index, value=trait_value
             )
 
-            # 富集区间索引
+            # Enrichment interval index
             _enrichment_start = _seed_cell_size
             _enrichment_end = min(2 * _seed_cell_size, self.cell_size - 1)
 
@@ -669,7 +669,7 @@ class RandomWalk:
             )
             _seed_cell_en_weight[_seed_cell_en_index] = _tmp_weight
 
-            # 无权重版本（仅在需要时计算）
+            # Unauthorized version duplication (only calculated when needed)
             _seed_cell_matrix = None
             _seed_cell_matrix_en = None
 
@@ -693,10 +693,12 @@ class RandomWalk:
                 seed_cell_matrix_en=_seed_cell_matrix_en
             )
 
-        # 并行处理所有 trait
-        results = Parallel(n_jobs=-1, backend="threading")(delayed(_process_single_trait)(i) for i in self.trait_range)
+        # Parallel processing of all traits and real-time display of progress
+        results = Parallel(n_jobs=-1, backend="threading")(
+            delayed(_process_single_trait)(i) for i in tqdm(self.trait_range, desc="Obtain progress of seed cells with weights")
+        )
 
-        # 将并行结果写回对应数组
+        # Write the parallel results back to the corresponding array
         for i, res in enumerate(results):
 
             if res["seed_cell_index"] is None:
