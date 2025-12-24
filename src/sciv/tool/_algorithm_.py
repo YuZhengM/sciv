@@ -1024,9 +1024,12 @@ def calculate_fragment_weighted_accessibility(input_data: dict, block_size: int 
     ul.log(__name__).info("Calculate expected counts matrix ===> (numerator)")
     global_scale_data = vector_multiply_block_storage(row_sum, col_sum, block_size=block_size)
 
+    if block_size <= 0:
+        global_scale_data = global_scale_data.astype(np.float32)
+
     del row_sum, col_sum
 
-    global_scale_data /= all_sum
+    global_scale_data /= all_sum * 1.0
 
     del all_sum
 
@@ -1034,7 +1037,7 @@ def calculate_fragment_weighted_accessibility(input_data: dict, block_size: int 
     overlap_matrix = to_dense(overlap_matrix)
     global_scale_data = global_scale_data.dot(overlap_matrix)
 
-    global_scale_data[global_scale_data != 0] = global_scale_data[global_scale_data != 0].min() / 2
+    global_scale_data[global_scale_data == 0] = global_scale_data[global_scale_data != 0].min() / 2
 
     ul.log(__name__).info("Calculate fragment weighted accessibility.")
     init_score = to_dense(init_score)
@@ -1128,9 +1131,12 @@ def calculate_init_score_weight(
     ul.log(__name__).info("Calculate expected counts matrix ===> (numerator)")
     global_scale_data = vector_multiply_block_storage(row_sum, col_sum, block_size=block_size)
 
+    if block_size <= 0:
+        global_scale_data = global_scale_data.astype(np.float32)
+
     del row_sum, col_sum
 
-    global_scale_data /= all_sum
+    global_scale_data /= all_sum * 1.0
 
     del all_sum
 
@@ -1139,7 +1145,7 @@ def calculate_init_score_weight(
     global_scale_data = global_scale_data.dot(overlap_matrix)
     del overlap_matrix
 
-    global_scale_data[global_scale_data != 0] = global_scale_data[global_scale_data != 0].min() / 2
+    global_scale_data[global_scale_data == 0] = global_scale_data[global_scale_data != 0].min() / 2
 
     ul.log(__name__).info("Calculate fragment weighted accessibility.")
     _init_trs_ncw_ = to_dense(_init_trs_ncw_)
@@ -1147,7 +1153,7 @@ def calculate_init_score_weight(
 
     del global_scale_data
 
-    da_peaks_adata.obsm["cluster_weight"] = to_sparse(_cluster_weight_)
+    da_peaks_adata.obsm["cluster_weight"] = to_dense(_cluster_weight_, is_array=True)
     del _cluster_weight_
 
     ul.log(__name__).info("Broadcasting the weight factor to the cellular level")
@@ -1157,9 +1163,7 @@ def calculate_init_score_weight(
 
     for cluster in da_peaks_adata.obs_names:
         mask = cluster_series == cluster
-        _cell_type_weight_[mask, :] = to_dense(
-            da_peaks_adata[cluster, :].obsm["cluster_weight"], is_array=True
-        ).flatten().astype(np.float32)
+        _cell_type_weight_[mask, :] = da_peaks_adata[cluster, :].obsm["cluster_weight"].flatten().astype(np.float32)
 
     ul.log(__name__).info("Calculate initial trait relevance scores")
     _init_trs_weight_ = np.multiply(_init_trs_ncw_, _cell_type_weight_)

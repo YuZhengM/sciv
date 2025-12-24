@@ -23,7 +23,9 @@ from ..util import (
     collection,
     check_adata_get,
     enrichment_optional,
-    check_gpu_availability
+    check_gpu_availability,
+    dense_data,
+    sparse_data
 )
 
 __name__: str = "tool_random_walk"
@@ -297,7 +299,6 @@ class RandomWalk:
 
         init_status.obs["clusters"] = init_status.obs["clusters"].astype(str)
 
-        self.cc_adata = cc_adata
         self.epsilon = epsilon
         self.gamma = gamma
         self.enrichment_gamma = enrichment_gamma
@@ -390,10 +391,12 @@ class RandomWalk:
             self.random_seed_cell = np.zeros(init_status.shape)
 
         # Transition Probability Matrix
-        self.weight = self._get_weight_(self.cc_adata.X)
+        self.weight = self._get_weight_(cc_adata.X)
 
         if not is_simple and self.is_ablation:
-            self.weight_m_knn = self._get_weight_(self.cc_adata.layers["cell_mutual_knn"])
+            self.weight_m_knn = self._get_weight_(cc_adata.layers["cell_mutual_knn"])
+
+        del cc_adata
 
         self.cluster_types, self.init_seed_cell_size = self._get_cluster_info_()
 
@@ -418,6 +421,9 @@ class RandomWalk:
                 self.seed_cell_weight_en_ncsw,
                 self.seed_cell_weight_en_ncw
             ) = self._get_seed_cell_(init_data=init_status_no_weight, info="ablation")
+
+        del self.cell_affinity
+        del init_status
 
     def _random_walk_(
         self,

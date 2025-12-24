@@ -449,10 +449,10 @@ def matrix_operation_memory_efficient(
             result_chunk = chunk1.multiply(chunk2)
         elif operation == '/':
             # Sparse matrix division: convert to dense, perform element-wise division, then convert back to sparse
-            dense_chunk1 = chunk1.todense()
+            dense_chunk1 = chunk1 if isinstance(chunk1, dense_data) else chunk1.todense()
 
             if isinstance(data2, matrix_data):
-                dense_chunk2 = chunk2.todense()
+                dense_chunk2 = chunk2 if isinstance(chunk2, dense_data) else chunk2.todense()
                 dense_chunk2[dense_chunk2 == 0] = default
             else:
                 dense_chunk2 = data2
