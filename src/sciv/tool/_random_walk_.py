@@ -8,6 +8,7 @@ import torch.nn as nn
 
 from torch import Tensor
 from tqdm import tqdm
+from joblib import Parallel, delayed
 
 import numpy as np
 from anndata import AnnData
@@ -599,73 +600,117 @@ class RandomWalk:
         if init_data is None:
             init_data = self.init_status
 
-        # seed cell threshold
-        seed_cell_count: collection = np.zeros(len(self.trait_list)).astype(int)
-        seed_cell_threshold: collection = np.zeros(len(self.trait_list))
-        seed_cell_weight: matrix_data = np.zeros(self.trs_adata.shape)
-        seed_cell_index: matrix_data = np.zeros(self.trs_adata.shape)
-        seed_cell_weight_en: matrix_data = np.zeros(self.trs_adata.shape)
+        n_traits = len(self.trait_list)
+        n_cells = self.cell_size
+
+        seed_cell_count = np.zeros(n_traits, dtype=int)
+        seed_cell_threshold = np.zeros(n_traits)
+        seed_cell_weight = np.zeros((n_cells, n_traits))
+        seed_cell_index = np.zeros((n_cells, n_traits), dtype=int)
+        seed_cell_weight_en = np.zeros((n_cells, n_traits))
 
         if not self.is_simple:
-            seed_cell_matrix: matrix_data = np.zeros(self.trs_adata.shape)
-            seed_cell_matrix_en: matrix_data = np.zeros(self.trs_adata.shape)
+            seed_cell_matrix = np.zeros((n_cells, n_traits))
+            seed_cell_matrix_en = np.zeros((n_cells, n_traits))
         else:
-            seed_cell_matrix: matrix_data = np.zeros((1, 1))
-            seed_cell_matrix_en: matrix_data = np.zeros((1, 1))
+            seed_cell_matrix = np.zeros((1, 1))
+            seed_cell_matrix_en = np.zeros((1, 1))
 
-        ul.log(__name__).info(f"Calculate {len(self.trait_list)} traits/diseases for seed cells information.{f' ({info})' if info is not None else ''}")
-        for i in tqdm(self.trait_range):
+        ul.log(__name__).info(f"Calculate {n_traits} traits/diseases for seed cells information.{f' ({info})' if info else ''}")
 
-            # Obtain all cell score values in a trait
-            trait_adata: AnnData = init_data[:, i]
-            trait_value: collection = to_dense(trait_adata.X, is_array=True).flatten()
+        trait_values_all = to_dense(init_data.X, is_array=True)
 
-            # Obtain the maximum initial score
-            trait_value_max = np.max(trait_value)
-            trait_value_min = np.min(trait_value)
+        def _process_single_trait(i: int) -> dict:
+            trait_value = trait_values_all[:, i]
+            trait_value_max = trait_value.max()
+            trait_value_min = trait_value.min()
 
-            if trait_value_min != trait_value_max:
-
-                # Obtain a cell count greater than zero
-                trait_value_sort_index = np.argsort(trait_value).astype(int)
-                trait_value_sort_index = trait_value_sort_index[::-1]
-                _gto_cell_index_ = trait_value > 0
-                _gt0_cell_size_ = trait_value[_gto_cell_index_].size
-
-                _seed_cell_size_ = self._get_seed_cell_size_(_gt0_cell_size_)
-
-                seed_cell_count[i] = _seed_cell_size_
-                seed_cell_threshold[i] = trait_value[trait_value_sort_index[_seed_cell_size_]]
-
-                # Set seed cell weights (reduce noise seed cell weights)
-                _seed_cell_index_ = trait_value_sort_index[0:_seed_cell_size_]
-                seed_cell_index[:, i][_seed_cell_index_] = 1
-                seed_cell_weight[:, i][_seed_cell_index_] = self._get_seed_cell_weight_(seed_cell_index=_seed_cell_index_, value=trait_value)
-
-                _enrichment_start_index_: int = _seed_cell_size_
-                _enrichment_end_index_: int = 2 * _seed_cell_size_ if self.cell_size > 2 * _seed_cell_size_ else _seed_cell_size_ - 1
-
-                if _gt0_cell_size_ == _seed_cell_size_:
-                    _enrichment_start_index_ = int(_seed_cell_size_ - self._enrichment_seed_cell_min_count_) \
-                        if _seed_cell_size_ > self._enrichment_seed_cell_min_count_ else \
-                        ((_seed_cell_size_ - 1) if _seed_cell_size_ > 2 else 0)
-                    _enrichment_end_index_ = _seed_cell_size_
-
-                _seed_cell_en_index_ = trait_value_sort_index[_enrichment_start_index_:_enrichment_end_index_]
-                _seed_cell_en_weight_ = self._get_seed_cell_weight_(
-                    seed_cell_index=_seed_cell_index_ if len(_seed_cell_en_index_) == len(_seed_cell_index_) else _seed_cell_en_index_, value=trait_value,
-                    seed_cell_index_enrichment=_seed_cell_en_index_
+            if trait_value_min == trait_value_max:
+                return dict(
+                    seed_cell_count=0,
+                    seed_cell_threshold=0.0,
+                    seed_cell_index=None,
+                    seed_cell_weight=None,
+                    seed_cell_en_index=None,
+                    seed_cell_en_weight=None,
+                    seed_cell_matrix=None,
+                    seed_cell_matrix_en=None
                 )
-                seed_cell_weight_en[:, i][_seed_cell_en_index_] = _seed_cell_en_weight_
 
-                if not self.is_simple and self.is_ablation:
-                    # Without weight
-                    seed_cell_value = np.zeros(self.cell_size)
-                    seed_cell_value[_seed_cell_index_] = 1
-                    seed_cell_matrix[:, i] = seed_cell_value / (1 if seed_cell_value.sum() == 0 else seed_cell_value.sum())
-                    seed_cell_en_value = np.zeros(self.cell_size)
-                    seed_cell_en_value[_seed_cell_en_index_] = 1
-                    seed_cell_matrix_en[:, i] = seed_cell_en_value / (1 if seed_cell_en_value.sum() == 0 else seed_cell_en_value.sum())
+            # 直接获取降序索引
+            trait_value_sort_index = np.argpartition(trait_value, -trait_value.size)[::-1]
+
+            # 计算 >0 的细胞数
+            _gt0_cell_size = (trait_value > 0).sum()
+
+            _seed_cell_size = self._get_seed_cell_size_(_gt0_cell_size)
+
+            # 设置种子细胞索引与权重
+            _seed_cell_index = trait_value_sort_index[:_seed_cell_size]
+            _seed_cell_weight = np.zeros(n_cells)
+            _seed_cell_weight[_seed_cell_index] = self._get_seed_cell_weight_(
+                seed_cell_index=_seed_cell_index, value=trait_value
+            )
+
+            # 富集区间索引
+            _enrichment_start = _seed_cell_size
+            _enrichment_end = min(2 * _seed_cell_size, self.cell_size - 1)
+
+            if _gt0_cell_size == _seed_cell_size:
+                _enrichment_start = max(_seed_cell_size - self._enrichment_seed_cell_min_count_, 0)
+                _enrichment_end = _seed_cell_size
+
+            _seed_cell_en_index = trait_value_sort_index[_enrichment_start:_enrichment_end]
+            _seed_cell_en_weight = np.zeros(n_cells)
+            _tmp_weight = self._get_seed_cell_weight_(
+                seed_cell_index=_seed_cell_index if len(_seed_cell_en_index) == len(_seed_cell_index) else _seed_cell_en_index,
+                value=trait_value,
+                seed_cell_index_enrichment=_seed_cell_en_index
+            )
+            _seed_cell_en_weight[_seed_cell_en_index] = _tmp_weight
+
+            # 无权重版本（仅在需要时计算）
+            _seed_cell_matrix = None
+            _seed_cell_matrix_en = None
+
+            if not self.is_simple and self.is_ablation:
+                seed_cell_value = np.zeros(n_cells)
+                seed_cell_value[_seed_cell_index] = 1
+                _seed_cell_matrix = seed_cell_value / seed_cell_value.sum() if seed_cell_value.sum() else 0
+
+                seed_cell_en_value = np.zeros(n_cells)
+                seed_cell_en_value[_seed_cell_en_index] = 1
+                _seed_cell_matrix_en = seed_cell_en_value / seed_cell_en_value.sum() if seed_cell_en_value.sum() else 0
+
+            return dict(
+                seed_cell_count=_seed_cell_size,
+                seed_cell_threshold=trait_value[trait_value_sort_index[_seed_cell_size]],
+                seed_cell_index=_seed_cell_index,
+                seed_cell_weight=_seed_cell_weight,
+                seed_cell_en_index=_seed_cell_en_index,
+                seed_cell_en_weight=_seed_cell_en_weight,
+                seed_cell_matrix=_seed_cell_matrix,
+                seed_cell_matrix_en=_seed_cell_matrix_en
+            )
+
+        # 并行处理所有 trait
+        results = Parallel(n_jobs=-1, backend="threading")(delayed(_process_single_trait)(i) for i in self.trait_range)
+
+        # 将并行结果写回对应数组
+        for i, res in enumerate(results):
+
+            if res["seed_cell_index"] is None:
+                continue
+
+            seed_cell_count[i] = res["seed_cell_count"]
+            seed_cell_threshold[i] = res["seed_cell_threshold"]
+            seed_cell_index[res["seed_cell_index"], i] = 1
+            seed_cell_weight[:, i] = res["seed_cell_weight"]
+            seed_cell_weight_en[res["seed_cell_en_index"], i] = res["seed_cell_en_weight"]
+
+            if not self.is_simple and self.is_ablation:
+                seed_cell_matrix[:, i] = res["seed_cell_matrix"]
+                seed_cell_matrix_en[:, i] = res["seed_cell_matrix_en"]
 
         return seed_cell_count, seed_cell_threshold, seed_cell_matrix, seed_cell_weight, seed_cell_index, seed_cell_matrix_en, seed_cell_weight_en
 
