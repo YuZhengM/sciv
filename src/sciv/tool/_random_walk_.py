@@ -32,7 +32,7 @@ __name__: str = "tool_random_walk"
 
 
 def _random_walk_cpu_(
-    seed_cell_vector: collection,
+    seed_cell_vector: Union[list, np.ndarray, np.matrix],
     weight: matrix_data = None,
     gamma: float = 0.05,
     epsilon: float = 1e-5,
@@ -48,17 +48,19 @@ def _random_walk_cpu_(
     :return: The value after random walk.
     """
 
-    w = to_dense(weight)
-
     # Random walk
-    p0 = seed_cell_vector.copy()[:, np.newaxis]
+    p0 = np.asarray(seed_cell_vector, dtype=float).ravel()[:, np.newaxis]
     pt: matrix_data = p0.copy()
     k = 0
     delta = 1
 
     # iteration
     while delta > epsilon:
-        p1 = (1 - gamma) * np.dot(w, pt) + gamma * p0
+
+        if hasattr(weight, "dot"):
+            p1 = (1 - gamma) * weight.dot(pt) + gamma * p0
+        else:
+            p1 = (1 - gamma) * np.dot(weight, pt) + gamma * p0
 
         # 1 and 2, It would be faster alone
         if p == 1:
