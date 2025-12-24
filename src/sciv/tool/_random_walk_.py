@@ -630,7 +630,8 @@ class RandomWalk:
                 return
 
             # Directly obtain descending index
-            trait_value_sort_index = np.argpartition(trait_value, -trait_value.size)[::-1]
+            trait_value_sort_index = np.argsort(trait_value).astype(int)
+            trait_value_sort_index = trait_value_sort_index[::-1]
 
             # Calculate the number of cells with>0
             _gt0_cell_size = (trait_value > 0).sum()

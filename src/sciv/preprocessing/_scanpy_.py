@@ -103,7 +103,7 @@ def filter_data(
         f"Filtered out cells {cells_count - filter_adata.shape[0]}, "
         f"Filtered out peaks {peaks_count - filter_adata.shape[1]}"
     )
-    ul.log(__name__).info(f"Size of filtered scATAC data: {filter_adata.shape}")
+    ul.log(__name__).info(f"Size of filtered scATAC-seq data: {filter_adata.shape}")
     filter_adata.uns["step"] = 0
     return filter_adata
 
