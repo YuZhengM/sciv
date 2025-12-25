@@ -774,6 +774,7 @@ class RandomWalk:
 
         score = self._random_walk_core_(seed_cell_data, weight=weight)
 
+        ul.log(__name__).info("Normalize the results")
         cell_value = self.scale_norm(score)
 
         if _layer_label_ == "trs":
