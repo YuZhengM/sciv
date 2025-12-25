@@ -81,6 +81,7 @@ def _check_and_run_two_step_(
     gamma: float = 0.05,
     enrichment_gamma: float = 0.05,
     p: int = 2,
+    n_jobs: int = -1,
     min_seed_cell_rate: float = 0.01,
     max_seed_cell_rate: float = 0.05,
     credible_threshold: float = 0,
@@ -235,6 +236,7 @@ def _check_and_run_two_step_(
         "gamma": gamma,
         "enrichment_gamma": enrichment_gamma,
         "p": p,
+        "n_jobs": n_jobs,
         "min_seed_cell_rate": min_seed_cell_rate,
         "max_seed_cell_rate": max_seed_cell_rate,
         "credible_threshold": credible_threshold,
@@ -383,6 +385,7 @@ def core(
     gamma: float = 0.05,
     enrichment_gamma: float = 0.05,
     p: int = 2,
+    n_jobs: int = -1,
     min_seed_cell_rate: float = 0.01,
     max_seed_cell_rate: float = 0.05,
     credible_threshold: float = 0,
@@ -435,6 +438,7 @@ def core(
     :param gamma: reset weight for random walk;
     :param enrichment_gamma: reset weight for random walk for enrichment;
     :param p: Distance used for loss {1: Manhattan distance, 2: Euclidean distance};
+    :param n_jobs: The maximum number of concurrently running jobs;
     :param min_seed_cell_rate: The minimum percentage of seed cells in all cells;
     :param max_seed_cell_rate: The maximum percentage of seed cells in all cells;
     :param credible_threshold: The threshold for determining the credibility of enriched cells in the context of
@@ -516,6 +520,7 @@ def core(
         epsilon=epsilon,
         gamma=gamma,
         p=p,
+        n_jobs=n_jobs,
         min_seed_cell_rate=min_seed_cell_rate,
         max_seed_cell_rate=max_seed_cell_rate,
         credible_threshold=max_seed_cell_rate,
@@ -701,6 +706,7 @@ def core(
                     gamma=gamma,
                     enrichment_gamma=enrichment_gamma,
                     p=p,
+                    n_jobs=n_jobs,
                     min_seed_cell_rate=min_seed_cell_rate,
                     max_seed_cell_rate=max_seed_cell_rate,
                     credible_threshold=credible_threshold,
@@ -899,6 +905,7 @@ def core(
                 gamma=gamma,
                 enrichment_gamma=enrichment_gamma,
                 p=p,
+                n_jobs=n_jobs,
                 min_seed_cell_rate=min_seed_cell_rate,
                 max_seed_cell_rate=max_seed_cell_rate,
                 credible_threshold=credible_threshold,
@@ -1072,6 +1079,7 @@ def knock(
         epsilon=params["epsilon"],
         gamma=params["gamma"],
         p=params["p"],
+        n_jobs=params["n_jobs"] if "n_jobs" in params else -1,
         min_seed_cell_rate=params["min_seed_cell_rate"],
         max_seed_cell_rate=params["max_seed_cell_rate"],
         credible_threshold=params["credible_threshold"],
@@ -1109,6 +1117,7 @@ def knock(
         gamma=params["gamma"],
         enrichment_gamma=params["enrichment_gamma"],
         p=params["p"],
+        n_jobs=params["n_jobs"] if "n_jobs" in params else -1,
         min_seed_cell_rate=params["min_seed_cell_rate"],
         max_seed_cell_rate=params["max_seed_cell_rate"],
         credible_threshold=params["credible_threshold"],

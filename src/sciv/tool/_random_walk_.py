@@ -192,6 +192,7 @@ def random_walk(
     gamma: float = 0.05,
     epsilon: float = 1e-5,
     p: int = 2,
+    n_jobs: int = -1,
     device: str = 'auto'
 ) -> matrix_data:
 
@@ -200,12 +201,12 @@ def random_walk(
     if device == 'cpu' or (device == 'auto' and not availability):
         sample_count = seed_cell_weight.shape[1]
 
-        score = np.zeros(seed_cell_weight.shape)
+        results = Parallel(n_jobs=n_jobs)(
+            delayed(_random_walk_cpu_)(seed_cell_weight[:, i], weight, gamma, epsilon, p)
+            for i in tqdm(range(sample_count))
+        )
 
-        for i in tqdm(range(sample_count)):
-            score[:, i] = _random_walk_cpu_(seed_cell_weight[:, i], weight, gamma, epsilon, p)
-
-        return score
+        return np.column_stack(results)
     elif device == 'gpu' or (device == 'auto' and availability):
         return _random_walk_gpu_(seed_cell_weight, weight, gamma, epsilon, p, device='gpu')
     else:
@@ -232,6 +233,7 @@ class RandomWalk:
         gamma: float = 0.05,
         enrichment_gamma: float = 0.05,
         p: int = 2,
+        n_jobs: int = -1,
         min_seed_cell_rate: float = 0.01,
         max_seed_cell_rate: float = 0.05,
         credible_threshold: float = 0,
@@ -248,6 +250,7 @@ class RandomWalk:
         :param gamma: reset weight for random walk;
         :param enrichment_gamma: reset weight for random walk for enrichment;
         :param p: Distance used for loss {1: Manhattan distance, 2: Euclidean distance};
+        :param n_jobs: The maximum number of concurrently running jobs;
         :param min_seed_cell_rate: The minimum percentage of seed cells in all cells;
         :param max_seed_cell_rate: The maximum percentage of seed cells in all cells.
         :param credible_threshold: The threshold for determining the credibility of enriched cells in the context of
@@ -305,6 +308,7 @@ class RandomWalk:
         self.gamma = gamma
         self.enrichment_gamma = enrichment_gamma
         self.p = p
+        self.n_jobs = n_jobs
         self.min_seed_cell_rate = min_seed_cell_rate
         self.max_seed_cell_rate = max_seed_cell_rate
         self.credible_threshold = credible_threshold
@@ -449,13 +453,13 @@ class RandomWalk:
             w = weight
 
         if not self.is_gpu_available:
-            return random_walk(seed_cell_data, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p, device='cpu')
+            return random_walk(seed_cell_data, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p, n_jobs=self.n_jobs, device='cpu')
 
         try:
-            _data_ = random_walk(seed_cell_data, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p, device=device)
+            _data_ = random_walk(seed_cell_data, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p, n_jobs=self.n_jobs, device=device)
         except Exception as e:
             ul.log(__name__).warning(f"GPU failed to run, try to switch to CPU running.\n {e}")
-            _data_ = random_walk(seed_cell_data, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p, device='cpu')
+            _data_ = random_walk(seed_cell_data, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p, n_jobs=self.n_jobs, device='cpu')
 
         return _data_
 
