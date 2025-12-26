@@ -208,7 +208,19 @@ def random_walk(
 
         return np.column_stack(results)
     elif device == 'gpu' or (device == 'auto' and availability):
-        return _random_walk_gpu_(seed_cell_weight, weight, gamma, epsilon, p, device='gpu')
+
+        try:
+            return _random_walk_gpu_(seed_cell_weight, weight, gamma, epsilon, p, device='gpu')
+        except RuntimeError as e:
+            ul.log(__name__).warning(f"GPU failed to run, try to switch to CPU running.\n {e}")
+            sample_count = seed_cell_weight.shape[1]
+
+            results = Parallel(n_jobs=n_jobs)(
+                delayed(_random_walk_cpu_)(seed_cell_weight[:, i], weight, gamma, epsilon, p)
+                for i in tqdm(range(sample_count))
+            )
+
+            return np.column_stack(results)
     else:
         ul.log(__name__).error(f'The `device` ({device}) is not supported. Only supports "cpu", "gpu", and "auto" values.')
         raise ValueError(f'The `device` ({device}) is not supported. Only supports "cpu", "gpu", and "auto" values.')
@@ -905,8 +917,8 @@ class RandomWalk:
         trs_score = to_dense(self.trs_adata.X if label == "run_en" else self.trs_adata.layers[_trs_layer_label_], is_array=True)
 
         # Initialize enriched container
-        trait_cell_enrichment = np.zeros(self.trs_adata.shape)
-        trait_cell_credible = np.zeros(self.trs_adata.shape)
+        trait_cell_enrichment = np.zeros(self.trs_adata.shape).astype(int)
+        trait_cell_credible = np.zeros(self.trs_adata.shape).astype(np.float32)
 
         ul.log(__name__).info(f"Calculate {len(self.trait_list)} traits/diseases for process `{label}`. (Enrichment-random walk)")
         # Random walk
@@ -917,8 +929,9 @@ class RandomWalk:
         )
 
         ul.log(__name__).info(f"Calculate {len(self.trait_list)} traits/diseases for process `{label}`. (Enrichment-score)")
-        for i in tqdm(self.trait_range):
 
+        # Process each trait in parallel
+        def _process_trait(i):
             # Random walk
             cell_value = cell_value_data[:, i]
 
@@ -941,7 +954,10 @@ class RandomWalk:
             trait_cell_enrichment[:, i][cell_value_credible > self.credible_threshold] = 1
             trait_cell_credible[:, i] = cell_value_credible
 
-        self.trs_adata.layers[_layer_label_] = to_sparse(trait_cell_enrichment.astype(int))
+        # Process each trait in parallel
+        Parallel(n_jobs=self.n_jobs, backend='threading')(delayed(_process_trait)(i) for i in tqdm(self.trait_range))
+
+        self.trs_adata.layers[_layer_label_] = to_sparse(trait_cell_enrichment)
 
         if not self.is_simple:
             self.trs_adata.layers[f"credible_{_layer_label_}"] = to_sparse(trait_cell_credible)
