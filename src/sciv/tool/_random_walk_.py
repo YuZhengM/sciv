@@ -201,6 +201,7 @@ def random_walk(
     if device == 'cpu' or (device == 'auto' and not availability):
         sample_count = seed_cell_weight.shape[1]
 
+        # 使用 joblib.Parallel 并指定 backend='threading' 保证顺序与输入一致
         results = Parallel(n_jobs=n_jobs)(
             delayed(_random_walk_cpu_)(seed_cell_weight[:, i], weight, gamma, epsilon, p)
             for i in tqdm(range(sample_count))
@@ -689,7 +690,7 @@ class RandomWalk:
                 seed_cell_matrix_en[:, i] = seed_cell_en_value / (1 if seed_cell_en_value.sum() == 0 else seed_cell_en_value.sum())
 
         # Parallel processing of all traits and real-time display of progress
-        Parallel(n_jobs=-1, backend="threading")(
+        Parallel(n_jobs=self.n_jobs)(
             delayed(_process_single_trait)(i) for i in tqdm(self.trait_range, desc="Obtain progress of seed cells with weights")
         )
 
@@ -955,7 +956,7 @@ class RandomWalk:
             trait_cell_credible[:, i] = cell_value_credible
 
         # Process each trait in parallel
-        Parallel(n_jobs=self.n_jobs, backend='threading')(delayed(_process_trait)(i) for i in tqdm(self.trait_range))
+        Parallel(n_jobs=self.n_jobs)(delayed(_process_trait)(i) for i in tqdm(self.trait_range))
 
         self.trs_adata.layers[_layer_label_] = to_sparse(trait_cell_enrichment)
 

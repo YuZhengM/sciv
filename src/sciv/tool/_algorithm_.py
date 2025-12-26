@@ -902,73 +902,97 @@ def overlap_sum(regions: AnnData, variants: dict, trait_info: DataFrame) -> AnnD
     """
 
     # Unique feature set
-    label_all = list(regions.var.index)
+    label_all = regions.var.index.tolist()
     # Peak number
     label_all_size: int = len(label_all)
 
-    # trait/disease information
-    trait_names: list = list(trait_info["id"])
+    # 预先把 peaks 的 index 做成 dict，O(1) 查找
+    label2idx = {lb: i for i, lb in enumerate(label_all)}
 
-    matrix = np.zeros((label_all_size, len(trait_names)))
+    trait_names = trait_info["id"].tolist()
+    n_trait = len(trait_names)
+    # 提前分配稀疏矩阵，按列填充，最后一次性转成 csc 再转 csr，省内存且快
+    row_indices, col_indices, data_vals = [], [], []
 
-    regions_df = regions.var.copy()
+    # 检查列存在性一次完成
+    required = {"chr", "start", "end"}
 
-    regions_columns: list = list(regions_df.columns)
-
-    if "chr" not in regions_columns or "start" not in regions_columns or "end" not in regions_columns:
+    if not required.issubset(regions.var.columns):
         ul.log(__name__).error(
-            f"The peaks information {regions_columns} in data `adata` must include three columns: `chr`, `start` and "
-            f"`end`. (It is recommended to use the `read_sc_atac` method.)"
+            f"The peaks information {regions.var.columns} in data `adata` must include three columns: `chr`, `start` "
+            f"and `end`. (It is recommended to use the `read_sc_atac` method.)"
         )
         raise ValueError(
-            f"The peaks information {regions_columns} in data `adata` must include three columns: `chr`, `start` and "
-            f"`end`. (It is recommended to use the `read_sc_atac` method.)"
+            f"The peaks information {regions.var.columns} in data `adata` must include three columns: `chr`, `start` "
+            f"and `end`. (It is recommended to use the `read_sc_atac` method.)"
         )
 
-    regions_df = regions_df.rename_axis("index")
-    regions_df = regions_df.reset_index()
-    # sort
-    regions_df = regions_df.sort_values(["chr", "start", "end"])[["index", "chr", "start", "end"]]
+    regions_df = (
+        regions.var
+        .reset_index()
+        .loc[:, ["index", "chr", "start", "end"]]
+        .sort_values(["chr", "start", "end"])
+    )
 
-    ul.log(__name__).info(f"Obtain peak-trait/disease matrix. (overlap variant information)")
-    for trait_name in tqdm(trait_names):
+    ul.log(__name__).info("Obtain peak-trait/disease matrix. (overlap variant information)")
 
+    # 外层循环按 trait 并行可再加速，这里先保持单循环
+    for col_idx, trait_name in enumerate(tqdm(trait_names)):
         variant: AnnData = variants[trait_name]
-        index: int = trait_names.index(trait_name)
+        overlap_df: DataFrame = _overlap_(regions_df, variant.obs)
 
-        # handle overlap data
-        overlap_info: DataFrame = _overlap_(regions_df, variant.obs)
-
-        if overlap_info.shape[0] == 0:
+        if overlap_df.empty:
             continue
 
-        overlap_info.rename({"index": "label"}, axis="columns", inplace=True)
-        overlap_info.reset_index(inplace=True)
-        overlap_info["region_id"] = (
-            overlap_info["chr"].astype(str)
-            + ":" + overlap_info["start"].astype(str) + "-" + overlap_info["end"].astype(str)
+        # 直接拿到 label->variant_id 的列表，省掉 groupby
+        overlap_df = overlap_df.rename(columns={"index": "label"})
+        # 把 label 映射到行号
+        overlap_df = overlap_df[overlap_df["label"].isin(label2idx)]
+
+        if overlap_df.empty:
+            continue
+
+        # 一次性求和：先按 label 分组，把 variant_id 收集成列表
+        label_var_ids = (
+            overlap_df
+            .groupby("label")["variant_id"]
+            .apply(list)
+            .reset_index()
         )
 
-        # get region
-        region_info = overlap_info.groupby("region_id", as_index=False)["label"].first()
-        region_info.index = region_info["label"].astype(str)
-        label: list = list(region_info["label"])
+        # 遍历每个 label，一次性切片求和
+        for _, row in label_var_ids.iterrows():
+            label = row["label"]
+            row_idx = label2idx[label]
+            var_ids = row["variant_id"]
+            # 切片一次求和，避免逐行切片
+            matrix_sum = variant[var_ids, :].X.sum(axis=0)
 
-        # Mutation information with repetitive features
-        label_size: int = len(label)
+            if np.isscalar(matrix_sum):
+                matrix_sum = np.asarray(matrix_sum).reshape(1)
 
-        for j in range(label_size):
+            # 收集非零值
+            if matrix_sum.size == 1:
+                val = float(matrix_sum)
+                if val != 0:
+                    row_indices.append(row_idx)
+                    col_indices.append(col_idx)
+                    data_vals.append(val)
+            else:
+                for t_idx, v in enumerate(matrix_sum):
+                    if v != 0:
+                        row_indices.append(row_idx)
+                        col_indices.append(col_idx + t_idx)
+                        data_vals.append(float(v))
 
-            # Determine whether the features after overlap exist, In other words, whether there is overlap in this feature
-            if label[j] in label_all:
-                # get the index of label
-                label_index = label_all.index(label[j])
-                overlap_info_region = overlap_info[overlap_info["label"] == label[j]]
-                # sum value
-                overlap_variant = variant[list(overlap_info_region["variant_id"]), :]
-                matrix[label_index, index] = overlap_variant.X.sum(axis=0)
+    # 构建稀疏矩阵，再转 csr
+    overlap_sparse = sparse.csc_matrix(
+        (data_vals, (row_indices, col_indices)),
+        shape=(label_all_size, n_trait),
+        dtype=np.float32
+    ).tocsr()
 
-    overlap_adata = AnnData(to_sparse(matrix), var=trait_info, obs=regions.var)
+    overlap_adata = AnnData(overlap_sparse, var=trait_info, obs=regions.var)
     overlap_adata.uns["is_overlap"] = True
     return overlap_adata
 
