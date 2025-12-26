@@ -814,7 +814,9 @@ def _overlap_(regions_sort: DataFrame, variants: DataFrame) -> DataFrame:
 
     variants_overlap_info_list: list = []
 
-    for index, chr_a, start, end in zip(regions_sort["index"], regions_sort["chr"], regions_sort["start"],
+    for index, chr_a, start, end in zip(regions_sort["index"],
+                                        regions_sort["chr"],
+                                        regions_sort["start"],
                                         regions_sort["end"]):
 
         # judge chr
@@ -906,15 +908,15 @@ def overlap_sum(regions: AnnData, variants: dict, trait_info: DataFrame) -> AnnD
     # Peak number
     label_all_size: int = len(label_all)
 
-    # 预先把 peaks 的 index 做成 dict，O(1) 查找
+    # Pre-build a dict of peak indices for O(1) lookup
     label2idx = {lb: i for i, lb in enumerate(label_all)}
 
     trait_names = trait_info["id"].tolist()
     n_trait = len(trait_names)
-    # 提前分配稀疏矩阵，按列填充，最后一次性转成 csc 再转 csr，省内存且快
+    # Pre-allocate sparse matrix, fill column by column, then convert to csc and then csr for efficiency
     row_indices, col_indices, data_vals = [], [], []
 
-    # 检查列存在性一次完成
+    # Check column existence once
     required = {"chr", "start", "end"}
 
     if not required.issubset(regions.var.columns):
@@ -936,7 +938,7 @@ def overlap_sum(regions: AnnData, variants: dict, trait_info: DataFrame) -> AnnD
 
     ul.log(__name__).info("Obtain peak-trait/disease matrix. (overlap variant information)")
 
-    # 外层循环按 trait 并行可再加速，这里先保持单循环
+    # The outer loop can be further accelerated by parallelizing over traits; here we keep it single-threaded for now.
     for col_idx, trait_name in enumerate(tqdm(trait_names)):
         variant: AnnData = variants[trait_name]
         overlap_df: DataFrame = _overlap_(regions_df, variant.obs)
@@ -944,34 +946,26 @@ def overlap_sum(regions: AnnData, variants: dict, trait_info: DataFrame) -> AnnD
         if overlap_df.empty:
             continue
 
-        # 直接拿到 label->variant_id 的列表，省掉 groupby
-        overlap_df = overlap_df.rename(columns={"index": "label"})
-        # 把 label 映射到行号
-        overlap_df = overlap_df[overlap_df["label"].isin(label2idx)]
-
-        if overlap_df.empty:
-            continue
-
-        # 一次性求和：先按 label 分组，把 variant_id 收集成列表
+        # Sum at once: first group by label and collect variant_id into a list
         label_var_ids = (
             overlap_df
-            .groupby("label")["variant_id"]
+            .groupby("index")["variant_id"]
             .apply(list)
             .reset_index()
         )
 
-        # 遍历每个 label，一次性切片求和
+        # Traverse each label, sum once for each variant_id list
         for _, row in label_var_ids.iterrows():
-            label = row["label"]
+            label = row["index"]
             row_idx = label2idx[label]
             var_ids = row["variant_id"]
-            # 切片一次求和，避免逐行切片
+            # Sum once for all variant_ids in the list, avoiding row-by-row slicing
             matrix_sum = variant[var_ids, :].X.sum(axis=0)
 
             if np.isscalar(matrix_sum):
                 matrix_sum = np.asarray(matrix_sum).reshape(1)
 
-            # 收集非零值
+            # Collect non-zero values
             if matrix_sum.size == 1:
                 val = float(matrix_sum)
                 if val != 0:
@@ -985,7 +979,7 @@ def overlap_sum(regions: AnnData, variants: dict, trait_info: DataFrame) -> AnnD
                         col_indices.append(col_idx + t_idx)
                         data_vals.append(float(v))
 
-    # 构建稀疏矩阵，再转 csr
+    # Build sparse matrix, then convert to csr format
     overlap_sparse = sparse.csc_matrix(
         (data_vals, (row_indices, col_indices)),
         shape=(label_all_size, n_trait),
