@@ -134,7 +134,7 @@ def poisson_vi(
                 ul.log(__name__).warning(f"GPU failed to run, try to switch to CPU running.\n {ome}")
 
                 try:
-                    model = scvi.external.POISSONVI.load(model_dir, adata=adata, accelerator="cpu", devices="cpu")
+                    model = scvi.external.POISSONVI.load(model_dir, adata=adata, accelerator="cpu", device="cpu")
                 except Exception as e:
                     ul.log(__name__).error(f"File `model.pt` failed to load, you can execute `Poisson VI` again by deleting file `model.pt` ({model_dir}/model.pt).\n {e}")
                     raise ValueError(f"File `model.pt` failed to load, you can execute `Poisson VI` again by deleting file `model.pt` ({model_dir}/model.pt).")
