@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 
 from anndata import AnnData
+from torch import OutOfMemoryError
 
 from .. import util as ul
 from ..tool import umap, tsne
@@ -126,11 +127,17 @@ def poisson_vi(
     if model_dir is not None:
         if os.path.exists(os.path.join(model_dir, "model.pt")):
             ul.log(__name__).info(f"Due to the existence of file `model.pt`, it is loaded by default.")
+
             try:
                 model = scvi.external.POISSONVI.load(model_dir, adata=adata)
-            except FileExistsError as fee:
-                ul.log(__name__).error(f"File `model.pt` failed to load, you can execute `Poisson VI` again by deleting file `model.pt` ({model_dir}/model.pt).\n {fee}")
-                raise ValueError(f"File `model.pt` failed to load, you can execute `Poisson VI` again by deleting file `model.pt` ({model_dir}/model.pt).")
+            except OutOfMemoryError as ome:
+                ul.log(__name__).warning(f"GPU failed to run, try to switch to CPU running.\n {ome}")
+
+                try:
+                    model = scvi.external.POISSONVI.load(model_dir, adata=adata, accelerator="cpu", devices="cpu")
+                except Exception as e:
+                    ul.log(__name__).error(f"File `model.pt` failed to load, you can execute `Poisson VI` again by deleting file `model.pt` ({model_dir}/model.pt).\n {e}")
+                    raise ValueError(f"File `model.pt` failed to load, you can execute `Poisson VI` again by deleting file `model.pt` ({model_dir}/model.pt).")
         else:
             ul.file_method(__name__).makedirs(model_dir)
             model = __train__()
