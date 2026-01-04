@@ -68,6 +68,7 @@ def heatmap_annotation(
     cmap: str = "Oranges",
     is_sort: bool = True,
     show: bool = True,
+    close: bool = False,
     output: path = None,
     **kwargs
 ) -> None:
@@ -130,12 +131,13 @@ def heatmap_annotation(
     :param cmap: Display color themes for heat maps;
     :param is_sort: If set to true, when displaying the heatmap, the row and column names are sorted and displayed;
     :param show: If true, display the image;
+    :param close: If true, close the image;
     :param output: Output file for image saving;
     :return: Display of image or saved file.
     """
 
     ul.log(__name__).info("Start plotting the heatmap")
-    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
+    fig, ax = plot_start(width, height, bottom, output, show)
 
     data = adata.copy()
 
@@ -287,7 +289,7 @@ def heatmap_annotation(
         **kwargs
     )
 
-    plot_end(fig, output, show)
+    plot_end(fig, title, x_name, y_name, output, show, close)
 
 
 def heatmap(
@@ -308,9 +310,10 @@ def heatmap(
     y_name: str = None,
     output: path = None,
     show: bool = True,
+    close: bool = False,
     **kwargs: Any
 ) -> None:
-    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
+    fig, ax = plot_start(width, height, bottom, output, show)
 
     data = adata.copy()
 
@@ -337,4 +340,4 @@ def heatmap(
         # noinspection PyUnresolvedReferences
         plt.setp(heat_map.ax_heatmap.get_xticklabels(), rotation=rotation)
 
-    plot_end(fig, output, show)
+    plot_end(fig, title, x_name, y_name, output, show, close)

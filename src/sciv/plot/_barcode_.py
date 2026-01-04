@@ -29,7 +29,8 @@ def barcode_base(
     colors: list = None,
     ground_true: list = None,
     output: path = None,
-    show: bool = True
+    show: bool = True,
+    close: bool = False
 ):
     # sort
     df_sort = df.sort_values([trait_column_name, sort_column], ascending=False)
@@ -57,9 +58,6 @@ def barcode_base(
     fig.subplots_adjust(left=0.03, right=0.97, top=0.99, bottom=0.01)
 
     plt.axis("off")
-
-    if title is not None:
-        plt.title(title)
 
     gs = GridSpec(20, 20)
     ax1 = fig.add_subplot(gs[:17, 11:14] if is_ticks else gs[:18, 11:14])
@@ -91,7 +89,7 @@ def barcode_base(
     ticks = np.linspace(round(df_sort[sort_column].min(), 2), round(df_sort[sort_column].max() - 0.05, 2), 3)
     color_bar.set_ticks(ticks if is_ticks else [])
 
-    plot_end(fig, output, show)
+    plot_end(fig, title, output=output, show=show, close=close)
 
 
 def barcode_trait(
@@ -108,7 +106,8 @@ def barcode_trait(
     ground_true: list = None,
     title: str = None,
     output: path = None,
-    show: bool = True
+    show: bool = True,
+    close: bool = False
 ):
     data: DataFrame = trait_df.copy()
     cluster_list = list(set(trait_df[clusters]))
@@ -138,7 +137,8 @@ def barcode_trait(
             ground_true=ground_true,
             title=f"{title} {trait_}" if title is not None else title,
             output=os.path.join(output, f"cell_{trait_}_score_rank.pdf") if output is not None else None,
-            show=show
+            show=show,
+            close=close
         )
 
     # noinspection DuplicatedCode

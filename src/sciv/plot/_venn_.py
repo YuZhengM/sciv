@@ -26,9 +26,10 @@ def three_venn(
     title: str = None,
     output: path = None,
     show: bool = True,
+    close: bool = False,
     **kwargs: Any
 ) -> None:
-    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
+    fig, ax = plot_start(width, height, bottom, output, show)
 
     if colors is None:
         colors = type_set_colors[:3]
@@ -54,7 +55,7 @@ def three_venn(
 
     ax.axis('off')
 
-    plot_end(fig, output, show)
+    plot_end(fig, title, x_name, y_name, output, show, close)
 
 
 def two_venn(
@@ -71,9 +72,10 @@ def two_venn(
     title: str = None,
     output: path = None,
     show: bool = True,
+    close: bool = False,
     **kwargs: Any
 ) -> None:
-    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
+    fig, ax = plot_start(width, height, bottom, output, show)
 
     if colors is None:
         colors = type_set_colors[:2]
@@ -96,4 +98,4 @@ def two_venn(
 
     ax.axis('off')
 
-    plot_end(fig, output, show)
+    plot_end(fig, title, x_name, y_name, output, show, close)

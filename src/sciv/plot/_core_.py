@@ -315,7 +315,8 @@ def rate_bar_plot(
     title: str = None,
     text_left_move: float = 0.15,
     plot_output: path = None,
-    show: bool = True
+    show: bool = True,
+    close: bool = False
 ) -> None:
 
     if dir_name is not None:
@@ -349,7 +350,8 @@ def rate_bar_plot(
         rotation=rotation,
         text_left_move=text_left_move,
         output=new_path if plot_output is not None else None,
-        show=show
+        show=show,
+        close=close
     )
 
 
@@ -373,7 +375,8 @@ def rate_circular_bar_plot(
     y_limit: Tuple = (-0.5, 1),
     y_axis_scale: Tuple = (0, 1),
     plot_output: path = None,
-    show: bool = True
+    show: bool = True,
+    close: bool = False
 ) -> None:
 
     if dir_name is not None:
@@ -412,7 +415,8 @@ def rate_circular_bar_plot(
         y_limit=y_limit,
         y_axis_scale=y_axis_scale,
         output=new_path if plot_output is not None else None,
-        show=show
+        show=show,
+        close=close
     )
 
 

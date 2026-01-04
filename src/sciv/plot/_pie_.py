@@ -27,9 +27,10 @@ def base_pie(
     autopct: str = '%1.2f%%',
     output: path = None,
     show: bool = True,
+    close: bool = False,
     **kwargs: Any
 ) -> None:
-    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
+    fig, ax = plot_start(width, height, bottom, output, show)
 
     size = len(values)
 
@@ -54,7 +55,7 @@ def base_pie(
 
     ax.axis('off')
 
-    plot_end(fig, output, show)
+    plot_end(fig, title, x_name, y_name, output, show, close)
 
 
 def pie_label(
@@ -75,9 +76,10 @@ def pie_label(
     colors: list = None,
     output: path = None,
     show: bool = True,
+    close: bool = False,
     **kwargs: Any
 ) -> None:
-    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
+    fig, ax = plot_start(width, height, bottom, output, show)
 
     # judge
     df_columns = list(df.columns)
@@ -128,7 +130,7 @@ def pie_label(
 
     ax.axis('off')
 
-    plot_end(fig, output, show)
+    plot_end(fig, title, x_name, y_name, output, show, close)
 
 
 def pie_trait(
@@ -150,6 +152,7 @@ def pie_trait(
     colors: list = None,
     output: path = None,
     show: bool = True,
+    close: bool = False,
     **kwargs: Any
 ) -> None:
     trait_cluster_map_key_list = list(trait_cluster_map.keys())
@@ -191,6 +194,7 @@ def pie_trait(
             title=f"{title} {trait_}" if title is not None else title,
             output=os.path.join(output, f"cell_{trait_}_score_pie.pdf") if output is not None else None,
             show=show,
+            close=close,
             **kwargs
         )
 

@@ -415,9 +415,6 @@ def check_gpu_availability(verbose: bool = True) -> bool:
 
 
 def plot_start(
-    title: str = None,
-    x_name: str = None,
-    y_name: str = None,
     width: float = 2,
     height: float = 2,
     bottom: float = 0,
@@ -431,6 +428,20 @@ def plot_start(
     fig, ax = plt.subplots(figsize=(width, height))
     fig.subplots_adjust(bottom=bottom)
 
+    return fig, ax
+
+
+def plot_end(
+    fig,
+    title: str = None,
+    x_name: str = None,
+    y_name: str = None,
+    output: str = None,
+    show: bool = True,
+    close: bool = False,
+    dpi: float = 300
+):
+
     if title is not None:
         plt.title(title)
 
@@ -438,12 +449,8 @@ def plot_start(
         plt.xlabel(x_name, rotation=0)
 
     if y_name is not None:
-        plt.xlabel(y_name, rotation=90)
+        plt.ylabel(y_name, rotation=90)
 
-    return fig, ax
-
-
-def plot_end(fig, output: str, show: bool, dpi: float = 300):
     if output is not None:
 
         if output.endswith(".pdf"):
@@ -459,7 +466,8 @@ def plot_end(fig, output: str, show: bool, dpi: float = 300):
     if show:
         plt.show()
 
-    plt.close()
+    if close:
+        plt.close('all')
 
 
 def generate_hex_colors(num_colors):

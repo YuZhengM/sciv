@@ -33,6 +33,7 @@ def box_base(
     order_names: list = None,
     output: path = None,
     show: bool = True,
+    close: bool = False,
     **kwargs: Any
 ) -> None:
 
@@ -43,7 +44,7 @@ def box_base(
         ul.log(__name__).error(f"The `value` ({value}) parameter must be in the `df` parameter data column name ({df_columns})")
         raise ValueError(f"The `value` ({value}) parameter must be in the `df` parameter data column name ({df_columns})")
 
-    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
+    fig, ax = plot_start(width, height, bottom, output, show)
 
     group_columns = [clusters]
 
@@ -78,7 +79,7 @@ def box_base(
                 colors = new_df["color"]
 
     # scatter
-    ax1 = sns.boxplot(
+    sns.boxplot(
         data=df,
         x=clusters,
         y=value,
@@ -87,6 +88,7 @@ def box_base(
         fliersize=marker_size,
         orient=orient,
         whis=whis,
+        ax=ax,
         flierprops={'marker': 'o', 'markersize': marker_size},
         boxprops={'linestyle': '-', 'linewidth': line_width},
         whiskerprops={'linestyle': '-', 'linewidth': line_width},
@@ -95,7 +97,7 @@ def box_base(
         **kwargs
     )
 
-    lines = ax1.lines
+    lines = ax.lines
 
     for line in lines:
         line.set_linewidth(line_width)
@@ -107,7 +109,9 @@ def box_base(
     ax.spines['left'].set_linewidth(line_width)
     ax.spines['right'].set_linewidth(line_width)
 
-    plot_end(fig, output, show)
+    ax.yaxis.grid(True, linestyle='-', linewidth=line_width)
+
+    plot_end(fig, title, x_name, y_name, output, show, close)
 
 
 def box_trait(
@@ -133,6 +137,7 @@ def box_trait(
     title: str = None,
     output: path = None,
     show: bool = True,
+    close: bool = False,
     **kwargs: Any
 ) -> None:
 
@@ -170,6 +175,7 @@ def box_trait(
             title=f"{title} {trait_}" if title is not None else title,
             output=os.path.join(output, f"cell_{trait_}_score_box.pdf") if output is not None else None,
             show=show,
+            close=close,
             **kwargs
         )
 

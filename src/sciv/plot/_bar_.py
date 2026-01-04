@@ -32,10 +32,11 @@ def bar(
     direction: Literal['vertical', 'horizontal'] = "vertical",
     output: path = None,
     show: bool = True,
+    close: bool = False,
     **kwargs: Any
 ) -> None:
 
-    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
+    fig, ax = plot_start(width, height, bottom, output, show)
 
     ax_x = np.array(ax_x).astype(str)
 
@@ -59,7 +60,7 @@ def bar(
             color=text_color
         )
 
-    plot_end(fig, output, show)
+    plot_end(fig, title, x_name, y_name, output, show, close)
 
 
 def two_bar(
@@ -78,10 +79,11 @@ def two_bar(
     title: str = None,
     output: path = None,
     show: bool = True,
+    close: bool = False,
     **kwargs: Any
 ):
 
-    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
+    fig, ax = plot_start(width, height, bottom, output, show)
 
     ax_x = np.array(ax_x).astype(str)
     ax.bar(ax_x, ax_y[0], label=legend[0], color=color[0], **kwargs)
@@ -101,7 +103,7 @@ def two_bar(
             color=text_color
         )
 
-    plot_end(fig, output, show)
+    plot_end(fig, title, x_name, y_name, output, show, close)
 
 
 def class_bar(
@@ -123,6 +125,7 @@ def class_bar(
     text_left_move: float = 0.15,
     output: path = None,
     show: bool = True,
+    close: bool = False,
     **kwargs: Any
 ):
 
@@ -159,6 +162,7 @@ def class_bar(
         title=title,
         output=output,
         show=show,
+        close=close,
         **kwargs
     )
 
@@ -183,6 +187,7 @@ def bar_trait(
     text_left_move: float = 0.15,
     output: path = None,
     show: bool = True,
+    close: bool = False,
     **kwargs: Any
 ):
     def trait_plot(trait_: str, cell_df_: DataFrame) -> None:
@@ -214,6 +219,7 @@ def bar_trait(
             text_color=text_color,
             output=os.path.join(output, f"cell_{trait_}_enrichment_bar.pdf") if output is not None else None,
             show=show,
+            close=close,
             **kwargs
         )
 
@@ -272,6 +278,7 @@ def bar_significance(
     title: str = None,
     output: path = None,
     show: bool = True,
+    close: bool = False,
     **kwargs: Any
 ) -> None:
     """
@@ -311,10 +318,11 @@ def bar_significance(
     :param title: Plot title
     :param output: Path to save figure (optional)
     :param show: Whether to display the plot
+    :param close:
     :return: None
     """
 
-    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
+    fig, ax = plot_start(width, height, bottom, output, show)
 
     if legend_list is not None:
         new_data: DataFrame = df[df[hue].isin(legend_list)].copy()
@@ -432,4 +440,4 @@ def bar_significance(
 
     plt.legend(loc='upper left', bbox_to_anchor=(0.0, legend_gap), ncol=2)
 
-    plot_end(fig, output, show)
+    plot_end(fig, title, x_name, y_name, output, show, close)

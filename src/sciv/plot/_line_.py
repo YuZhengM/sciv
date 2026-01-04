@@ -40,10 +40,11 @@ def stability_line(
     output: Optional[path] = None,
     is_str: bool = True,
     show: bool = True,
+    close: bool = False,
     **kwargs: Any
 ) -> None:
 
-    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
+    fig, ax = plot_start(width, height, bottom, output, show)
 
     new_data = data.copy()
 
@@ -122,4 +123,4 @@ def stability_line(
     else:
         plt.xticks(x_ticks, rotation=x_name_rotation)
 
-    plot_end(fig, output, show)
+    plot_end(fig, title, x_name, y_name, output, show, close)

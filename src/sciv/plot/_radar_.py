@@ -35,10 +35,11 @@ def radar(
     y_axis_scale: Tuple = (0, 1),
     output: path = None,
     show: bool = True,
+    close: bool = False,
     **kwargs: Any
 ):
 
-    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
+    fig, ax = plot_start(width, height, bottom, output, show)
 
     ax_x = list(ax_x)
     ax_y = list(ax_y)
@@ -96,7 +97,7 @@ def radar(
     # Adjust the layout to prevent label overlap
     plt.tight_layout()
 
-    plot_end(fig, output, show)
+    plot_end(fig, title, x_name, y_name, output, show, close)
 
 
 def radar_trait(
@@ -119,6 +120,7 @@ def radar_trait(
     y_axis_scale: Tuple = (0, 1),
     output: path = None,
     show: bool = True,
+    close: bool = False,
     **kwargs: Any
 ):
 
@@ -166,6 +168,7 @@ def radar_trait(
             center_text=trait_,
             output=os.path.join(output, f"{trait_}_enrichment_radar.pdf") if output is not None else None,
             show=show,
+            close=close,
             **kwargs
         )
 

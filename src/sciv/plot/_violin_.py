@@ -29,11 +29,12 @@ def violin_base(
     rotation: float = 65,
     line_width: float = 0.5,
     title: str = None,
-    split: bool = True,
+    split: bool = False,
     is_sort: bool = True,
     order_names: list = None,
     output: path = None,
     show: bool = True,
+    close: bool = False,
     **kwargs: Any
 ) -> None:
     # judge
@@ -50,7 +51,7 @@ def violin_base(
             f"The `hue` ({hue}) parameter must be in the `df` parameter data column name ({df_columns})")
         raise ValueError(f"The `hue` ({hue}) parameter must be in the `df` parameter data column name ({df_columns})")
 
-    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
+    fig, ax = plot_start(width, height, bottom, output, show)
 
     group_columns = [clusters]
 
@@ -98,15 +99,15 @@ def violin_base(
     )
 
     # set coordinate
-    for ax in g.axes.flat:
-        ax.spines['top'].set_linewidth(line_width)
-        ax.spines['right'].set_linewidth(line_width)
-        ax.spines['bottom'].set_linewidth(line_width)
-        ax.spines['left'].set_linewidth(line_width)
+    for _ax_ in g.axes.flat:
+        _ax_.spines['top'].set_linewidth(line_width)
+        _ax_.spines['right'].set_linewidth(line_width)
+        _ax_.spines['bottom'].set_linewidth(line_width)
+        _ax_.spines['left'].set_linewidth(line_width)
         # Set the rotation angle of the x-axis labels
-        ax.tick_params(axis='x', rotation=rotation)
+        _ax_.tick_params(axis='x', rotation=rotation)
 
-    plot_end(fig, output, show)
+    plot_end(fig, title, x_name, y_name, output, show, close)
 
 
 def violin_trait(
@@ -124,30 +125,29 @@ def violin_trait(
     rotation: float = 65,
     line_width: float = 0.1,
     bottom: float = 0.3,
-    split: bool = True,
+    split: bool = False,
     is_sort: bool = True,
     order_names: list = None,
     title: str = None,
     output: path = None,
     show: bool = True,
+    close: bool = False,
     **kwargs: Any
 ) -> None:
 
     data: DataFrame = trait_df.copy()
 
-    def trait_plot(trait_: Union[str, list], atac_cell_df_: DataFrame) -> None:
+    def trait_plot(_trait_: Union[str, list], _cell_df_: DataFrame) -> None:
         """
         show plot
-        :param trait_: trait name
-        :param atac_cell_df_:
+        :param _trait_: trait name
+        :param _cell_df_:
         :return: None
         """
-        ul.log(__name__).info("Plotting box {}".format(", ".join(trait_)))
+        ul.log(__name__).info("Plotting box {}".format(_trait_))
         # get gene score
-        _filename_: str = trait_ if isinstance(trait_, str) else "_".join(trait_)
-        trait_score = atac_cell_df_[
-            atac_cell_df_[trait_column_name] == trait_ if isinstance(trait_, str) else atac_cell_df_[
-                trait_column_name].isin(trait_)]
+        _filename_: str = _trait_
+        trait_score = _cell_df_[_cell_df_[trait_column_name] == _trait_]
         # Sort gene scores from small to large
         violin_base(
             df=trait_score,
@@ -169,6 +169,7 @@ def violin_trait(
             title=f"{title} {_filename_}" if title is not None else title,
             output=os.path.join(output, f"cell_{_filename_}_score_cat_{kind}.pdf") if output is not None else None,
             show=show,
+            close=close,
             **kwargs
         )
 
@@ -176,9 +177,10 @@ def violin_trait(
     trait_list = list(set(data[trait_column_name]))
     # judge trait
     if trait_name != "All":
-        if isinstance(trait_name, str) and trait_name not in trait_list:
-            ul.log(__name__).error(f"The {trait_name} trait/disease is not in the trait/disease list {trait_list}.")
-            raise ValueError(f"The {trait_name} trait/disease is not in the trait/disease list {trait_list}.")
+        if isinstance(trait_name, str):
+            if trait_name not in trait_list:
+                ul.log(__name__).error(f"The {trait_name} trait/disease is not in the trait/disease list {trait_list}.")
+                raise ValueError(f"The {trait_name} trait/disease is not in the trait/disease list {trait_list}.")
         else:
             for tn in trait_name:
                 if tn not in trait_list:

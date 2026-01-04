@@ -41,15 +41,16 @@ def graph(
     bottom: float = 0,
     is_font: bool = False,
     output: path = None,
-    show: bool = True
+    show: bool = True,
+    close: bool = False
 ) -> None:
     if output is None and not show:
         ul.log(__name__).error(f"At least one of the `output` and `show` parameters is required")
         raise ValueError(f"At least one of the `output` and `show` parameters is required")
 
-    plt.figure(figsize=(width, height), dpi=150)
+    plt.figure(figsize=(width, height), dpi=300)
 
-    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
+    fig, ax = plot_start(width, height, bottom, output, show)
 
     # Determine whether it is a square array
     if data.shape[0] != data.shape[1]:
@@ -94,7 +95,7 @@ def graph(
     else:
         nx.draw(gr, pos=pos, labels={}, **options)
 
-    plot_end(fig, output, show)
+    plot_end(fig, title, x_name, y_name, output, show, close)
 
 
 def communities_graph(
@@ -113,7 +114,8 @@ def communities_graph(
     start_color_index: int = 0,
     color_step_size: int = 0,
     output: path = None,
-    show: bool = True
+    show: bool = True,
+    close: bool = False
 ):
     if output is None and not show:
         ul.log(__name__).error(f"At least one of the `output` and `show` parameters is required")
@@ -133,7 +135,7 @@ def communities_graph(
 
     type_colors = type_20_colors if len(__hue_order__) <= 20 else type_50_colors
 
-    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
+    fig, ax = plot_start(width, height, bottom, output, show)
 
     ul.log(__name__).info("Get position")
     color_index = 0
@@ -170,7 +172,7 @@ def communities_graph(
         width=line_widths
     )
 
-    plot_end(fig, output, show)
+    plot_end(fig, title, x_name, y_name, output, show, close)
 
 
 def network_two_types(
@@ -197,7 +199,8 @@ def network_two_types(
     is_fluctuate: bool = True,
     layout_type: str = 'spring',
     output: path = None,
-    show: bool = True
+    show: bool = True,
+    close: bool = False
 ):
     if output is None and not show:
         ul.log(__name__).error(f"At least one of the `output` and `show` parameters is required")
@@ -375,4 +378,4 @@ def network_two_types(
 
     plt.axis('off')
 
-    plot_end(fig, output, show)
+    plot_end(fig, output=output, show=show, close=close)

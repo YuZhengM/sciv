@@ -25,10 +25,11 @@ def bubble(
     bottom: float = 0,
     output: path = None,
     show: bool = True,
+    close: bool = False,
     **kwargs: Any
 ):
 
-    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
+    fig, ax = plot_start(width, height, bottom, output, show)
 
     if size is not None:
         _size_ = df[size].values
@@ -49,4 +50,4 @@ def bubble(
         **kwargs
     )
 
-    plot_end(fig, output, show)
+    plot_end(fig, title, x_name, y_name, output, show, close)

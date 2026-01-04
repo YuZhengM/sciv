@@ -45,9 +45,10 @@ def scatter_base(
     is_text: bool = False,
     output: path = None,
     show: bool = True,
+    close: bool = False,
     **kwargs: Any
 ) -> None:
-    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
+    fig, ax = plot_start(width, height, bottom, output, show)
 
     # scatter
     if number:
@@ -147,7 +148,7 @@ def scatter_base(
     ax.spines['bottom'].set_visible(False)
     ax.spines['left'].set_visible(False)
 
-    plot_end(fig, output, show)
+    plot_end(fig, title, x_name, y_name, output, show, close)
 
 
 def scatter_atac(
@@ -169,6 +170,7 @@ def scatter_atac(
     is_text: bool = False,
     output: path = None,
     show: bool = True,
+    close: bool = False,
     **kwargs: Any
 ) -> None:
     # DataFrame
@@ -195,6 +197,7 @@ def scatter_atac(
         legend_fontsize=legend_fontsize,
         output=output,
         show=show,
+        close=close,
         right=0.75,
         **kwargs
     )
@@ -225,6 +228,7 @@ def scatter_trait(
     legend: dict = None,
     output: path = None,
     show: bool = True,
+    close: bool = False,
     **kwargs: Any
 ) -> None:
     data: AnnData = trait_adata.copy()
@@ -285,6 +289,7 @@ def scatter_trait(
                 output, f"cell_{trait_}_score_{layer_}.pdf" if layer_ is not None else f"cell_{trait_}_score.pdf"
             ) if output is not None else None,
             show=show,
+            close=close,
             **kwargs
         )
 
@@ -336,9 +341,10 @@ def volcano_base(
     y_name: Optional[str] = None,
     output: path = None,
     show: bool = True,
+    close: bool = False,
     **kwargs: Any
 ):
-    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
+    fig, ax = plot_start(width, height, bottom, output, show)
 
     if palette is None:
         palette = ["#01c5c4", "#686d76", "#ff414d"]
@@ -352,7 +358,7 @@ def volcano_base(
     plt.axvline(axv_left_value, color='grey', linestyle='--')
     plt.axvline(axv_right_value, color='grey', linestyle='--')
 
-    plot_end(fig, output, show)
+    plot_end(fig, title, x_name, y_name, output, show, close)
 
 
 def manhattan_causal_variant(
@@ -375,6 +381,7 @@ def manhattan_causal_variant(
     y_limit: Tuple[float, float] = (0, 1),
     output: path = None,
     show: bool = True,
+    close: bool = False,
     **kwargs: Any
 ):
 
@@ -390,7 +397,7 @@ def manhattan_causal_variant(
         colors = type_20_colors.copy()
         colors.extend(type_set_colors)
 
-    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
+    fig, ax = plot_start(width, height, bottom, output, show)
 
     x_labels = []
     x_labels_pos = []
@@ -434,7 +441,7 @@ def manhattan_causal_variant(
     ax.set_xlim([0, len(df)])
     ax.set_ylim(y_limit)
 
-    plot_end(fig, output, show)
+    plot_end(fig, title, x_name, y_name, output, show, close)
 
 
 def pseudo_time_score(
@@ -454,11 +461,12 @@ def pseudo_time_score(
     size: Union[float, collection] = 1.0,
     output: path = None,
     show: bool = True,
+    close: bool = False,
     **kwargs: Any
 ):
     from scipy.signal import savgol_filter
 
-    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
+    fig, ax = plot_start(width, height, bottom, output, show)
 
     pseudo_times = df[x].values
     scores = df[y].values
@@ -482,4 +490,4 @@ def pseudo_time_score(
 
     plt.tight_layout()
 
-    plot_end(fig, output, show)
+    plot_end(fig, title, x_name, y_name, output, show, close)

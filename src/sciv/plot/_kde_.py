@@ -28,11 +28,12 @@ def kde(
     is_legend: bool = True,
     output: path = None,
     show: bool = True,
+    close: bool = False,
     **kwargs: Any
 ) -> None:
     ul.log(__name__).info("Start plotting the Kernel density estimation chart")
 
-    fig, ax = plot_start(title, x_name, y_name, width, height, bottom, output, show)
+    fig, ax = plot_start(width, height, bottom, output, show)
 
     data = check_adata_get(adata, layer=layer, is_dense=True, is_matrix=False)
 
@@ -72,4 +73,4 @@ def kde(
         if is_legend:
             ax.legend(list(adata.obs.index))
 
-    plot_end(fig, output, show)
+    plot_end(fig, title, x_name, y_name, output, show, close)
