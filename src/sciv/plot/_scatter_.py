@@ -163,11 +163,13 @@ def scatter_3d(
     y_name: str = None,
     z_name: str = None,
     title: str = None,
-    width: float = 2,
-    height: float = 2,
+    width: float = 7,
+    height: float = 7,
     bottom: float = 0,
+    cmap: str = 'tab20',
+    font_size: int = 14,
     edge_color: str = None,
-    size: Union[float, collection] = 1.0,
+    size: Union[float, collection] = 0.1,
     legend_name: str = None,
     output: path = None,
     show: bool = True,
@@ -188,25 +190,23 @@ def scatter_3d(
         df[y],
         df[z],
         c=hue_cat.codes,
-        cmap='tab20',
+        cmap=cmap,
         s=size,
         edgecolors=edge_color,
         **kwargs
     )
 
-    # 设置坐标轴标签和标题
-
     if x_name is not None:
-        ax.set_xlabel(x_name)
+        ax.set_xlabel(x_name, fontsize=font_size)
 
     if y_name is not None:
-        ax.set_ylabel(y_name)
+        ax.set_ylabel(y_name, fontsize=font_size)
 
     if z_name is not None:
-        ax.set_zlabel(z_name)
+        ax.set_zlabel(z_name, fontsize=font_size)
 
     if title is not None:
-        ax.set_title(title)
+        ax.set_title(title, fontsize=font_size)
 
     unique_types = hue_cat.categories
     legend_elements = [
@@ -217,7 +217,7 @@ def scatter_3d(
         for i, type_ in enumerate(unique_types)
     ]
 
-    ax.legend(handles=legend_elements, title=legend_name, bbox_to_anchor=(1.05, 1), loc='upper left')
+    ax.legend(handles=legend_elements, title=legend_name, loc='upper left')
 
     plot_end(fig, None, None, None, output, show, close)
 
