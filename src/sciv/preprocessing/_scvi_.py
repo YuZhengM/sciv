@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 from anndata import AnnData
-from torch import OutOfMemoryError
+from torch.cuda import OutOfMemoryError
 
 from .. import util as ul
 from ..tool import umap, tsne
