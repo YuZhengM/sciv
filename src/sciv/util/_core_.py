@@ -458,7 +458,7 @@ def plot_end(
             with PdfPages(output) as pdf:
                 pdf.savefig(fig)
 
-        elif output.endswith(".png") or output.endswith(".jpg"):
+        elif output.endswith(".png") or output.endswith(".jpg") or output.endswith(".svg"):
             plt.savefig(output, dpi=dpi)
         else:
             plt.savefig(f"{output}.png", dpi=dpi)

@@ -105,6 +105,7 @@ def barcode_trait(
     colors: list = None,
     ground_true: list = None,
     title: str = None,
+    suffix: str = "pdf",
     output: path = None,
     show: bool = True,
     close: bool = False
@@ -136,7 +137,7 @@ def barcode_trait(
             cmap=cmap,
             ground_true=ground_true,
             title=f"{title} {trait_}" if title is not None else title,
-            output=os.path.join(output, f"cell_{trait_}_score_rank.pdf") if output is not None else None,
+            output=os.path.join(output, f"cell_{trait_}_score_rank.{suffix}") if output is not None else None,
             show=show,
             close=close
         )
