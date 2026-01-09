@@ -5,6 +5,7 @@ from typing import Union, Tuple, Optional, Any
 
 import matplotlib
 import numpy as np
+import pandas as pd
 from anndata import AnnData
 from matplotlib import pyplot as plt
 from pandas import DataFrame
@@ -83,7 +84,8 @@ def scatter_base(
             if legend is not None:
                 df.loc[df[df["__hue__"] == elem].index, "__hue__"] = legend[elem]
                 colors.update(
-                    {legend[elem]: type_colors[start_color_index + i * color_step_size + __hue_order__.index(elem)]})
+                    {legend[elem]: type_colors[start_color_index + i * color_step_size + __hue_order__.index(elem)]}
+                )
             else:
                 colors.update(
                     {
@@ -149,6 +151,75 @@ def scatter_base(
     ax.spines['left'].set_visible(False)
 
     plot_end(fig, title, x_name, y_name, output, show, close)
+
+
+def scatter_3d(
+    df: DataFrame,
+    x: str,
+    y: str,
+    z: str,
+    hue: str = None,
+    x_name: str = None,
+    y_name: str = None,
+    z_name: str = None,
+    title: str = None,
+    width: float = 2,
+    height: float = 2,
+    bottom: float = 0,
+    edge_color: str = None,
+    size: Union[float, collection] = 1.0,
+    legend_name: str = None,
+    output: path = None,
+    show: bool = True,
+    close: bool = False,
+    **kwargs: Any
+):
+    if output is None and not show:
+        ul.log(__name__).error(f"At least one of the `output` and `show` parameters is required")
+        raise ValueError(f"At least one of the `output` and `show` parameters is required")
+
+    fig, ax = plt.subplots(figsize=(width, height))
+    fig.subplots_adjust(bottom=bottom, projection='3d')
+
+    hue_cat = pd.Categorical(df[hue])
+
+    scatter = ax.scatter(
+        df[x],
+        df[y],
+        df[z],
+        c=hue_cat.codes,
+        cmap='tab20',
+        s=size,
+        edgecolors=edge_color,
+        **kwargs
+    )
+
+    # 设置坐标轴标签和标题
+
+    if x_name is not None:
+        ax.set_xlabel(x_name)
+
+    if y_name is not None:
+        ax.set_ylabel(y_name)
+
+    if z_name is not None:
+        ax.set_zlabel(z_name)
+
+    if title is not None:
+        ax.set_title(title)
+
+    unique_types = hue_cat.categories
+    legend_elements = [
+        plt.Line2D(
+            [0], [0], marker='o', color='w', label=type_,
+            markerfacecolor=scatter.cmap(scatter.norm(i))
+        )
+        for i, type_ in enumerate(unique_types)
+    ]
+
+    ax.legend(handles=legend_elements, title=legend_name, bbox_to_anchor=(1.05, 1), loc='upper left')
+
+    plot_end(fig, None, None, None, output, show, close)
 
 
 def scatter_atac(
@@ -384,7 +455,6 @@ def manhattan_causal_variant(
     close: bool = False,
     **kwargs: Any
 ):
-
     df[chr_name] = df[chr_name].astype(chrtype)
 
     if is_sort:

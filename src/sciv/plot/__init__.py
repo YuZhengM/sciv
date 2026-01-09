@@ -7,6 +7,7 @@ from ._heat_map_ import heatmap, heatmap_annotation
 
 from ._scatter_ import (
     scatter_base,
+    scatter_3d,
     scatter_atac,
     scatter_trait,
     volcano_base,
