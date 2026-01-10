@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 from anndata import AnnData
 from matplotlib import pyplot as plt
+from matplotlib.colors import ListedColormap
 from pandas import DataFrame
 import seaborn as sns
 
@@ -165,8 +166,10 @@ def scatter_3d(
     title: str = None,
     width: float = 7,
     height: float = 7,
-    bottom: float = 0,
-    cmap: str = 'tab20',
+    elev: float = 30,
+    azim: float = -60,
+    is_add_legend: bool = True,
+    cmap: Union[str, ListedColormap] = 'tab20',
     font_size: int = 14,
     edge_color: str = None,
     size: Union[float, collection] = 0.1,
@@ -180,8 +183,8 @@ def scatter_3d(
         ul.log(__name__).error(f"At least one of the `output` and `show` parameters is required")
         raise ValueError(f"At least one of the `output` and `show` parameters is required")
 
-    fig, ax = plt.subplots(figsize=(width, height))
-    fig.subplots_adjust(bottom=bottom, projection='3d')
+    fig = plt.figure(figsize=(width, height))
+    ax = fig.add_subplot(projection='3d')
 
     hue_cat = pd.Categorical(df[hue])
 
@@ -196,6 +199,9 @@ def scatter_3d(
         **kwargs
     )
 
+    # angle of view
+    ax.view_init(elev=elev, azim=azim)
+
     if x_name is not None:
         ax.set_xlabel(x_name, fontsize=font_size)
 
@@ -208,16 +214,17 @@ def scatter_3d(
     if title is not None:
         ax.set_title(title, fontsize=font_size)
 
-    unique_types = hue_cat.categories
-    legend_elements = [
-        plt.Line2D(
-            [0], [0], marker='o', color='w', label=type_,
-            markerfacecolor=scatter.cmap(scatter.norm(i))
-        )
-        for i, type_ in enumerate(unique_types)
-    ]
+    if is_add_legend:
+        unique_types = hue_cat.categories
+        legend_elements = [
+            plt.Line2D(
+                [0], [0], marker='o', color='w', label=type_,
+                markerfacecolor=scatter.cmap(scatter.norm(i))
+            )
+            for i, type_ in enumerate(unique_types)
+        ]
 
-    ax.legend(handles=legend_elements, title=legend_name, loc='upper left')
+        ax.legend(handles=legend_elements, title=legend_name, loc='upper left')
 
     plot_end(fig, None, None, None, output, show, close)
 
