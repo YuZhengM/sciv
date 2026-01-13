@@ -7,6 +7,8 @@ from typing import Union, Tuple, Literal, Optional
 from scipy import sparse
 from scipy.stats import norm
 from tqdm import tqdm
+from joblib import Parallel, delayed
+import multiprocessing
 
 import numpy as np
 from anndata import AnnData
@@ -516,7 +518,7 @@ def semi_mutual_knn_weight(
     adj_weight = (1 - weight) * adj_and.astype(np.float32) + weight * adj_or.astype(np.float32)
 
     # Ensure full connectivity if required
-    if is_mknn_fully_connected and (or_neighbors == 0 or weight == 0):
+    if is_mknn_fully_connected:
         adj_1nn = _knn(new_data, 1)
 
         if sparse.issparse(adj_and):
@@ -824,16 +826,17 @@ def _overlap_(regions_sort: DataFrame, variants: DataFrame) -> DataFrame:
         if chr_a in chr_keys:
             # get chr variant
             variants_chr_type_position_list = variants_position_list[chr_a]
+
             # judge start and end position
             if start <= variants_chr_type_position_list[-1] and end >= variants_chr_type_position_list[0]:
                 # get index
-                start_index = get_index(start, variants_chr_type_position_list)
-                end_index = get_index(end, variants_chr_type_position_list)
+                start_index = get_index(start, variants_chr_type_position_list, False)
+                end_index = get_index(end, variants_chr_type_position_list, False)
 
                 # Determine whether it is equal, Equality means there is no overlap
                 if start_index != end_index:
-                    start_index = start_index if isinstance(start_index, number) else start_index[1]
-                    end_index = end_index + 1 if isinstance(end_index, number) else end_index[1]
+                    start_index = start_index if isinstance(start_index, int) else start_index[1]
+                    end_index = end_index + 1 if isinstance(end_index, int) else end_index[1]
 
                     if start_index > end_index:
                         ul.log(__name__).error("The end index in the region is greater than the start index.")
@@ -1253,7 +1256,7 @@ def obtain_cell_cell_network(
     weight: float = 0.1,
     kernel: Literal["laplacian", "gaussian"] = "gaussian",
     local_k: int = 10,
-    gamma: Optional[float, collection] = None,
+    gamma: Optional[Union[float, collection]] = None,
     is_simple: bool = True
 ) -> AnnData:
     """

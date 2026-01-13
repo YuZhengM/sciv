@@ -90,17 +90,20 @@ def sum_min_max(data: matrix_data, axis: int = 1) -> Tuple[number, number]:
     return min(rows_sum), max(rows_sum)
 
 
-def get_index(position: number, positions_list: list) -> Union[number, Tuple[number, number]]:
+def get_index(position: number, positions_list: list, is_sort: bool = True) -> Union[int, Tuple[int, int]]:
     """
     Search for position information. Similar to half search.
         If the position exists in the list, return the index.
         If it does not exist, return the index located between the two indexes
     :param position: position
     :param positions_list: position list
+    :param is_sort: True
     :return: position index
     """
-    # sort
-    positions_list.sort()
+
+    if is_sort:
+        positions_list.sort()
+
     # search
     position_size: int = len(positions_list)
     left, right = 0, position_size - 1
@@ -441,7 +444,6 @@ def plot_end(
     close: bool = False,
     dpi: float = 300
 ):
-
     if title is not None:
         plt.title(title)
 
