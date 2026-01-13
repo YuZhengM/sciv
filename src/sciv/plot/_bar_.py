@@ -302,7 +302,8 @@ def bar_significance(
     :param color_step_size: Step size when cycling through palette
     :param color_type: Name of seaborn palette to use
     :param test: Statistical test for pairwise comparisons
-        {"t-test_ind", "t-test_welch", "t-test_paired", "Mann-Whitney", "Mann-Whitney-gt", "Mann-Whitney-ls", "Levene", "Wilcoxon", "Kruskal", "Brunner-Munzel"}
+        {"t-test_ind", "t-test_welch", "t-test_paired", "Mann-Whitney", "Mann-Whitney-gt", "Mann-Whitney-ls",
+         "Levene", "Wilcoxon", "Kruskal", "Brunner-Munzel"}
     :param ci: Confidence interval type or value
     :param capsize: Width of the error-bar caps
     :param errcolor: Color of the error bars

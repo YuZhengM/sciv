@@ -1,6 +1,7 @@
 # -*- coding: UTF-8 -*-
 
 import random
+import time
 from typing import Union, Tuple, Literal, Optional
 
 from scipy import sparse
@@ -903,6 +904,8 @@ def overlap_sum(regions: AnnData, variants: dict, trait_info: DataFrame) -> AnnD
     :return: overlap data
     """
 
+    start_time = time.time()
+
     # Unique feature set
     label_all = regions.var.index.tolist()
     # Peak number
@@ -988,6 +991,8 @@ def overlap_sum(regions: AnnData, variants: dict, trait_info: DataFrame) -> AnnD
 
     overlap_adata = AnnData(overlap_sparse, var=trait_info, obs=regions.var)
     overlap_adata.uns["is_overlap"] = True
+    overlap_adata.uns["elapsed_time"] = time.time() - start_time
+
     return overlap_adata
 
 
@@ -1069,6 +1074,7 @@ def calculate_init_score_weight(
     adata: AnnData,
     da_peaks_adata: AnnData,
     overlap_adata: AnnData,
+    layer: Optional[str] = "fragments",
     diff_peak_value: difference_peak_optional = 'emp_effect',
     is_simple: bool = True,
     block_size: int = -1
@@ -1078,6 +1084,7 @@ def calculate_init_score_weight(
     :param adata: scATAC-seq data;
     :param da_peaks_adata: Differential peak data;
     :param overlap_adata: Peaks-traits/diseases data;
+    :param layer: The layer value of scATAC-seq data;
     :param diff_peak_value: Specify the correction value in peak correction of clustering type differences.
         {'emp_effect', 'bayes_factor', 'emp_prob1', 'all'}
     :param is_simple: True represents not adding unnecessary intermediate variables, only adding the final result. It
@@ -1087,17 +1094,30 @@ def calculate_init_score_weight(
         If the value is less than or equal to zero, no block operation will be performed
     :return: Initial TRS with weight.
     """
+
+    start_time = time.time()
+
     if "is_overlap" not in overlap_adata.uns:
         ul.log(__name__).warning(
-            "The `is_overlap` is not in `overlap_data.uns`. (Suggest using the 'tl.overlap_stum' function to obtain the result.)"
+            "The `is_overlap` is not in `overlap_data.uns`. "
+            "(Suggest using the 'tl.overlap_stum' function to obtain the result.)"
         )
 
     if "dp_delta" not in da_peaks_adata.uns:
         ul.log(__name__).warning(
-            "The `dp_delta` is not in `da_peaks_adata.uns`. (Suggest using the 'pp.poisson_vi' function to obtain the result.)"
+            "The `dp_delta` is not in `da_peaks_adata.uns`. "
+            "(Suggest using the 'pp.poisson_vi' function to obtain the result.)"
         )
 
-    fragments = adata.layers["fragments"]
+    if layer is not None and layer not in adata.layers:
+        ul.log(__name__).error(
+            f"The `layer` parameter is empty or one of the element values of `adata.layers` ({adata.layers})."
+        )
+        raise ValueError(
+            f"The `layer` parameter is empty or one of the element values of `adata.layers` ({adata.layers})."
+        )
+
+    fragments = adata.layers[layer] if layer is not None else adata.X
     cell_anno = adata.obs
     del adata
 
@@ -1174,7 +1194,8 @@ def calculate_init_score_weight(
     del _cluster_weight_
 
     ul.log(__name__).info("Broadcasting the weight factor to the cellular level")
-    _cell_type_weight_ = np.zeros((cell_anno.shape[0], da_peaks_adata.obsm["cluster_weight"].shape[1]), dtype=np.float32)
+    _cell_type_weight_ = np.zeros((cell_anno.shape[0], da_peaks_adata.obsm["cluster_weight"].shape[1]),
+                                  dtype=np.float32)
 
     cluster_series = cell_anno["clusters"]
 
@@ -1195,7 +1216,34 @@ def calculate_init_score_weight(
     del _init_trs_ncw_, _cell_type_weight_
 
     init_trs_adata.uns["is_sample"] = is_simple
+    init_trs_adata.uns["elapsed_time"] = time.time() - start_time
     return init_trs_adata
+
+
+def adaptive_gamma_knn(data: matrix_data, k: int = 10):
+    """
+    Adaptive gamma parameter based on k-nearest neighbors
+    :param data: Data matrix (n_samples, n_features)
+    :param k: Number of neighbors, usually select 5-20
+    :return: Gamma value for each sample (n_samples,)
+    """
+
+    from sklearn.neighbors import NearestNeighbors
+
+    # Calculate the distance from each point to its k-th nearest neighbor
+    knn = NearestNeighbors(n_neighbors=k + 1).fit(data)  # +1 because it includes itself
+    distances, _ = knn.kneighbors(data)
+
+    # Take the distance of the k-th nearest neighbor (index k, because 0 is itself)
+    kth_distances = distances[:, k]
+
+    # Avoid division by zero (if the distance is 0, set it to a very small value)
+    kth_distances[kth_distances == 0] = np.finfo(float).eps
+
+    # Calculate local gamma: gamma = 1 / (2 * sigma^2), where sigma = kth_distance
+    gammas = 1.0 / (kth_distances ** 2)
+
+    return gammas
 
 
 def obtain_cell_cell_network(
@@ -1203,7 +1251,9 @@ def obtain_cell_cell_network(
     k: int = 30,
     or_k: int = 1,
     weight: float = 0.1,
-    gamma: Optional[float] = None,
+    kernel: Literal["laplacian", "gaussian"] = "gaussian",
+    local_k: int = 10,
+    gamma: Optional[float, collection] = None,
     is_simple: bool = True
 ) -> AnnData:
     """
@@ -1212,14 +1262,19 @@ def obtain_cell_cell_network(
     :param k: When building an M-KNN network, the number of nodes connected by each node (and);
     :param or_k: When building an M-KNN network, the number of nodes connected by each node (or);
     :param weight: The weight of interactions or operations;
-    :param gamma: If None, defaults to 1.0 / n_features. Otherwise, it should be strictly positive;
+    :param local_k: Determining the number of neighbors for the adaptive kernel;
+    :param kernel: Determine the kernel function to be used;
+    :param gamma: If None, it defaults to the adaptive value obtained through the local information of
+        parameter `local_k`. Otherwise, it should be strictly positive;
     :param is_simple: True represents not adding unnecessary intermediate variables, only adding the final result.
         It is worth noting that when set to `True`, the `is_ablation` parameter will become invalid, and when set to
         `False`, `is_ablation` will only take effect;
     :return: Cell similarity data.
     """
 
-    from sklearn.metrics.pairwise import laplacian_kernel
+    start_time = time.time()
+
+    from sklearn.metrics.pairwise import laplacian_kernel, rbf_kernel
 
     # data
     if "poisson_vi" not in adata.uns.keys():
@@ -1232,6 +1287,14 @@ def obtain_cell_cell_network(
             "the `poisson_vi` function."
         )
 
+    if kernel not in ["laplacian", "gaussian"]:
+        ul.log(__name__).error("Parameter `kernel` only supports two values, `laplacian` and `gaussian`.")
+        raise ValueError("Parameter `kernel` only supports two values, `laplacian` and `gaussian`.")
+
+    if local_k <= 0:
+        ul.log(__name__).error("The `local_k` parameter must be a natural number greater than 0.")
+        raise ValueError("The `local_k` parameter must be a natural number greater than 0.")
+
     _latent_name_ = "latent" if adata.uns["poisson_vi"]["latent_name"] is None \
         else adata.uns["poisson_vi"]["latent_name"]
 
@@ -1240,9 +1303,15 @@ def obtain_cell_cell_network(
     cell_anno = adata.obs
     del adata
 
-    ul.log(__name__).info("Laplacian kernel")
-    # Laplacian kernel
-    cell_affinity = laplacian_kernel(latent, gamma=gamma).astype(np.float32)
+    if gamma is None:
+        gamma = adaptive_gamma_knn(latent, k=local_k)
+
+    if kernel == "kernel":
+        ul.log(__name__).info("Laplacian kernel")
+        cell_affinity = laplacian_kernel(latent, gamma=gamma).astype(np.float32)
+    else:
+        ul.log(__name__).info("Gaussian (RBF) kernel")
+        cell_affinity = rbf_kernel(latent, gamma=gamma).astype(np.float32)
 
     # Define KNN network
     cell_mutual_knn_weight, cell_mutual_knn = semi_mutual_knn_weight(
@@ -1261,6 +1330,8 @@ def obtain_cell_cell_network(
 
     if not is_simple:
         cc_data.layers["cell_mutual_knn"] = to_sparse(cell_mutual_knn)
+
+    cc_data.uns["elapsed_time"] = time.time() - start_time
 
     return cc_data
 

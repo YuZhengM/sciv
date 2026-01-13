@@ -1,5 +1,5 @@
 # -*- coding: UTF-8 -*-
-
+import time
 import warnings
 from typing import Optional, Literal
 
@@ -45,6 +45,10 @@ def filter_data(
     :param is_min_peak: Whether to screen peaks
     :return: scATAC-seq data
     """
+
+    # start time
+    start_time = time.time()
+
     import scanpy as sc
 
     ul.log(__name__).info("Filter scATAC-seq data")
@@ -105,6 +109,8 @@ def filter_data(
     )
     ul.log(__name__).info(f"Size of filtered scATAC-seq data: {filter_adata.shape}")
     filter_adata.uns["step"] = 0
+    filter_adata.uns["elapsed_time"] = time.time() - start_time
+
     return filter_adata
 
 

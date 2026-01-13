@@ -1,6 +1,7 @@
 # -*- coding: UTF-8 -*-
 
 import math
+import time
 from typing import Union, Tuple, Literal
 
 import torch
@@ -222,7 +223,9 @@ def random_walk(
 
             return np.column_stack(results)
     else:
-        ul.log(__name__).error(f'The `device` ({device}) is not supported. Only supports "cpu", "gpu", and "auto" values.')
+        ul.log(__name__).error(
+            f'The `device` ({device}) is not supported. Only supports "cpu", "gpu", and "auto" values.'
+        )
         raise ValueError(f'The `device` ({device}) is not supported. Only supports "cpu", "gpu", and "auto" values.')
 
 
@@ -267,17 +270,20 @@ class RandomWalk:
         :param max_seed_cell_rate: The maximum percentage of seed cells in all cells.
         :param credible_threshold: The threshold for determining the credibility of enriched cells in the context of
             enrichment, i.e. the threshold for judging enriched cells;
-        :param enrichment_threshold: Only by setting a threshold for the standardized output TRS can a portion of the enrichment
-            results be obtained. Parameters support string types {'golden', 'half', 'e', 'pi', 'none'}, or valid floating-point types
-            within the range of (0, log1p(1)).
-        :param is_ablation: True represents obtaining the results of the ablation experiment. This parameter is limited by
-            the `is_simple` parameter, and its effectiveness requires setting `is_simple` to `False`;
+        :param enrichment_threshold: Only by setting a threshold for the standardized output TRS can a portion of the
+            enrichment results be obtained. Parameters support string types {'golden', 'half', 'e', 'pi', 'none'}, or
+            valid floating-point types within the range of (0, log1p(1)).
+        :param is_ablation: True represents obtaining the results of the ablation experiment. This parameter is limited
+            by the `is_simple` parameter, and its effectiveness requires setting `is_simple` to `False`;
         :param is_simple: True represents not adding unnecessary intermediate variables, only adding the final result.
-            It is worth noting that when set to `True`, the `is_ablation` parameter will become invalid, and when set to
-            `False`, `is_ablation` will only take effect;
+            It is worth noting that when set to `True`, the `is_ablation` parameter will become invalid, and when set
+            to `False`, `is_ablation` will only take effect;
         :return: Stable distribution score.
         """
         ul.log(__name__).info("Random walk.")
+
+        start_time = time.time()
+
         # judge length
         if cc_adata.shape[0] != init_status.shape[0]:
             ul.log(__name__).error(
@@ -311,8 +317,12 @@ class RandomWalk:
             raise ValueError("The parameter of `epsilon` must be greater than zero.")
 
         if "clusters" not in init_status.obs.columns:
-            ul.log(__name__).error("Unsupervised clustering information must be included in column `clusters` of `init_datus.obs`.")
-            raise ValueError("Unsupervised clustering information must be included in column `clusters` of `init_datus.obs`.")
+            ul.log(__name__).error(
+                "Unsupervised clustering information must be included in column `clusters` of `init_datus.obs`."
+            )
+            raise ValueError(
+                "Unsupervised clustering information must be included in column `clusters` of `init_datus.obs`."
+            )
 
         init_status.obs["clusters"] = init_status.obs["clusters"].astype(str)
 
@@ -339,8 +349,13 @@ class RandomWalk:
         if isinstance(enrichment_threshold, float):
 
             if enrichment_threshold <= 0 or enrichment_threshold >= np.log1p(1):
-                ul.log(__name__).warning("The `enrichment_threshold` parameter is not set within the range of (0, log1p(1)), this parameter will become invalid.")
-                ul.log(__name__).warning("It is recommended to set the `enrichment_threshold` parameter to the 'golden' value.")
+                ul.log(__name__).warning(
+                    "The `enrichment_threshold` parameter is not set within the range of (0, log1p(1)), "
+                    "this parameter will become invalid."
+                )
+                ul.log(__name__).warning(
+                    "It is recommended to set the `enrichment_threshold` parameter to the 'golden' value."
+                )
 
             self.enrichment_threshold = enrichment_threshold
         elif enrichment_threshold == "golden":
@@ -356,8 +371,9 @@ class RandomWalk:
             self.enrichment_threshold = np.log1p(1)
         else:
             raise ValueError(
-                f"Invalid enrichment settings. The string type in the `enrichment_threshold` parameter only supports the following parameter "
-                f"'golden', 'half', 'e', 'pi',  Alternatively, input a floating-point type value within the range of (0, log1p(1))"
+                "Invalid enrichment settings. The string type in the `enrichment_threshold` parameter only supports "
+                "the following parameter 'golden', 'half', 'e', 'pi',  Alternatively, input a floating-point type "
+                "value within the range of (0, log1p(1))"
             )
 
         # Enrichment judgment
@@ -443,6 +459,8 @@ class RandomWalk:
         del self.cell_affinity
         del init_status
 
+        self.elapsed_time = time.time() - start_time
+
     def _random_walk_(
         self,
         seed_cell_data: matrix_data,
@@ -465,13 +483,19 @@ class RandomWalk:
             w = weight
 
         if not self.is_gpu_available:
-            return random_walk(seed_cell_data, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p, n_jobs=self.n_jobs, device='cpu')
+            return random_walk(
+                seed_cell_data, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p, n_jobs=self.n_jobs, device='cpu'
+            )
 
         try:
-            _data_ = random_walk(seed_cell_data, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p, n_jobs=self.n_jobs, device=device)
+            _data_ = random_walk(
+                seed_cell_data, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p, n_jobs=self.n_jobs, device=device
+            )
         except Exception as e:
             ul.log(__name__).warning(f"GPU failed to run, try to switch to CPU running.\n {e}")
-            _data_ = random_walk(seed_cell_data, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p, n_jobs=self.n_jobs, device='cpu')
+            _data_ = random_walk(
+                seed_cell_data, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p, n_jobs=self.n_jobs, device='cpu'
+            )
 
         return _data_
 
@@ -548,8 +572,9 @@ class RandomWalk:
 
     def _get_seed_cell_clustering_weight_(self, seed_cell_index: collection) -> Tuple[collection, dict]:
         """
-        This function is used to obtain the percentage of seed cells that occupy this cell type, i.e., the seed cell clustering weight.
-        The purpose of this weight is to provide fair enrichment opportunities for those with fewer cell numbers in cell clustering types.
+        This function is used to obtain the percentage of seed cells that occupy this cell type, i.e., the seed cell
+        clustering weight. The purpose of this weight is to provide fair enrichment opportunities for those with fewer
+        cell numbers in cell clustering types.
         :param seed_cell_index: Index of seed cells.
         :return: The seed cell clustering weight, equity factor.
         """
@@ -604,14 +629,17 @@ class RandomWalk:
         :param info: Log information about seed cells
         :return:
             1. Set seed cell thresholds for each trait or disease.
-            2. Seed cell weights obtained for each trait or disease based on the `init_data` parameter, with each seed cell assigned the same weight.
-                Note that this only takes effect when `is_simple` is true.
-            3. Seed cell weights obtained for each trait or disease based on the init_data parameter, and the weight of each seed cell will be assigned based on the similarity between cells.
+            2. Seed cell weights obtained for each trait or disease based on the `init_data` parameter, with each seed
+                cell assigned the same weight. Note that this only takes effect when `is_simple` is true.
+            3. Seed cell weights obtained for each trait or disease based on the init_data parameter, and the weight of
+                each seed cell will be assigned based on the similarity between cells.
             4. Seed cell index, which will be used for later knockout or knockdown prediction.
-            5. Based on the init_data parameter, a reference seed cell weight is obtained for enrichment analysis assistance for each trait or disease, and each seed cell is assigned the same weight.
+            5. Based on the init_data parameter, a reference seed cell weight is obtained for enrichment analysis
+                assistance for each trait or disease, and each seed cell is assigned the same weight.
                 Note that this only takes effect when `is_simple` is true.
-            6. Reference seed cell weights for auxiliary enrichment analysis of each trait or disease based on the init_data parameter,
-                and the weight of each seed cell will be assigned based on the similarity between cells.
+            6. Reference seed cell weights for auxiliary enrichment analysis of each trait or disease based on the
+                init_data parameter, and the weight of each seed cell will be assigned based on the similarity
+                between cells.
         """
 
         if init_data is None:
@@ -633,7 +661,9 @@ class RandomWalk:
             seed_cell_matrix = np.zeros((1, 1))
             seed_cell_matrix_en = np.zeros((1, 1))
 
-        ul.log(__name__).info(f"Calculate {n_traits} traits/diseases for seed cells information.{f' ({info})' if info else ''}")
+        ul.log(__name__).info(
+            f"Calculate {n_traits} traits/diseases for seed cells information.{f' ({info})' if info else ''}"
+        )
 
         trait_values_all = to_dense(init_data.X, is_array=True)
 

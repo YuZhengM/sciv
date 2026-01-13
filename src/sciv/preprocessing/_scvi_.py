@@ -1,6 +1,7 @@
 # -*- coding: UTF-8 -*-
 
 import os
+import time
 import warnings
 from typing import Optional
 
@@ -48,6 +49,8 @@ def poisson_vi(
     :return: Differential peak of clustering types.
     """
     ul.log(__name__).info("Start PoissonVI")
+
+    start_time = time.time()
 
     import scvi
     import scanpy as sc
@@ -232,11 +235,14 @@ def poisson_vi(
 
     obs = pd.DataFrame(clusters_list, columns=["id"])
     obs.index = obs["id"].astype(str)
+
     da_peaks_adata = AnnData(matrix_ee, obs=obs, var=adata.var)
     da_peaks_adata.layers["bayes_factor"] = matrix_bf
     da_peaks_adata.layers["emp_prob1"] = matrix_ep1
     da_peaks_adata.uns["latent_name"] = latent_name
     da_peaks_adata.uns["dp_delta"] = dp_delta
+    da_peaks_adata.uns["elapsed_time"] = time.time() - start_time
 
     adata.uns["step"] = 1
+
     return da_peaks_adata

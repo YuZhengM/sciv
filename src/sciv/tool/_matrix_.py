@@ -506,6 +506,7 @@ def vector_multiply_block_storage(
         data = np.zeros((n, q))
 
     total_steps = len(n_range) * len(q_range)
+
     with tqdm(total=total_steps) as pbar:
         for i in n_range:
             for j in q_range:
