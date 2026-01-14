@@ -597,7 +597,7 @@ def core(
     if elapsed_time < step_time:
         elapsed_time = step_time
 
-    ul.log(__name__).info(f"Algorithm {project_name} consumes a total of {elapsed_time} seconds.")
+    ul.log(__name__).info(f"Algorithm {project_name} consumes a total of {elapsed_time:.2f}s.")
 
     trs.uns["elapsed_time"] = {
         "PoissonVI": poisson_vi_time,
