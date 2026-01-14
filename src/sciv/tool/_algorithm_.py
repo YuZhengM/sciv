@@ -993,7 +993,7 @@ def overlap_sum(regions: AnnData, variants: dict, trait_info: DataFrame, n_jobs:
 
     # Use Parallel to process traits in parallel
     results = Parallel(n_jobs=n_jobs)(
-        delayed(_process_trait_)(trait_name, col_idx) for col_idx, trait_name in enumerate(trait_names)
+        delayed(_process_trait_)(trait_name, col_idx) for col_idx, trait_name in tqdm(enumerate(trait_names))
     )
 
     # Preallocate length to avoid list dynamic expansion
@@ -1234,10 +1234,18 @@ def calculate_init_score_weight(
 
     ul.log(__name__).info("Calculate initial trait relevance scores")
     _init_trs_weight_ = np.multiply(_init_trs_ncw_, _cell_type_weight_)
+
+    if hasattr(_init_trs_weight_, "A"):
+        _init_trs_weight_ = _init_trs_weight_.A
+
     init_trs_adata = AnnData(_init_trs_weight_, obs=cell_anno, var=trait_anno)
     del _init_trs_weight_
 
     if not is_simple:
+
+        if hasattr(_init_trs_ncw_, "A"):
+            _init_trs_ncw_ = _init_trs_ncw_.A
+
         init_trs_adata.layers["init_trs_ncw"] = _init_trs_ncw_
         init_trs_adata.layers["cell_type_weight"] = to_sparse(_cell_type_weight_)
         init_trs_adata.uns["cluster_weight_factor"] = da_peaks_adata.obsm["cluster_weight"]
