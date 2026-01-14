@@ -1,7 +1,7 @@
 # -*- coding: UTF-8 -*-
 
 import os
-from typing import Tuple, Literal, Optional, Union
+from typing import Tuple, Literal, Optional, Union, Any
 
 import pandas as pd
 from anndata import AnnData
@@ -314,9 +314,11 @@ def rate_bar_plot(
     rotation: float = 65,
     title: str = None,
     text_left_move: float = 0.15,
+    y_limit: Tuple[float, float] = (0, 1),
     plot_output: path = None,
     show: bool = True,
-    close: bool = False
+    close: bool = False,
+    **kwargs: Any
 ) -> None:
 
     if dir_name is not None:
@@ -349,9 +351,11 @@ def rate_bar_plot(
         bottom=bottom,
         rotation=rotation,
         text_left_move=text_left_move,
+        y_limit=y_limit,
         output=new_path if plot_output is not None else None,
         show=show,
-        close=close
+        close=close,
+        **kwargs
     )
 
 

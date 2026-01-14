@@ -119,7 +119,7 @@ def stability_line(
         locator = mdates.DayLocator(interval=1)
         chart.xaxis.set_major_locator(locator)
 
-        ax.set_xticklabels(ax.get_xticklabels(), rotation=x_name_rotation)
+        ax.tick_params(axis='x', rotation=x_name_rotation)
     else:
         plt.xticks(x_ticks, rotation=x_name_rotation)
 

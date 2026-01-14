@@ -48,7 +48,8 @@ def violin_base(
 
     if hue is not None and hue not in df_columns:
         ul.log(__name__).error(
-            f"The `hue` ({hue}) parameter must be in the `df` parameter data column name ({df_columns})")
+            f"The `hue` ({hue}) parameter must be in the `df` parameter data column name ({df_columns})"
+        )
         raise ValueError(f"The `hue` ({hue}) parameter must be in the `df` parameter data column name ({df_columns})")
 
     fig, ax = plot_start(width, height, bottom, output, show)
@@ -67,20 +68,29 @@ def violin_base(
     if is_sort:
         new_df.sort_values([value], ascending=False, inplace=True)
         y_names: Union[list, None] = list(new_df[clusters])
+
         if "color" in df_columns:
             colors = list(new_df["color"])
+
     else:
         new_df.index = new_df[clusters]
+
         if order_names is not None:
             y_names: list = order_names
+
             if "color" in df_columns:
+
                 for i in order_names:
+
                     for j, c in zip(new_df[clusters], new_df["color"]):
+
                         if i == j:
                             colors.append(c)
                             break
+
         else:
             y_names = list(new_df[clusters])
+
             if "color" in df_columns:
                 colors = list(new_df["color"])
 

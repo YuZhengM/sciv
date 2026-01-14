@@ -143,8 +143,10 @@ def communities_graph(
     partition: list = [0 for _ in range(g.number_of_nodes())]
 
     for c_i, nodes in enumerate(communities):
+
         for i in nodes:
             partition[i] = type_colors[start_color_index + color_index * color_step_size + c_i]
+
         color_index += 1
 
     pos = nx.spring_layout(g)

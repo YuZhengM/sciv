@@ -455,11 +455,11 @@ def semi_mutual_knn_weight(
         del data
         np.fill_diagonal(new_data, 0)
 
-    def _knn_k_(_mat: matrix_data, k: int):
+    def _knn_k_(_mat: matrix_data, k: int, info: str = "LOG"):
         n_rows = _mat.shape[0]
         adj = sparse.lil_matrix((n_rows, n_rows), dtype=np.int8)
 
-        ul.log(__name__).info("Calculate the k-nearest neighbors of each node.")
+        ul.log(__name__).info(f"Calculate the k-nearest neighbors of each node. ({info})")
 
         for i in tqdm(range(n_rows)):
             row = np.array(_mat[i]).ravel()
@@ -477,7 +477,7 @@ def semi_mutual_knn_weight(
 
         return adj.tocsr()
 
-    def _knn(_mat: matrix_data, k: int) -> matrix_data:
+    def _knn(_mat: matrix_data, k: int, info: str = "LOG") -> matrix_data:
         """
         Return k-nearest-neighbor 0/1 adjacency matrix (int8 to save memory).
         Supports both sparse and dense inputs.
@@ -486,11 +486,11 @@ def semi_mutual_knn_weight(
         if sparse.issparse(_mat):
             # Sparse path: sort each row's data to find the k-th largest
             _mat = _mat.tocsr(copy=False)
-            return _knn_k_(_mat, k)
+            return _knn_k_(_mat, k, info)
         else:
 
             if is_for:
-                return _knn_k_(_mat, k)
+                return _knn_k_(_mat, k, info)
             else:
                 # Dense path: vectorized thresholding
                 kth_val = np.sort(_mat, axis=1)[:, -(k + 1)]
@@ -499,12 +499,12 @@ def semi_mutual_knn_weight(
                 return adj
 
     # Compute adjacency matrices for AND/OR logic
-    adj_and = _knn(new_data, neighbors)
+    adj_and = _knn(new_data, neighbors, "AND")
 
     if neighbors == or_neighbors:
         adj_or = adj_and
     else:
-        adj_or = _knn(new_data, or_neighbors)
+        adj_or = _knn(new_data, or_neighbors, "OR")
 
     # Symmetrize
     if sparse.issparse(adj_and):
@@ -519,7 +519,12 @@ def semi_mutual_knn_weight(
 
     # Ensure full connectivity if required
     if is_mknn_fully_connected:
-        adj_1nn = _knn(new_data, 1)
+        adj_1nn = _knn(new_data, 1, "ONE")
+
+        if sparse.issparse(adj_1nn):
+            adj_1nn = adj_1nn.maximum(adj_1nn.T)
+        else:
+            adj_1nn = np.maximum(adj_1nn, adj_1nn.T)
 
         if sparse.issparse(adj_and):
             adj_and = adj_and.maximum(adj_1nn)

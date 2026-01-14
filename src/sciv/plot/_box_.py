@@ -52,7 +52,6 @@ def box_base(
 
     if "color" in df_columns:
         new_df_color: DataFrame = df.groupby(group_columns, as_index=False)["color"].first()
-
         new_df = new_df.merge(new_df_color, how="left", on=clusters)
 
     colors: list = []
@@ -61,22 +60,31 @@ def box_base(
     if is_sort:
         new_df.sort_values([value], ascending=False, inplace=True)
         y_names: Union[list, None] = list(new_df[clusters])
+
         if "color" in df_columns:
-            colors = new_df["color"]
+            colors = list(new_df["color"])
+
     else:
         new_df.index = new_df[clusters]
+
         if order_names is not None:
             y_names: list = order_names
+
             if "color" in df_columns:
+
                 for i in order_names:
+
                     for j, c in zip(new_df[clusters], new_df["color"]):
+
                         if i == j:
                             colors.append(c)
                             break
+
         else:
             y_names = new_df[clusters]
+
             if "color" in df_columns:
-                colors = new_df["color"]
+                colors = list(new_df["color"])
 
     # scatter
     sns.boxplot(
@@ -103,6 +111,7 @@ def box_base(
         line.set_linewidth(line_width)
 
     # set coordinate
+    ax.set_xticks(range(len(y_names)))
     ax.set_xticklabels(labels=y_names, rotation=rotation)
     ax.spines['top'].set_linewidth(line_width)
     ax.spines['bottom'].set_linewidth(line_width)

@@ -76,6 +76,7 @@ def two_bar(
     bottom: float = 0,
     rotation: float = 65,
     text_left_move: float = 0.15,
+    y_limit: Tuple[float, float] = (0, 1),
     title: str = None,
     output: path = None,
     show: bool = True,
@@ -91,6 +92,9 @@ def two_bar(
 
     ax.legend()
 
+    ax.set_ylim(y_limit)
+
+    ax.set_xticks(range(len(ax_x)))
     ax.set_xticklabels(labels=list(ax_x), rotation=rotation)
 
     # Draw numerical values
@@ -102,6 +106,13 @@ def two_bar(
             rotation=90,
             color=text_color
         )
+
+    for spine in ["top", "left", "right", "bottom"]:
+        ax.spines[spine].set_linewidth(1)
+
+    ax.spines['bottom'].set_linewidth(1)
+    ax.grid(axis='y', ls='--', c='gray')
+    ax.set_axisbelow(True)
 
     plot_end(fig, title, x_name, y_name, output, show, close)
 
@@ -123,6 +134,7 @@ def class_bar(
     rotation: float = 65,
     title: str = None,
     text_left_move: float = 0.15,
+    y_limit: Tuple[float, float] = (0, 1),
     output: path = None,
     show: bool = True,
     close: bool = False,
@@ -159,6 +171,7 @@ def class_bar(
         bottom=bottom,
         rotation=rotation,
         text_left_move=text_left_move,
+        y_limit=y_limit,
         title=title,
         output=output,
         show=show,
@@ -185,6 +198,7 @@ def bar_trait(
     rotation: float = 65,
     title: str = None,
     text_left_move: float = 0.15,
+    y_limit: Tuple[float, float] = (0, 1),
     output: path = None,
     show: bool = True,
     close: bool = False,
@@ -216,6 +230,7 @@ def bar_trait(
             bottom=bottom,
             rotation=rotation,
             text_left_move=text_left_move,
+            y_limit=y_limit,
             text_color=text_color,
             output=os.path.join(output, f"cell_{trait_}_enrichment_bar.pdf") if output is not None else None,
             show=show,
@@ -224,6 +239,7 @@ def bar_trait(
         )
 
     trait_list = list(set(trait_df[trait_column_name]))
+
     # judge trait
     if trait_name != "All" and trait_name not in trait_list:
         ul.log(__name__).error(
@@ -237,8 +253,10 @@ def bar_trait(
 
     # plot
     if trait_name == "All":
+
         for trait in trait_list:
             trait_plot(trait_=trait, cell_df_=trait_df)
+
     else:
         trait_plot(trait_name, trait_df)
 
@@ -376,10 +394,9 @@ def bar_significance(
         y=y,
         hue=legend,
         hue_order=hue_order,
-        ci=ci,
+        errorbar=('ci', ci),
         capsize=capsize,
-        errwidth=line_width,
-        errcolor=errcolor,
+        err_kws={'color': errcolor, 'linewidth': line_width},
         ax=ax,
         palette=palette,
         edgecolor=errcolor,
@@ -437,7 +454,7 @@ def bar_significance(
     ax.set_axisbelow(True)
 
     if x_rotation != 0:
-        ax.set_xticklabels(labels=ax.get_xticklabels(), rotation=x_rotation)
+        ax.tick_params(axis='x', rotation=x_rotation)
 
     plt.legend(loc='upper left', bbox_to_anchor=(0.0, legend_gap), ncol=2)
 

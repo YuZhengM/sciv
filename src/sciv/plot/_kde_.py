@@ -42,7 +42,7 @@ def kde(
     # Random sampling
     if axis == -1:
         matrix = down_sampling_data(data.X, sample_number)
-        sns.kdeplot(matrix, shade=True, fill=True)
+        sns.kdeplot(matrix, fill=True)
     elif axis == 0:
         col_number = data.shape[1]
         if data.shape[0] * data.shape[1] > sample_number:
@@ -50,10 +50,10 @@ def kde(
 
             for i in tqdm(range(col_number)):
                 _vector_ = down_sampling_data(data.X[:, i], row_number)
-                sns.kdeplot(np.array(_vector_).flatten(), shade=True, fill=True, **kwargs)
+                sns.kdeplot(np.array(_vector_).flatten(), fill=True, **kwargs)
         else:
             for i in tqdm(range(col_number)):
-                sns.kdeplot(np.array(data.X[:, i]).flatten(), shade=True, fill=True, **kwargs)
+                sns.kdeplot(np.array(data.X[:, i]).flatten(), fill=True, **kwargs)
 
         if is_legend:
             ax.legend(list(adata.var.index))
@@ -65,10 +65,10 @@ def kde(
 
             for i in tqdm(range(row_number)):
                 _vector_ = down_sampling_data(data.X[i, :], col_number)
-                sns.kdeplot(np.array(_vector_).flatten(), shade=True, fill=True, **kwargs)
+                sns.kdeplot(np.array(_vector_).flatten(), fill=True, **kwargs)
         else:
             for i in tqdm(range(row_number)):
-                sns.kdeplot(np.array(data.X[i, :]).flatten(), shade=True, fill=True, **kwargs)
+                sns.kdeplot(np.array(data.X[i, :]).flatten(), fill=True, **kwargs)
 
         if is_legend:
             ax.legend(list(adata.obs.index))
