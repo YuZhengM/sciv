@@ -897,13 +897,14 @@ def overlap(regions: DataFrame, variants: DataFrame) -> DataFrame:
     return _overlap_(regions_sort, variants)
 
 
-def overlap_sum(regions: AnnData, variants: dict, trait_info: DataFrame) -> AnnData:
+def overlap_sum(regions: AnnData, variants: dict, trait_info: DataFrame, n_jobs: int = -1) -> AnnData:
     """
     Overlap regional data and mutation data and sum the PP values of all mutations in a region as the values for that
     region.
     :param regions: peaks data
     :param variants: variants data
     :param trait_info: traits information
+    :param n_jobs: The maximum number of concurrently running jobs
     :return: overlap data
     """
 
@@ -919,8 +920,6 @@ def overlap_sum(regions: AnnData, variants: dict, trait_info: DataFrame) -> AnnD
 
     trait_names = trait_info["id"].tolist()
     n_trait = len(trait_names)
-    # Pre-allocate sparse matrix, fill column by column, then convert to csc and then csr for efficiency
-    row_indices, col_indices, data_vals = [], [], []
 
     # Check column existence once
     required = {"chr", "start", "end"}
@@ -944,13 +943,18 @@ def overlap_sum(regions: AnnData, variants: dict, trait_info: DataFrame) -> AnnD
 
     ul.log(__name__).info("Obtain peak-trait/disease matrix. (overlap variant information)")
 
-    # The outer loop can be further accelerated by parallelizing over traits; here we keep it single-threaded for now.
-    for col_idx, trait_name in enumerate(tqdm(trait_names)):
+    # Function to process a single trait
+    def _process_trait_(trait_name, col_idx):
+
+        local_data_vals = []
+        local_row_indices = []
+        local_col_indices = []
+
         variant: AnnData = variants[trait_name]
         overlap_df: DataFrame = _overlap_(regions_df, variant.obs)
 
         if overlap_df.empty:
-            continue
+            return local_data_vals, local_row_indices, local_col_indices
 
         # Sum at once: first group by label and collect variant_id into a list
         label_var_ids = (
@@ -975,15 +979,37 @@ def overlap_sum(regions: AnnData, variants: dict, trait_info: DataFrame) -> AnnD
             if matrix_sum.size == 1:
                 val = float(matrix_sum)
                 if val != 0:
-                    row_indices.append(row_idx)
-                    col_indices.append(col_idx)
-                    data_vals.append(val)
+                    local_row_indices.append(row_idx)
+                    local_col_indices.append(col_idx)
+                    local_data_vals.append(val)
             else:
                 for t_idx, v in enumerate(matrix_sum):
                     if v != 0:
-                        row_indices.append(row_idx)
-                        col_indices.append(col_idx + t_idx)
-                        data_vals.append(float(v))
+                        local_row_indices.append(row_idx)
+                        local_col_indices.append(col_idx + t_idx)
+                        local_data_vals.append(float(v))
+
+        return local_data_vals, local_row_indices, local_col_indices
+
+    # Use Parallel to process traits in parallel
+    results = Parallel(n_jobs=n_jobs)(
+        delayed(_process_trait_)(trait_name, col_idx) for col_idx, trait_name in enumerate(trait_names)
+    )
+
+    # Preallocate length to avoid list dynamic expansion
+    total = sum(len(ld) for ld, _, _ in results)
+    row_indices = np.empty(total, dtype=np.int32)
+    col_indices = np.empty(total, dtype=np.int32)
+    data_vals  = np.empty(total, dtype=np.float32)
+
+    ptr = 0
+
+    for local_data, local_rows, local_cols in results:
+        n = len(local_data)
+        row_indices[ptr:ptr+n] = local_rows
+        col_indices[ptr:ptr+n] = local_cols
+        data_vals[ptr:ptr+n] = local_data
+        ptr += n
 
     # Build sparse matrix, then convert to csr format
     overlap_sparse = sparse.csc_matrix(

@@ -481,7 +481,7 @@ def core(
             )
 
     else:
-        overlap_adata: AnnData = overlap_sum(adata, variants, trait_info)
+        overlap_adata: AnnData = overlap_sum(adata, variants, trait_info, n_jobs=n_jobs)
 
     del variants, trait_info
 
