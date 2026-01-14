@@ -280,7 +280,7 @@ class RandomWalk:
             to `False`, `is_ablation` will only take effect;
         :return: Stable distribution score.
         """
-        ul.log(__name__).info("Random walk.")
+        ul.log(__name__).info("Random walk with weighted seed cells.")
 
         start_time = time.time()
 
