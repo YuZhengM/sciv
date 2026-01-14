@@ -15,7 +15,7 @@ from ..tool import RandomWalk, overlap_sum, obtain_cell_cell_network, calculate_
 
 from ..file import save_h5ad, save_pkl, read_h5ad, read_pkl
 from ..preprocessing import filter_data, poisson_vi
-from ..util import path, enrichment_optional, to_dense, collection, to_sparse, difference_peak_optional
+from ..util import path, enrichment_optional, to_dense, collection, to_sparse, difference_peak_optional, project_name
 
 __name__: str = "model_core"
 
@@ -453,7 +453,7 @@ def core(
             model_dir=model_dir
         )
 
-    step1_time = adata.uns["elapsed_time"] + da_peaks.uns["elapsed_time"]
+    poisson_vi_time = adata.uns["elapsed_time"] + da_peaks.uns["elapsed_time"]
 
     if save_path is not None:
 
@@ -485,7 +485,7 @@ def core(
 
     del variants, trait_info
 
-    step2_time = overlap_adata.uns["elapsed_time"]
+    overlap_time = overlap_adata.uns["elapsed_time"]
 
     if save_path is not None and not overlap_is_read:
         save_h5ad(overlap_adata, file=atac_overlap_save_file)
@@ -518,7 +518,7 @@ def core(
 
     del da_peaks, overlap_adata
 
-    step3_time = init_score.uns["elapsed_time"]
+    init_score_time = init_score.uns["elapsed_time"]
 
     if save_path is not None and not init_score_is_read:
         save_h5ad(init_score, file=init_score_save_file)
@@ -546,13 +546,13 @@ def core(
 
     del adata
 
-    step4_time = cc_data.uns["elapsed_time"]
+    smknn_time = cc_data.uns["elapsed_time"]
 
     if save_path is not None and not cc_data_is_read:
         save_h5ad(cc_data, file=cc_data_save_file)
 
     """
-    5. Random walk
+    5. Random walk with weighted seed cells
     """
 
     random_walk_is_read: bool = is_file_exist_loading and os.path.exists(random_walk_save_file) and is_save_random_walk_model
@@ -584,17 +584,29 @@ def core(
     del random_walk_is_read, init_score, cc_data
 
     trs = _run_random_walk_(random_walk, is_ablation, is_simple)
-
-    step5_time = random_walk.elapsed_time
-
-    # end time
-    elapsed_time = time.time() - start_time
-    step_time = step1_time + step2_time + step3_time + step4_time + step5_time
-
-    params.update({"elapsed_time": elapsed_time if elapsed_time > step_time else step_time})
     trs.uns["params"] = params
 
     del params
+
+    random_walk_time = random_walk.elapsed_time
+
+    # end time
+    elapsed_time = time.time() - start_time
+    step_time = poisson_vi_time + overlap_time + init_score_time + smknn_time + random_walk_time
+
+    if elapsed_time < step_time:
+        elapsed_time = step_time
+
+    ul.log(__name__).info(f"Algorithm {project_name} consumes a total of {elapsed_time} seconds.")
+
+    trs.uns["elapsed_time"] = {
+        "PoissonVI": poisson_vi_time,
+        "Overlap": overlap_time,
+        "initial TRS": init_score_time,
+        "SM-kNN": smknn_time,
+        "Random walk": random_walk_time,
+        "Total time": elapsed_time
+    }
 
     if save_path is not None:
         save_h5ad(trs, file=trs_save_file)
