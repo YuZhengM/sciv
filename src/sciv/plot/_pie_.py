@@ -115,6 +115,7 @@ def pie_label(
         startangle=90,
         labeldistance=label_distance,
         pctdistance=pct_distance,
+        wedgeprops=dict(linewidth=0),
         **kwargs
     )
     ax.pie(
@@ -122,7 +123,7 @@ def pie_label(
         colors=['white'],
         radius=radius,
         startangle=90,
-        wedgeprops=dict(width=radius, edgecolor='w'),
+        wedgeprops=dict(width=radius, edgecolor='w', linewidth=0),
         **kwargs
     )
     ax.text(0, 0, "{:.2f}%".format(top_x[0] / top_sum * 100), ha='center', va='center', fontsize=fontsize)

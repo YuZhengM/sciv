@@ -282,7 +282,7 @@ class RandomWalk:
         """
         ul.log(__name__).info("Random walk with weighted seed cells.")
 
-        start_time = time.time()
+        start_time = time.perf_counter()
 
         # judge length
         if cc_adata.shape[0] != init_status.shape[0]:
@@ -459,7 +459,7 @@ class RandomWalk:
         del self.cell_affinity
         del init_status
 
-        self.elapsed_time = time.time() - start_time
+        self.elapsed_time = time.perf_counter() - start_time
 
     def _random_walk_(
         self,

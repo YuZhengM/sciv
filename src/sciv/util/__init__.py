@@ -29,6 +29,7 @@ from ._constant_ import (
 from ._core_ import (
     file_method,
     log,
+    track_with_memory,
     to_dense,
     to_sparse,
     sum_min_max,
@@ -58,6 +59,7 @@ __all__ = [
     "log_file_path",
     "file_method",
     "log",
+    "track_with_memory",
     "path",
     "plot_color_types",
     "sparse_array",

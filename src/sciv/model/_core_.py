@@ -21,7 +21,7 @@ __name__: str = "model_core"
 
 
 def _run_random_walk_(random_walk: RandomWalk, is_ablation: bool, is_simple: bool) -> AnnData:
-    start_time = time.time()
+    start_time = time.perf_counter()
 
     if not random_walk.is_run_core:
         random_walk.run_core()
@@ -57,7 +57,7 @@ def _run_random_walk_(random_walk: RandomWalk, is_ablation: bool, is_simple: boo
         if not random_walk.is_run_en_ablation_m_knn:
             random_walk.run_en_ablation_m_knn()
 
-    random_walk.elapsed_time += time.time() - start_time
+    random_walk.elapsed_time += time.perf_counter() - start_time
 
     return random_walk.trs_adata
 
@@ -181,7 +181,7 @@ def core(
     """
 
     # start time
-    start_time = time.time()
+    start_time = time.perf_counter()
 
     if len(variants.keys()) == 0:
         ul.log(__name__).error("The number of mutations is empty.")
@@ -591,7 +591,7 @@ def core(
     random_walk_time = random_walk.elapsed_time
 
     # end time
-    elapsed_time = time.time() - start_time
+    elapsed_time = time.perf_counter() - start_time
     step_time = poisson_vi_time + overlap_time + init_score_time + smknn_time + random_walk_time
 
     if elapsed_time < step_time:

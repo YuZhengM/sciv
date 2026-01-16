@@ -913,7 +913,7 @@ def overlap_sum(regions: AnnData, variants: dict, trait_info: DataFrame, n_jobs:
     :return: overlap data
     """
 
-    start_time = time.time()
+    start_time = time.perf_counter()
 
     # Unique feature set
     label_all = regions.var.index.tolist()
@@ -1025,7 +1025,7 @@ def overlap_sum(regions: AnnData, variants: dict, trait_info: DataFrame, n_jobs:
 
     overlap_adata = AnnData(overlap_sparse, var=trait_info, obs=regions.var)
     overlap_adata.uns["is_overlap"] = True
-    overlap_adata.uns["elapsed_time"] = time.time() - start_time
+    overlap_adata.uns["elapsed_time"] = time.perf_counter() - start_time
 
     return overlap_adata
 
@@ -1129,7 +1129,7 @@ def calculate_init_score_weight(
     :return: Initial TRS with weight.
     """
 
-    start_time = time.time()
+    start_time = time.perf_counter()
 
     if "is_overlap" not in overlap_adata.uns:
         ul.log(__name__).warning(
@@ -1258,7 +1258,7 @@ def calculate_init_score_weight(
     del _init_trs_ncw_, _cell_type_weight_
 
     init_trs_adata.uns["is_sample"] = is_simple
-    init_trs_adata.uns["elapsed_time"] = time.time() - start_time
+    init_trs_adata.uns["elapsed_time"] = time.perf_counter() - start_time
     return init_trs_adata
 
 
@@ -1314,7 +1314,7 @@ def obtain_cell_cell_network(
     :return: Cell similarity data.
     """
 
-    start_time = time.time()
+    start_time = time.perf_counter()
 
     from sklearn.metrics.pairwise import laplacian_kernel, rbf_kernel
 
@@ -1373,7 +1373,7 @@ def obtain_cell_cell_network(
     if not is_simple:
         cc_data.layers["cell_mutual_knn"] = to_sparse(cell_mutual_knn)
 
-    cc_data.uns["elapsed_time"] = time.time() - start_time
+    cc_data.uns["elapsed_time"] = time.perf_counter() - start_time
 
     return cc_data
 

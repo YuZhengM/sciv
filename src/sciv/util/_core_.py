@@ -4,7 +4,11 @@ import math
 import os
 import random
 import string
-from typing import Tuple, Union, Literal
+import threading
+import time
+from functools import wraps
+from typing import Tuple, Union, Literal, Callable, Any
+import psutil
 
 import numpy as np
 import pandas as pd
@@ -33,6 +37,71 @@ def file_method(name: str = None) -> StaticMethod:
 def log(name: str = None) -> Logger:
     name = f"{project_name}_{name}" if name is not None else project_name
     return Logger(name, log_path=os.path.join(ul.log_file_path, name), is_form_file=ul.is_form_log_file)
+
+
+def track_with_memory(is_monitor: bool = False , interval: float = 60) -> Callable:
+    """
+    Decorator: Records memory usage at fixed intervals during function execution and returns the result, elapsed time, and memory list.
+
+    Parameters
+    ----------
+    is_monitor : bool, optional
+        Whether to enable memory monitoring, default is False.
+    interval : float, optional
+        Sampling interval (seconds), default is 60 seconds.
+
+    Returns
+    -------
+    Callable
+        Decorator function; when the wrapped function is called, it returns a dictionary containing:
+        - 'result': the original function's return value
+        - 'time': function execution time (seconds) if is_monitor is True, otherwise None.
+        - 'memory': list of sampled memory usage (bytes) if is_monitor is True, otherwise None.
+    """
+
+    def decorator(func) -> Callable:
+        @wraps(func)
+        def wrapper(*args, **kwargs) -> Union[Any, dict]:
+
+            if not is_monitor:
+                return func(*args, **kwargs)
+
+            process = psutil.Process(os.getpid())
+
+            stop_monitor = False
+
+            mem_list = []
+
+            def monitor():
+                nonlocal stop_monitor
+
+                while not stop_monitor:
+                    current_mem = process.memory_info().rss
+                    mem_list.append(current_mem)
+
+                    time.sleep(interval)
+
+            t = threading.Thread(target=monitor, daemon=True)
+            t.start()
+
+            start_time = time.perf_counter()
+            _result_ = func(*args, **kwargs)
+            end_time = time.perf_counter()
+
+            stop_monitor = True
+            t.join()
+
+            exec_time = end_time - start_time
+
+            return {
+                'result': _result_,
+                'time': exec_time,
+                'memory': mem_list
+            }
+
+        return wrapper
+
+    return decorator
 
 
 def to_dense(sm: matrix_data, is_array: bool = False) -> dense_data:

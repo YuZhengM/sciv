@@ -50,7 +50,7 @@ def poisson_vi(
     """
     ul.log(__name__).info("Start PoissonVI")
 
-    start_time = time.time()
+    start_time = time.perf_counter()
 
     import scvi
     import scanpy as sc
@@ -241,7 +241,7 @@ def poisson_vi(
     da_peaks_adata.layers["emp_prob1"] = matrix_ep1
     da_peaks_adata.uns["latent_name"] = latent_name
     da_peaks_adata.uns["dp_delta"] = dp_delta
-    da_peaks_adata.uns["elapsed_time"] = time.time() - start_time
+    da_peaks_adata.uns["elapsed_time"] = time.perf_counter() - start_time
 
     adata.uns["step"] = 1
 

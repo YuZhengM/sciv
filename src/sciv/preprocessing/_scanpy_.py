@@ -1,4 +1,5 @@
 # -*- coding: UTF-8 -*-
+
 import time
 import warnings
 from typing import Optional, Literal
@@ -47,7 +48,7 @@ def filter_data(
     """
 
     # start time
-    start_time = time.time()
+    start_time = time.perf_counter()
 
     import scanpy as sc
 
@@ -109,7 +110,7 @@ def filter_data(
     )
     ul.log(__name__).info(f"Size of filtered scATAC-seq data: {filter_adata.shape}")
     filter_adata.uns["step"] = 0
-    filter_adata.uns["elapsed_time"] = time.time() - start_time
+    filter_adata.uns["elapsed_time"] = time.perf_counter() - start_time
 
     return filter_adata
 
