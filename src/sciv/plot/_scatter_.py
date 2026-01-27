@@ -174,6 +174,8 @@ def scatter_3d(
     edge_color: str = None,
     size: Union[float, collection] = 0.1,
     legend_name: str = None,
+    is_add_max_label: bool = False,
+    text_left_offset: float = 0.5,
     output: path = None,
     show: bool = True,
     close: bool = False,
@@ -186,13 +188,14 @@ def scatter_3d(
     fig = plt.figure(figsize=(width, height))
     ax = fig.add_subplot(projection='3d')
 
-    hue_cat = pd.Categorical(df[hue])
+    if hue is not None:
+        hue_cat = pd.Categorical(df[hue])
 
     scatter = ax.scatter(
         df[x],
         df[y],
         df[z],
-        c=hue_cat.codes,
+        c=hue_cat.codes if hue is not None else None,
         cmap=cmap,
         s=size,
         edgecolors=edge_color,
@@ -214,7 +217,7 @@ def scatter_3d(
     if title is not None:
         ax.set_title(title, fontsize=font_size)
 
-    if is_add_legend:
+    if is_add_legend and hue is not None:
         unique_types = hue_cat.categories
         legend_elements = [
             plt.Line2D(
@@ -225,6 +228,24 @@ def scatter_3d(
         ]
 
         ax.legend(handles=legend_elements, title=legend_name, loc='upper left')
+
+    if is_add_max_label:
+
+        max_idx = df[z].idxmax()
+        max_x = df.loc[max_idx, x]
+        max_y = df.loc[max_idx, y]
+        max_value = df.loc[max_idx, z]
+
+        # 在最大值点的位置添加文本标签
+        ax.text(
+            max_x - text_left_offset,
+            max_y,
+            max_value,
+            f'({max_x}, {max_y}): {max_value:.3f}',
+            fontsize=font_size - 2,
+            color='red',
+            ha='left'
+        )
 
     plot_end(fig, None, None, None, output, show, close)
 
