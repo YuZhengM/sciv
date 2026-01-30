@@ -39,14 +39,12 @@ def log(name: str = None) -> Logger:
     return Logger(name, log_path=os.path.join(ul.log_file_path, name), is_form_file=ul.is_form_log_file)
 
 
-def track_with_memory(is_monitor: bool = False , interval: float = 60) -> Callable:
+def track_with_memory(interval: float = 60) -> Callable:
     """
     Decorator: Records memory usage at fixed intervals during function execution and returns the result, elapsed time, and memory list.
 
     Parameters
     ----------
-    is_monitor : bool, optional
-        Whether to enable memory monitoring, default is False.
     interval : float, optional
         Sampling interval (seconds), default is 60 seconds.
 
@@ -62,9 +60,6 @@ def track_with_memory(is_monitor: bool = False , interval: float = 60) -> Callab
     def decorator(func) -> Callable:
         @wraps(func)
         def wrapper(*args, **kwargs) -> Union[Any, dict]:
-
-            if not is_monitor:
-                return func(*args, **kwargs)
 
             process = psutil.Process(os.getpid())
 
