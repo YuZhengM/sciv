@@ -59,7 +59,7 @@ def track_with_memory(interval: float = 60) -> Callable:
 
     def decorator(func) -> Callable:
         @wraps(func)
-        def wrapper(*args, **kwargs) -> Union[Any, dict]:
+        def wrapper(*args, **kwargs) -> dict:
 
             process = psutil.Process(os.getpid())
 
