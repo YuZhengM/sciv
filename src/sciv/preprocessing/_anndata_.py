@@ -85,7 +85,7 @@ def adata_group(
 
     # add data
     for i in range(column_size):
-        # 获取 data_obs 下的索引信息
+        # Retrieve index information under data_obs
         data_obs_column: DataFrame = data_obs[data_obs[column] == column_group[i]]
         # sum value
         overlap_variant = data[list(data_obs_column.index), :]
