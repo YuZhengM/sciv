@@ -86,7 +86,7 @@ class RandomWalkModel(nn.Module):
         self.p = p
         self.pbar = pbar
 
-        is_gpu_available = check_gpu_availability(verbose=False)
+        is_gpu_available = check_gpu_availability()
 
         self.device = 'cuda' if (device == 'gpu' or (device == 'auto' and is_gpu_available)) else 'cpu'
 
@@ -197,7 +197,7 @@ def random_walk(
     device: str = 'auto'
 ) -> matrix_data:
 
-    availability = check_gpu_availability(False)
+    availability = check_gpu_availability()
 
     if device == 'cpu' or (device == 'auto' and not availability):
         sample_count = seed_cell_weight.shape[1]
@@ -339,7 +339,7 @@ class RandomWalk:
         self.benchmark_count = benchmark_count
         self._enrichment_seed_cell_min_count_ = 3
 
-        self.is_gpu_available = check_gpu_availability(False)
+        self.is_gpu_available = check_gpu_availability()
 
         if not is_simple and self.is_ablation:
             if "cell_mutual_knn" not in cc_adata.layers:

@@ -13,7 +13,7 @@ from torch.cuda import OutOfMemoryError
 
 from .. import util as ul
 from ..tool import umap, tsne
-from ..util import path
+from ..util import path, check_gpu_availability
 
 __name__: str = "preprocessing_scvi"
 
@@ -77,53 +77,70 @@ def poisson_vi(
         scvi.external.POISSONVI.setup_anndata(adata, layer="fragments", batch_key=batch_key)
         _model_ = scvi.external.POISSONVI(adata)
 
-        try:
-            data_splitter_kwargs = {"drop_dataset_tail": True, "drop_last": False}
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                _model_.train(
-                    max_epochs=int(max_epochs),
-                    check_val_every_n_epoch=1,
-                    accelerator="gpu",
-                    devices=-1,
-                    datasplitter_kwargs=data_splitter_kwargs,
-                    strategy="ddp_notebook_find_unused_parameters_true",
-                    lr=lr,
-                    batch_size=int(batch_size),
-                    eps=eps,
-                    early_stopping=early_stopping,
-                    early_stopping_patience=int(early_stopping_patience)
-                )
-        except Exception as ex:
+        if check_gpu_availability():
 
             try:
-                ul.log(__name__).warning(f"Multiple GPU failed to run, attempting to run on one card.\n {ex}")
+                data_splitter_kwargs = {"drop_dataset_tail": True, "drop_last": False}
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore")
                     _model_.train(
-                        max_epochs=int(max_epochs),
+                        max_epochs=max_epochs,
                         check_val_every_n_epoch=1,
+                        accelerator="gpu",
+                        devices=-1,
+                        datasplitter_kwargs=data_splitter_kwargs,
+                        strategy="ddp_notebook_find_unused_parameters_true",
                         lr=lr,
-                        batch_size=int(batch_size),
+                        batch_size=batch_size,
                         eps=eps,
                         early_stopping=early_stopping,
-                        early_stopping_patience=int(early_stopping_patience)
+                        early_stopping_patience=early_stopping_patience
                     )
-            except Exception as exc:
-                ul.log(__name__).warning(f"GPU failed to run, try to switch to CPU running.\n {exc}")
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
-                    _model_.to_device('cpu')
-                    _model_.train(
-                        max_epochs=int(max_epochs),
-                        check_val_every_n_epoch=1,
-                        lr=lr,
-                        batch_size=int(batch_size),
-                        eps=eps,
-                        early_stopping=early_stopping,
-                        early_stopping_patience=int(early_stopping_patience),
-                        accelerator="cpu"
-                    )
+            except Exception as ex:
+
+                try:
+                    ul.log(__name__).warning(f"Multiple GPU failed to run, attempting to run on one card.\n {ex}")
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore")
+                        _model_.train(
+                            max_epochs=max_epochs,
+                            check_val_every_n_epoch=1,
+                            lr=lr,
+                            batch_size=batch_size,
+                            eps=eps,
+                            early_stopping=early_stopping,
+                            early_stopping_patience=early_stopping_patience
+                        )
+                except Exception as exc:
+                    ul.log(__name__).warning(f"GPU failed to run, try to switch to CPU running.\n {exc}")
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore")
+                        _model_.to_device('cpu')
+                        _model_.train(
+                            max_epochs=max_epochs,
+                            check_val_every_n_epoch=1,
+                            lr=lr,
+                            batch_size=batch_size,
+                            eps=eps,
+                            early_stopping=early_stopping,
+                            early_stopping_patience=early_stopping_patience,
+                            accelerator="cpu"
+                        )
+        else:
+
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                _model_.to_device('cpu')
+                _model_.train(
+                    max_epochs=max_epochs,
+                    check_val_every_n_epoch=1,
+                    lr=lr,
+                    batch_size=batch_size,
+                    eps=eps,
+                    early_stopping=early_stopping,
+                    early_stopping_patience=early_stopping_patience,
+                    accelerator="cpu"
+                )
 
         return _model_
 

@@ -982,12 +982,16 @@ def overlap_sum(regions: AnnData, variants: dict, trait_info: DataFrame, n_jobs:
             # Collect non-zero values
             if matrix_sum.size == 1:
                 val = float(matrix_sum)
+
                 if val != 0:
                     local_row_indices.append(row_idx)
                     local_col_indices.append(col_idx)
                     local_data_vals.append(val)
+
             else:
+
                 for t_idx, v in enumerate(matrix_sum):
+
                     if v != 0:
                         local_row_indices.append(row_idx)
                         local_col_indices.append(col_idx + t_idx)

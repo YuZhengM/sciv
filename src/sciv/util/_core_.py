@@ -466,7 +466,7 @@ def add_cluster_info(data: DataFrame, data_ref: DataFrame, cluster: str) -> Data
     return new_data
 
 
-def check_gpu_availability(verbose: bool = True) -> bool:
+def check_gpu_availability(verbose: bool = False) -> bool:
     available = torch.cuda.is_available()
 
     if verbose:
