@@ -84,17 +84,17 @@ def poisson_vi(
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore")
                     _model_.train(
-                        max_epochs=max_epochs,
+                        max_epochs=int(max_epochs),
                         check_val_every_n_epoch=1,
                         accelerator="gpu",
                         devices=-1,
                         datasplitter_kwargs=data_splitter_kwargs,
                         strategy="ddp_notebook_find_unused_parameters_true",
                         lr=lr,
-                        batch_size=batch_size,
+                        batch_size=int(batch_size),
                         eps=eps,
                         early_stopping=early_stopping,
-                        early_stopping_patience=early_stopping_patience
+                        early_stopping_patience=int(early_stopping_patience)
                     )
             except Exception as ex:
 
@@ -103,13 +103,13 @@ def poisson_vi(
                     with warnings.catch_warnings():
                         warnings.simplefilter("ignore")
                         _model_.train(
-                            max_epochs=max_epochs,
+                            max_epochs=int(max_epochs),
                             check_val_every_n_epoch=1,
                             lr=lr,
-                            batch_size=batch_size,
+                            batch_size=int(batch_size),
                             eps=eps,
                             early_stopping=early_stopping,
-                            early_stopping_patience=early_stopping_patience
+                            early_stopping_patience=int(early_stopping_patience)
                         )
                 except Exception as exc:
                     ul.log(__name__).warning(f"GPU failed to run, try to switch to CPU running.\n {exc}")
@@ -117,13 +117,13 @@ def poisson_vi(
                         warnings.simplefilter("ignore")
                         _model_.to_device('cpu')
                         _model_.train(
-                            max_epochs=max_epochs,
+                            max_epochs=int(max_epochs),
                             check_val_every_n_epoch=1,
                             lr=lr,
-                            batch_size=batch_size,
+                            batch_size=int(batch_size),
                             eps=eps,
                             early_stopping=early_stopping,
-                            early_stopping_patience=early_stopping_patience,
+                            early_stopping_patience=int(early_stopping_patience),
                             accelerator="cpu"
                         )
         else:
@@ -132,13 +132,13 @@ def poisson_vi(
                 warnings.simplefilter("ignore")
                 _model_.to_device('cpu')
                 _model_.train(
-                    max_epochs=max_epochs,
+                    max_epochs=int(max_epochs),
                     check_val_every_n_epoch=1,
                     lr=lr,
-                    batch_size=batch_size,
+                    batch_size=int(batch_size),
                     eps=eps,
                     early_stopping=early_stopping,
-                    early_stopping_patience=early_stopping_patience,
+                    early_stopping_patience=int(early_stopping_patience),
                     accelerator="cpu"
                 )
 
