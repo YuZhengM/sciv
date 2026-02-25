@@ -1298,7 +1298,7 @@ def obtain_cell_cell_network(
     weight: float = 0.1,
     kernel: Literal["laplacian", "gaussian"] = "gaussian",
     local_k: int = 10,
-    gamma: Optional[Union[float, collection]] = None,
+    gamma: Optional[Union[float, str, collection]] = None,
     is_simple: bool = True
 ) -> AnnData:
     """
@@ -1350,6 +1350,8 @@ def obtain_cell_cell_network(
 
     if gamma is None:
         gamma = adaptive_gamma_knn(latent, k=local_k)
+    elif gamma == "latent_inv_p":
+        gamma = 1.0 / latent.shape[1]
 
     if kernel == "kernel":
         ul.log(__name__).info("Laplacian kernel")

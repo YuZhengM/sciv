@@ -189,7 +189,7 @@ def heatmap_annotation(
     row_ha = HeatmapAnnotation(
         label=anno_label(
             row_anno[row_name], cmap=ListedColormap(row_colors), merge=True, height=anno_label_height
-        ) if row_anno_label else None,
+        ) if row_anno_label and row_name else None,
         RowCategory=anno_simple(
             row_anno[row_name],
             cmap=ListedColormap(row_colors),
@@ -223,7 +223,7 @@ def heatmap_annotation(
     col_ha = HeatmapAnnotation(
         label=anno_label(
             col_anno[col_name], cmap=ListedColormap(col_colors), merge=True, height=anno_label_height, **col_ha_args
-        ) if col_anno_label else None,
+        ) if col_anno_label and col_name else None,
         ColCategory=anno_simple(
             col_anno[col_name],
             cmap=ListedColormap(col_colors),

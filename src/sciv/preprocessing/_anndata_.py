@@ -47,13 +47,16 @@ def adata_group(
 
     # judge layers
     if layer is not None:
+
         if layer not in list(data.layers):
             ul.log(__name__).error("The value of the `layer` parameter must be one of the keys in `adata.layers`.")
             raise ValueError("The value of the `layer` parameter must be one of the keys in `adata.layers`.")
+
         data.X = data.layers[layer]
 
     # get group information
     data_obs: DataFrame = data.obs
+
     if column not in data_obs.columns:
         ul.log(__name__).error(f"The grouped column {column} are not in the corresponding columns {data_obs.columns}")
         raise ValueError(f"The grouped column {column} are not in the corresponding columns {data_obs.columns}")

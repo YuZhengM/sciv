@@ -81,7 +81,7 @@ def core(
     weight: float = 0.1,
     kernel: Literal["laplacian", "gaussian"] = "gaussian",
     local_k: int = 10,
-    kernel_gamma: Optional[Union[float, collection]] = None,
+    kernel_gamma: Optional[Union[float, str, collection]] = None,
     epsilon: float = 1e-05,
     gamma: float = 0.05,
     enrichment_gamma: float = 0.05,

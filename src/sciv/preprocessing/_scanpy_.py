@@ -129,8 +129,7 @@ def get_difference_genes(
     adata.obs = add_cluster_info(adata.obs, cell_anno, cluster)
 
     if "log1p" not in adata.uns_keys():
-        ul.log(__name__).info("The `log1p` not detected in `adata.uns_keys`, `log1p` operation needs to be performed.")
-        raise ValueError("The `log1p` not detected in `adata.uns_keys`, `log1p` operation needs to be performed.")
+        adata.uns["log1p"] = {}
 
     if "base" not in adata.uns["log1p"].keys():
         adata.uns["log1p"].update({"base": None})
