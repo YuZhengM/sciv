@@ -1353,7 +1353,7 @@ def obtain_cell_cell_network(
     elif gamma == "latent_inv_p":
         gamma = 1.0 / latent.shape[1]
 
-    if kernel == "kernel":
+    if kernel == "laplacian":
         ul.log(__name__).info("Laplacian kernel")
         cell_affinity = laplacian_kernel(latent, gamma=gamma).astype(np.float32)
     else:
