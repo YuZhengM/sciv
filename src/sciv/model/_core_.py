@@ -81,7 +81,7 @@ def core(
     weight: float = 0.1,
     kernel: Literal["laplacian", "gaussian"] = "gaussian",
     local_k: int = 10,
-    kernel_gamma: Optional[Union[float, str, collection]] = None,
+    kernel_gamma: Optional[Union[float, collection]] = None,
     epsilon: float = 1e-05,
     gamma: float = 0.05,
     enrichment_gamma: float = 0.05,
@@ -135,8 +135,10 @@ def core(
     :param weight: The weight of interactions or operations;
     :param local_k: Determining the number of neighbors for the adaptive kernel;
     :param kernel: Determine the kernel function to be used;
-    :param kernel_gamma: If None, it defaults to the adaptive value obtained through the local information of
-        parameter `local_k`. Otherwise, it should be strictly positive;
+    :param kernel_gamma: When the value of `kernel` is "laplacian", if it is None, then it is the reciprocal of the
+        latent representation dimension of the cell. When the value of `kernel` is "gaussian", if it is None, then it
+        defaults to an adaptive value obtained through local information of the parameter `local_k`. Otherwise, it
+        should be strictly positive;
     :param epsilon: conditions for stopping in random walk;
     :param gamma: reset weight for random walk;
     :param enrichment_gamma: reset weight for random walk for enrichment;

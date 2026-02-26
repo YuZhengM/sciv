@@ -1298,7 +1298,7 @@ def obtain_cell_cell_network(
     weight: float = 0.1,
     kernel: Literal["laplacian", "gaussian"] = "gaussian",
     local_k: int = 10,
-    gamma: Optional[Union[float, str, collection]] = None,
+    gamma: Optional[Union[float, collection]] = None,
     is_simple: bool = True
 ) -> AnnData:
     """
@@ -1309,8 +1309,10 @@ def obtain_cell_cell_network(
     :param weight: The weight of interactions or operations;
     :param local_k: Determining the number of neighbors for the adaptive kernel;
     :param kernel: Determine the kernel function to be used;
-    :param gamma: If None, it defaults to the adaptive value obtained through the local information of
-        parameter `local_k`. Otherwise, it should be strictly positive;
+    :param gamma: When the value of `kernel` is "laplacian", if it is None, then it is the reciprocal of the
+        latent representation dimension of the cell. When the value of `kernel` is "gaussian", if it is None, then it
+        defaults to an adaptive value obtained through local information of the parameter `local_k`. Otherwise, it
+        should be strictly positive;
     :param is_simple: True represents not adding unnecessary intermediate variables, only adding the final result.
         It is worth noting that when set to `True`, the `is_ablation` parameter will become invalid, and when set to
         `False`, `is_ablation` will only take effect;
@@ -1348,15 +1350,18 @@ def obtain_cell_cell_network(
     cell_anno = adata.obs
     del adata
 
-    if gamma is None:
-        gamma = adaptive_gamma_knn(latent, k=local_k)
-    elif gamma == "latent_inv_p":
-        gamma = 1.0 / latent.shape[1]
-
     if kernel == "laplacian":
+
+        if gamma is None:
+            gamma = 1.0 / latent.shape[1]
+
         ul.log(__name__).info("Laplacian kernel")
         cell_affinity = laplacian_kernel(latent, gamma=gamma).astype(np.float32)
     else:
+
+        if gamma is None:
+            gamma = adaptive_gamma_knn(latent, k=local_k)
+
         ul.log(__name__).info("Gaussian (RBF) kernel")
         cell_affinity = rbf_kernel(latent, gamma=gamma).astype(np.float32)
 
