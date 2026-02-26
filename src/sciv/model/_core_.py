@@ -74,6 +74,7 @@ def core(
     eps: float = 1e-08,
     early_stopping: bool = True,
     early_stopping_patience: int = 50,
+    strategy: str = "ddp_notebook_find_unused_parameters_true",
     batch_key: Optional[str] = None,
     resolution: float = 0.5,
     k: int = 50,
@@ -81,7 +82,7 @@ def core(
     weight: float = 0.1,
     kernel: Literal["laplacian", "gaussian"] = "gaussian",
     local_k: int = 10,
-    kernel_gamma: Optional[Union[float, collection]] = None,
+    kernel_gamma: Optional[Union[float, str, collection]] = None,
     epsilon: float = 1e-05,
     gamma: float = 0.05,
     enrichment_gamma: float = 0.05,
@@ -128,6 +129,7 @@ def core(
     :param eps: Optimizer eps;
     :param early_stopping: Whether to perform early stopping with respect to the validation set;
     :param early_stopping_patience: How many epochs to wait for improvement before early stopping;
+    :param strategy: DDP strategy;
     :param batch_key: Batch information in scATAC-seq data;
     :param resolution: Resolution of the Leiden Cluster. The recommended values are any one of 0.4, 0.9, 1.3, 1.5;
     :param k: When building an mKNN network, the number of nodes connected by each node (and operation);
@@ -341,6 +343,7 @@ def core(
         "eps": eps,
         "early_stopping": early_stopping,
         "early_stopping_patience": early_stopping_patience,
+        "strategy": strategy,
         "batch_key": batch_key,
         "resolution": resolution,
         "k": k,
@@ -434,6 +437,7 @@ def core(
                 eps=eps,
                 early_stopping=early_stopping,
                 early_stopping_patience=early_stopping_patience,
+                strategy=strategy,
                 batch_key=batch_key,
                 resolution=resolution,
                 model_dir=model_dir
@@ -450,6 +454,7 @@ def core(
             eps=eps,
             early_stopping=early_stopping,
             early_stopping_patience=early_stopping_patience,
+            strategy=strategy,
             batch_key=batch_key,
             resolution=resolution,
             model_dir=model_dir

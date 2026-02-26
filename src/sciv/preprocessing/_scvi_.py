@@ -26,6 +26,7 @@ def poisson_vi(
     eps: float = 1e-08,
     early_stopping: bool = True,
     early_stopping_patience: int = 50,
+    strategy: str = "ddp_notebook_find_unused_parameters_true",
     batch_key: Optional[str] = None,
     resolution: float = 0.5,
     dp_delta: float = 0.05,
@@ -41,6 +42,7 @@ def poisson_vi(
     :param eps: Optimizer eps;
     :param early_stopping: Whether to perform early stopping with respect to the validation set;
     :param early_stopping_patience: How many epochs to wait for improvement before early stopping;
+    :param strategy: DDP strategy;
     :param batch_key: Batch information in scATAC-seq data;
     :param resolution: Resolution of the Leiden Cluster;
     :param dp_delta: PeakVI method in differential analysis empirical effect size threshold;
@@ -89,7 +91,7 @@ def poisson_vi(
                         accelerator="gpu",
                         devices=-1,
                         datasplitter_kwargs=data_splitter_kwargs,
-                        strategy="ddp_notebook_find_unused_parameters_true",
+                        strategy=strategy,
                         lr=lr,
                         batch_size=int(batch_size),
                         eps=eps,
