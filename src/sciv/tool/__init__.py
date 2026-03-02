@@ -36,7 +36,8 @@ from ._algorithm_ import (
     calculate_init_score_weight,
     obtain_cell_cell_network,
     perturb_data,
-    add_bernoulli_fluctuation_noise
+    add_bernoulli_fluctuation_noise,
+    add_noise_perturb
 )
 
 from ._random_walk_ import (
@@ -99,6 +100,7 @@ __all__ = [
     "obtain_cell_cell_network",
     "perturb_data",
     "add_bernoulli_fluctuation_noise",
+    "add_noise_perturb",
     "split_matrix",
     "merge_matrix",
     "down_sampling_data",
