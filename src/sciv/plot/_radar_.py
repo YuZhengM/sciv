@@ -39,7 +39,12 @@ def radar(
     **kwargs: Any
 ):
 
-    fig, ax = plot_start(width, height, bottom, output, show)
+    if output is None and not show:
+        ul.log(__name__).error(f"At least one of the `output` and `show` parameters is required")
+        raise ValueError(f"At least one of the `output` and `show` parameters is required")
+
+    fig, ax = plt.subplots(figsize=(width, height), subplot_kw={'projection': 'polar'})
+    fig.subplots_adjust(bottom=bottom)
 
     ax_x = list(ax_x)
     ax_y = list(ax_y)
