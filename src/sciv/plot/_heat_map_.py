@@ -209,7 +209,7 @@ def heatmap_annotation(
     row_ha_right = HeatmapAnnotation(
         AssociationScore=anno_barplot(row_anno[[row_score_name]], legend=True, height=level_bar_height,
                                       **dict(edgecolor='none')) if row_score_name in row_anno.columns else None,
-        selected=anno_label(df_rows, relpos=relpos, frac=frac,
+        selected=anno_label(df_rows, relpos=relpos, frac=frac, fontsize=label_size,
                             height=selected_anno_label_height) if anno_specific_labels is not None else None,
         axis=0,
         verbose=0,
