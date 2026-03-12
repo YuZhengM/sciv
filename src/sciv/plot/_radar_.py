@@ -10,7 +10,7 @@ from matplotlib import pyplot as plt
 from pandas import DataFrame
 
 from .. import util as ul
-from ..util import path, collection, plot_end, plot_start
+from ..util import path, collection, plot_end, type_20_colors, type_50_colors
 
 __name__: str = "plot_radar"
 
@@ -103,6 +103,74 @@ def radar(
     plt.tight_layout()
 
     plot_end(fig, title, x_name, y_name, output, show, close)
+
+
+def base_radar(
+    df: DataFrame,
+    ax_x: str,
+    ax_y: str,
+    hue: str,
+    x_name: str = None,
+    y_name: str = None,
+    title: str = None,
+    width: float = 4,
+    height: float = 4,
+    bottom: float = 0,
+    colors: collection = None,
+    line_width: float = 0.5,
+    y_limit: Tuple = (0, 1),
+    bbox_to_anchor: Tuple = (1.3, 1.1),
+    is_fill: bool = True,
+    fill_alpha: float = 0.2,
+    output: path = None,
+    show: bool = True,
+    close: bool = False,
+    **kwargs: Any
+) -> None:
+
+    if output is None and not show:
+        ul.log(__name__).error(f"At least one of the `output` and `show` parameters is required")
+        raise ValueError(f"At least one of the `output` and `show` parameters is required")
+
+    fig, ax = plt.subplots(figsize=(width, height), subplot_kw=dict(polar=True))
+    fig.subplots_adjust(bottom=bottom)
+
+    ax_x_values = sorted(df[ax_x].unique())
+    hue_values = sorted(df[hue].unique())
+
+    # Calculate angle
+    angles = np.linspace(0, 2 * np.pi, len(ax_x_values), endpoint=False).tolist()
+    angles += angles[:1]
+
+    if colors is None:
+        colors = type_20_colors if len(hue_values) <= 20 else type_50_colors
+
+    for i, _hue_ in enumerate(hue_values):
+        k_data = df[df[hue] == _hue_]
+        values = k_data[ax_y].tolist()
+        values += values[:1]
+
+        ax.plot(angles, values, color=colors[i], linewidth=line_width, label=_hue_, **kwargs)
+
+        if is_fill:
+            ax.fill(angles, values, color=colors[i], alpha=fill_alpha)
+
+    # Set angle label
+    ax.set_xticks(angles[:-1])
+    ax.set_xticklabels(ax_x_values)
+
+    # Set radial labels
+    ax.set_rlabel_position(0)
+    plt.yticks(color="grey")
+    plt.ylim(y_limit[0], y_limit[1])
+
+    # Add legend
+    plt.legend(loc='upper right', bbox_to_anchor=bbox_to_anchor, title=hue)
+
+    plt.tight_layout()
+
+    plot_end(fig, title, x_name, y_name, output, show, close)
+
 
 
 def radar_trait(

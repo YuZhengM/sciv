@@ -18,12 +18,12 @@ from ._scatter_ import (
 from ._violin_ import violin_base, violin_trait
 from ._box_ import box_base, box_trait
 from ._kde_ import kde
-from ._line_ import stability_line
+from ._line_ import base_line
 from ._bar_ import bar_trait, class_bar, bar, two_bar, bar_significance
 from ._barcode_ import barcode_base, barcode_trait
 from ._pie_ import pie_trait, pie_label, base_pie
 from ._bubble_ import bubble
-from ._radar_ import radar, radar_trait
+from ._radar_ import radar, base_radar, radar_trait
 from ._venn_ import three_venn, two_venn
 
 from ._core_ import (
@@ -64,7 +64,7 @@ __all__ = [
     "pie_label",
     "two_bar",
     "kde",
-    "stability_line",
+    "base_line",
     "class_bar",
     "bar_trait",
     "bubble",
@@ -78,6 +78,7 @@ __all__ = [
     "complete_ratio",
     "rate_circular_bar_plot",
     "radar",
+    "base_radar",
     "radar_trait",
     "three_venn",
     "two_venn"

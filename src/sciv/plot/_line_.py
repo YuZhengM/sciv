@@ -15,7 +15,7 @@ from ..util import path, plot_color_types, collection, plot_end, plot_start
 __name__: str = "plot_line"
 
 
-def stability_line(
+def base_line(
     data: Union[AnnData, DataFrame],
     x: str,
     y: str,
@@ -43,19 +43,19 @@ def stability_line(
     close: bool = False,
     **kwargs: Any
 ) -> None:
-
     fig, ax = plot_start(width, height, bottom, output, show)
 
     new_data = data.copy()
 
     if isinstance(new_data, AnnData):
 
-        if legend_list is not None:
+        if label is not None and legend_list is not None:
 
             index_list = []
             label_list = list(new_data.var[label])
 
             for lab in range(len(label_list)):
+
                 if legend_list.count(label_list[lab]) > 0:
                     index_list.append(lab)
 
@@ -77,7 +77,7 @@ def stability_line(
 
     elif isinstance(new_data, DataFrame):
 
-        if legend_list is not None:
+        if label is not None and legend_list is not None:
             df: DataFrame = new_data[new_data[label].isin(legend_list)].copy()
         else:
             df: DataFrame = new_data.copy()
@@ -86,25 +86,30 @@ def stability_line(
         ul.log(__name__).error(f"The `data` parameter only support `AnnData` and `DataFrame` class types.")
         raise ValueError(f"The `data` parameter only support `AnnData` and `DataFrame` class types.")
 
-    if legend is None:
+    if legend is None and label is not None:
         legend = "category"
 
-    df[legend] = df[label].copy()
-    new_data_columns = list(df.columns)
+    if label is not None:
 
-    hue_types = list(set(df[legend]))
+        df[legend] = df[label].copy()
 
-    # noinspection DuplicatedCode
-    if colors is not None:
-        palette = colors
-    else:
-        if "color" in new_data_columns:
-            palette = df["color"]
+        hue_types = df[legend].unique().tolist()
+
+        new_data_columns = list(df.columns)
+
+        # noinspection DuplicatedCode
+        if colors is not None:
+            palette = colors
         else:
-            palette = []
+            if "color" in new_data_columns:
+                palette = df["color"]
+            else:
+                palette = []
 
-            for i in range(len(hue_types)):
-                palette.append(plot_color_types[color_type][start_color_index + i * color_step_size + i])
+                for i in range(len(hue_types)):
+                    palette.append(plot_color_types[color_type][start_color_index + i * color_step_size + i])
+    else:
+        palette = colors
 
     # sns.set_theme(style="whitegrid")
     ax.set(ylim=y_limit)

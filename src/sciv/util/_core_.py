@@ -7,7 +7,7 @@ import string
 import threading
 import time
 from functools import wraps
-from typing import Tuple, Union, Literal, Callable, Any
+from typing import Tuple, Union, Literal, Callable
 import psutil
 
 import numpy as np
