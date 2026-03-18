@@ -69,7 +69,7 @@ def core(
     cell_rate: Optional[float] = None,
     peak_rate: Optional[float] = None,
     max_epochs: int = 500,
-    lr: float = 1e-4,
+    lr: float = 1e-5,
     batch_size: int = 128,
     eps: float = 1e-08,
     early_stopping: bool = True,
