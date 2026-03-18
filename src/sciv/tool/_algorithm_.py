@@ -414,17 +414,17 @@ def spectral_eigenmaps(
 
 def semi_mutual_knn_weight(
     data: matrix_data,
-    neighbors: int = 30,
-    or_neighbors: int = 1,
-    weight: float = 0.1,
+    k: int = 30,
+    or_k: int = 10,
+    weight: float = 0.5,
     is_for: bool = True,
     is_mknn_fully_connected: bool = True
 ) -> Tuple[matrix_data, matrix_data]:
     """
     Mutual KNN with weight
     :param data: Input data matrix;
-    :param neighbors: The number of nearest neighbors;
-    :param or_neighbors: The number of or nearest neighbors;
+    :param k: The number of nearest neighbors (AND);
+    :param or_k: The number of or nearest neighbors (OR);
     :param weight: The weight of interactions or operations;
     :param is_for: Obtain the nearest neighbors of each node from each row of the for loop matrix;
         Setting it to True is very suitable for situations with large samples and insufficient memory.
@@ -454,7 +454,7 @@ def semi_mutual_knn_weight(
         del data
         np.fill_diagonal(new_data, 0)
 
-    def _knn_k_(_mat: matrix_data, k: int, info: str = "LOG"):
+    def _knn_k_(_mat: matrix_data, _k: int, info: str = "LOG"):
         n_rows = _mat.shape[0]
         adj = sparse.lil_matrix((n_rows, n_rows), dtype=np.int8)
 
@@ -463,20 +463,20 @@ def semi_mutual_knn_weight(
         for i in tqdm(range(n_rows)):
             row = np.array(_mat[i]).ravel()
 
-            if row.size <= k:
+            if row.size <= _k:
                 adj[i, :] = 1
                 adj[i, i] = 0
                 continue
 
             # Partial sorting
-            kth = np.partition(row, -k)[-k]
+            kth = np.partition(row, -_k)[-_k]
             mask = row >= kth
             mask[i] = False  # remove self
             adj[i, mask] = 1
 
         return adj.tocsr()
 
-    def _knn(_mat: matrix_data, k: int, info: str = "LOG") -> matrix_data:
+    def _knn(_mat: matrix_data, _k: int, info: str = "LOG") -> matrix_data:
         """
         Return k-nearest-neighbor 0/1 adjacency matrix (int8 to save memory).
         Supports both sparse and dense inputs.
@@ -485,25 +485,25 @@ def semi_mutual_knn_weight(
         if sparse.issparse(_mat):
             # Sparse path: sort each row's data to find the k-th largest
             _mat = _mat.tocsr(copy=False)
-            return _knn_k_(_mat, k, info)
+            return _knn_k_(_mat, _k, info)
         else:
 
             if is_for:
-                return _knn_k_(_mat, k, info)
+                return _knn_k_(_mat, _k, info)
             else:
                 # Dense path: vectorized thresholding
-                kth_val = np.sort(_mat, axis=1)[:, -(k + 1)]
+                kth_val = np.sort(_mat, axis=1)[:, -(_k + 1)]
                 adj = (_mat >= kth_val[:, None]).astype(np.int8)
                 np.fill_diagonal(adj, 0)
                 return adj
 
     # Compute adjacency matrices for AND/OR logic
-    adj_and = _knn(new_data, neighbors, "AND")
+    adj_and = _knn(new_data, k, f"AND, k={k}")
 
-    if neighbors == or_neighbors:
+    if k == or_k:
         adj_or = adj_and
     else:
-        adj_or = _knn(new_data, or_neighbors, "OR")
+        adj_or = _knn(new_data, or_k, f"OR, or_k={or_k}")
 
     # Symmetrize
     if sparse.issparse(adj_and):
@@ -1294,8 +1294,8 @@ def adaptive_gamma_knn(data: matrix_data, k: int = 10):
 def obtain_cell_cell_network(
     adata: AnnData,
     k: int = 30,
-    or_k: int = 1,
-    weight: float = 0.1,
+    or_k: int = 10,
+    weight: float = 0.5,
     kernel: Literal["laplacian", "gaussian"] = "gaussian",
     local_k: int = 10,
     gamma: Optional[Union[float, str, collection]] = None,
@@ -1370,8 +1370,8 @@ def obtain_cell_cell_network(
     # Define KNN network
     cell_mutual_knn_weight, cell_mutual_knn = semi_mutual_knn_weight(
         cell_affinity,
-        neighbors=k,
-        or_neighbors=or_k,
+        k=k,
+        or_k=or_k,
         weight=weight
     )
 
