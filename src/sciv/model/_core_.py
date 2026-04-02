@@ -84,13 +84,14 @@ def core(
     local_k: int = 10,
     kernel_gamma: Optional[Union[float, str, collection]] = None,
     epsilon: float = 1e-05,
+    max_steps: int = 300,
     gamma: float = 0.05,
-    enrichment_gamma: float = 0.05,
+    enrichment_gamma: float = 0,
     p: int = 2,
     n_jobs: int = -1,
     min_seed_cell_rate: float = 0.01,
     max_seed_cell_rate: float = 0.05,
-    credible_threshold: float = 0,
+    credible_threshold: float = 1.5,
     diff_peak_value: difference_peak_optional = 'emp_effect',
     enrichment_threshold: Union[enrichment_optional, float] = 'golden',
     is_ablation: bool = False,
@@ -142,6 +143,7 @@ def core(
         defaults to an adaptive value obtained through local information of the parameter `local_k`. Otherwise, it
         should be strictly positive;
     :param epsilon: conditions for stopping in random walk;
+    :param max_steps: Maximum number of steps in a random walk with restart;
     :param gamma: reset weight for random walk;
     :param enrichment_gamma: reset weight for random walk for enrichment;
     :param p: Distance used for loss {1: Manhattan distance, 2: Euclidean distance};
@@ -277,6 +279,10 @@ def core(
         ul.log(__name__).error("The parameter of `enrichment_gamma` should be between 0 and 1.")
         raise ValueError("The parameter of `enrichment_gamma` should be between 0 and 1.")
 
+    if max_steps <= 0:
+        ul.log(__name__).error("The `max_steps` parameter must be a natural number greater than 0.")
+        raise ValueError("The `max_steps` parameter must be a natural number greater than 0.")
+
     if min_seed_cell_rate < 0 or min_seed_cell_rate > 1:
         ul.log(__name__).error("The parameter of `min_seed_cell_rate` should be between 0 and 1.")
         raise ValueError("The parameter of `min_seed_cell_rate` should be between 0 and 1.")
@@ -355,6 +361,7 @@ def core(
         "epsilon": epsilon,
         "gamma": gamma,
         "enrichment_gamma": enrichment_gamma,
+        "max_steps": max_steps,
         "p": p,
         "n_jobs": n_jobs,
         "min_seed_cell_rate": min_seed_cell_rate,
@@ -573,6 +580,7 @@ def core(
             cc_adata=cc_data,
             init_status=init_score,
             epsilon=epsilon,
+            max_steps=max_steps,
             gamma=gamma,
             enrichment_gamma=enrichment_gamma,
             p=p,

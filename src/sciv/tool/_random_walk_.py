@@ -37,6 +37,7 @@ def _random_walk_cpu_(
     weight: matrix_data = None,
     gamma: float = 0.05,
     epsilon: float = 1e-5,
+    max_steps: int = 300,
     p: int = 2
 ) -> collection:
     """
@@ -45,6 +46,7 @@ def _random_walk_cpu_(
     :param weight: weight matrix;
     :param gamma: reset weight.
     :param epsilon: conditions for stopping in random walk;
+    :param max_steps: Maximum number of steps in a random walk with restart;
     :param p: Distance used for loss {1: Manhattan distance, 2: Euclidean distance};
     :return: The value after random walk.
     """
@@ -52,11 +54,11 @@ def _random_walk_cpu_(
     # Random walk
     p0 = np.asarray(seed_cell_vector, dtype=float).ravel()[:, np.newaxis]
     pt: matrix_data = p0.copy()
-    k = 0
+    step = 0
     delta = 1
 
     # iteration
-    while delta > epsilon:
+    while delta > epsilon and max_steps > step:
 
         if hasattr(weight, "dot"):
             p1 = (1 - gamma) * weight.dot(pt) + gamma * p0
@@ -72,17 +74,26 @@ def _random_walk_cpu_(
             delta = np.float_power(np.float_power(np.abs(pt - p1), p).sum(), 1.0 / p)
 
         pt = p1
-        k += 1
+        step += 1
 
     return pt.flatten()
 
 
 class RandomWalkModel(nn.Module):
 
-    def __init__(self, gamma: float = 0.05, epsilon: float = 1e-5, p: int = 2, device: str = 'auto', pbar=None):
+    def __init__(
+        self,
+        gamma: float = 0.05,
+        epsilon: float = 1e-5,
+        max_steps: int = 300,
+        p: int = 2,
+        device: str = 'auto',
+        pbar=None
+    ):
         super().__init__()
         self.gamma = gamma
         self.epsilon = epsilon
+        self.max_steps = max_steps
         self.p = p
         self.pbar = pbar
 
@@ -98,13 +109,13 @@ class RandomWalkModel(nn.Module):
         pt = p0.clone()
 
         delta = 1.0
-        k = 0
+        step = 0
 
-        while delta > self.epsilon:
+        while delta > self.epsilon and self.max_steps > step:
             p1 = self.factor * torch.matmul(weight, pt) + self.gamma * p0
             delta = torch.linalg.norm(pt - p1, ord=self.p).item()
             pt = p1
-            k += 1
+            step += 1
 
         if self.pbar is not None:
             self.pbar.update(1)
@@ -163,13 +174,14 @@ def _random_walk_gpu_(
     weight: matrix_data,
     gamma: float = 0.05,
     epsilon: float = 1e-5,
+    max_steps: int = 300,
     p: int = 2,
     device: str = 'auto'
 ) -> matrix_data:
 
     with tqdm(total=seed_cell_weight.shape[1]) as pbar:
 
-        model = RandomWalkModel(gamma, epsilon, p, device, pbar)
+        model = RandomWalkModel(gamma, epsilon, max_steps, p, device, pbar)
 
         device = model.device
         model.to(device)
@@ -192,18 +204,18 @@ def random_walk(
     weight: matrix_data,
     gamma: float = 0.05,
     epsilon: float = 1e-5,
+    max_steps: int = 300,
     p: int = 2,
     n_jobs: int = -1,
     device: str = 'auto'
 ) -> matrix_data:
-
     availability = check_gpu_availability()
 
     if device == 'cpu' or (device == 'auto' and not availability):
         sample_count = seed_cell_weight.shape[1]
 
         results = Parallel(n_jobs=n_jobs)(
-            delayed(_random_walk_cpu_)(seed_cell_weight[:, i], weight, gamma, epsilon, p)
+            delayed(_random_walk_cpu_)(seed_cell_weight[:, i], weight, gamma, epsilon, max_steps, p)
             for i in tqdm(range(sample_count))
         )
 
@@ -211,13 +223,13 @@ def random_walk(
     elif device == 'gpu' or (device == 'auto' and availability):
 
         try:
-            return _random_walk_gpu_(seed_cell_weight, weight, gamma, epsilon, p, device='gpu')
+            return _random_walk_gpu_(seed_cell_weight, weight, gamma, epsilon, max_steps, p, device='gpu')
         except RuntimeError as e:
             ul.log(__name__).warning(f"GPU failed to run, try to switch to CPU running.\n {e}")
             sample_count = seed_cell_weight.shape[1]
 
             results = Parallel(n_jobs=n_jobs)(
-                delayed(_random_walk_cpu_)(seed_cell_weight[:, i], weight, gamma, epsilon, p)
+                delayed(_random_walk_cpu_)(seed_cell_weight[:, i], weight, gamma, epsilon, max_steps, p)
                 for i in tqdm(range(sample_count))
             )
 
@@ -245,13 +257,14 @@ class RandomWalk:
         cc_adata: AnnData,
         init_status: AnnData,
         epsilon: float = 1e-05,
+        max_steps: int = 300,
         gamma: float = 0.05,
-        enrichment_gamma: float = 0.05,
+        enrichment_gamma: float = 0,
         p: int = 2,
         n_jobs: int = -1,
         min_seed_cell_rate: float = 0.01,
         max_seed_cell_rate: float = 0.05,
-        credible_threshold: float = 0,
+        credible_threshold: float = 1.5,
         enrichment_threshold: Union[enrichment_optional, float] = 'golden',
         benchmark_count: int = 10,
         is_ablation: bool = False,
@@ -262,6 +275,7 @@ class RandomWalk:
         :param cc_adata: Cell features;
         :param init_status: For cell scores under each trait;
         :param epsilon: conditions for stopping in random walk;
+        :param max_steps: Maximum number of steps in a random walk with restart;
         :param gamma: reset weight for random walk;
         :param enrichment_gamma: reset weight for random walk for enrichment;
         :param p: Distance used for loss {1: Manhattan distance, 2: Euclidean distance};
@@ -316,6 +330,10 @@ class RandomWalk:
             ul.log(__name__).error("The parameter of `epsilon` must be greater than zero.")
             raise ValueError("The parameter of `epsilon` must be greater than zero.")
 
+        if max_steps <= 0:
+            ul.log(__name__).error("The `max_steps` parameter must be a natural number greater than 0.")
+            raise ValueError("The `max_steps` parameter must be a natural number greater than 0.")
+
         if "clusters" not in init_status.obs.columns:
             ul.log(__name__).error(
                 "Unsupervised clustering information must be included in column `clusters` of `init_datus.obs`."
@@ -327,6 +345,7 @@ class RandomWalk:
         init_status.obs["clusters"] = init_status.obs["clusters"].astype(str)
 
         self.epsilon = epsilon
+        self.max_steps = max_steps
         self.gamma = gamma
         self.enrichment_gamma = enrichment_gamma
         self.p = p
@@ -482,20 +501,26 @@ class RandomWalk:
         else:
             w = weight
 
-        if not self.is_gpu_available:
+        def _core_(_device_: str):
             return random_walk(
-                seed_cell_data, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p, n_jobs=self.n_jobs, device='cpu'
+                seed_cell_data,
+                weight=w,
+                gamma=gamma,
+                epsilon=self.epsilon,
+                max_steps=self.max_steps,
+                p=self.p,
+                n_jobs=self.n_jobs,
+                device=_device_
             )
 
+        if not self.is_gpu_available:
+            return _core_('cpu')
+
         try:
-            _data_ = random_walk(
-                seed_cell_data, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p, n_jobs=self.n_jobs, device=device
-            )
+            _data_ = _core_(device)
         except Exception as e:
             ul.log(__name__).warning(f"GPU failed to run, try to switch to CPU running.\n {e}")
-            _data_ = random_walk(
-                seed_cell_data, weight=w, gamma=gamma, epsilon=self.epsilon, p=self.p, n_jobs=self.n_jobs, device='cpu'
-            )
+            _data_ = _core_('cpu')
 
         return _data_
 
