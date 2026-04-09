@@ -14,10 +14,10 @@ __name__: str = "plot_box"
 
 def box_base(
     df: DataFrame,
-    value: str = "value",
+    x: str = "clusters",
+    y: str = "value",
     x_name: str = None,
     y_name: str = "value",
-    clusters: str = "clusters",
     palette: Union[Tuple, list] = None,
     width: float = 2,
     height: float = 2,
@@ -40,32 +40,32 @@ def box_base(
     # judge
     df_columns = list(df.columns)
 
-    if value not in df_columns:
-        ul.log(__name__).error(f"The `value` ({value}) parameter must be in the `df` parameter data column name ({df_columns})")
-        raise ValueError(f"The `value` ({value}) parameter must be in the `df` parameter data column name ({df_columns})")
+    if y not in df_columns:
+        ul.log(__name__).error(f"The `y` ({y}) parameter must be in the `df` parameter data column name ({df_columns})")
+        raise ValueError(f"The `y` ({y}) parameter must be in the `df` parameter data column name ({df_columns})")
 
     fig, ax = plot_start(width, height, bottom, output, show)
 
-    group_columns = [clusters]
+    group_columns = [x]
 
-    new_df: DataFrame = df.groupby(group_columns, as_index=False)[value].median()
+    new_df: DataFrame = df.groupby(group_columns, as_index=False)[y].median()
 
     if "color" in df_columns:
         new_df_color: DataFrame = df.groupby(group_columns, as_index=False)["color"].first()
-        new_df = new_df.merge(new_df_color, how="left", on=clusters)
+        new_df = new_df.merge(new_df_color, how="left", on=x)
 
     colors: list = []
 
     # sort
     if is_sort:
-        new_df.sort_values([value], ascending=False, inplace=True)
-        y_names: Union[list, None] = list(new_df[clusters])
+        new_df.sort_values([y], ascending=False, inplace=True)
+        y_names: Union[list, None] = list(new_df[x])
 
         if "color" in df_columns:
             colors = list(new_df["color"])
 
     else:
-        new_df.index = new_df[clusters]
+        new_df.index = new_df[x]
 
         if order_names is not None:
             y_names: list = order_names
@@ -74,23 +74,25 @@ def box_base(
 
                 for i in order_names:
 
-                    for j, c in zip(new_df[clusters], new_df["color"]):
+                    for j, c in zip(new_df[x], new_df["color"]):
 
                         if i == j:
                             colors.append(c)
                             break
 
         else:
-            y_names = new_df[clusters]
+            y_names = new_df[x]
 
             if "color" in df_columns:
                 colors = list(new_df["color"])
 
+    props = {'linestyle': '-', 'linewidth': line_width}
+
     # scatter
     sns.boxplot(
         data=df,
-        x=clusters,
-        y=value,
+        x=x,
+        y=y,
         order=y_names,
         showfliers=show_fliers,
         fliersize=marker_size,
@@ -98,9 +100,9 @@ def box_base(
         whis=whis,
         ax=ax,
         flierprops={'marker': 'o', 'markersize': marker_size},
-        boxprops={'linestyle': '-', 'linewidth': line_width},
-        whiskerprops={'linestyle': '-', 'linewidth': line_width},
-        medianprops={'linestyle': '-', 'linewidth': line_width},
+        boxprops=props,
+        whiskerprops=props,
+        medianprops=props,
         palette=palette if palette is not None else (colors if "color" in df_columns else None),
         **kwargs
     )
@@ -131,7 +133,7 @@ def box_trait(
     clusters: str = "clusters",
     x_name: str = None,
     y_name: str = "value",
-    palette: Tuple = None,
+    palette: Union[Tuple, list] = None,
     orient: str = None,
     width: float = 2,
     height: float = 2,
@@ -165,7 +167,8 @@ def box_trait(
         # Sort gene scores from small to large
         box_base(
             df=trait_score,
-            value=value,
+            x=clusters,
+            y=value,
             x_name=x_name,
             y_name=y_name,
             width=width,
@@ -180,7 +183,6 @@ def box_trait(
             show_fliers=show_fliers,
             marker_size=marker_size,
             orient=orient,
-            clusters=clusters,
             title=f"{title} {trait_}" if title is not None else title,
             output=os.path.join(output, f"cell_{trait_}_score_box.pdf") if output is not None else None,
             show=show,

@@ -495,6 +495,8 @@ def plot_start(
     fig, ax = plt.subplots(figsize=(width, height))
     fig.subplots_adjust(bottom=bottom)
 
+    plt.rcParams['axes.grid'] = False
+
     return fig, ax
 
 
