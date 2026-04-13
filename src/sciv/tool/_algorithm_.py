@@ -39,15 +39,35 @@ _EigenSolver = Literal["arpack", "lobpcg", "amg"]
 
 
 def sigmoid(data: Union[collection, matrix_data]) -> Union[collection, matrix_data]:
+    """
+    Sigmoid function.
+
+    Parameters
+    ----------
+    data : collection, matrix_data
+        Input data.
+    Returns
+    -------
+    collection, matrix_data
+        Sigmoid output.
+    """
     return 1 / (1 + np.exp(-data))
 
 
 def tf_idf(data: matrix_data, ri_sparse: bool = True) -> matrix_data:
     """
-    TF-IDF transformer
-    :param data: Matrix data that needs to be converted;
-    :param ri_sparse: (return_is_sparse) Whether to return sparse matrix.
-    :return: Matrix processed by TF-IDF.
+    TF-IDF transformer.
+
+    Parameters
+    ----------
+    data : matrix_data
+        Matrix data that needs to be converted;
+    ri_sparse : bool, optional
+        (return_is_sparse) Whether to return sparse matrix.
+    Returns
+    -------
+    matrix_data
+        Matrix processed by TF-IDF.
     """
     from sklearn.feature_extraction.text import TfidfTransformer
 
@@ -64,12 +84,22 @@ def z_score_normalize(
     is_sklearn: bool = False
 ) -> Union[dense_data, sparse_matrix]:
     """
-    Matrix standardization (z-score)
-    :param data: Standardized data matrix required.
-    :param with_mean: If True, center the data before scaling.
-    :param ri_sparse: (return_is_sparse) Whether to return sparse matrix.
-    :param is_sklearn: This parameter represents whether to use the sklearn package.
-    :return: Standardized matrix.
+    Matrix standardization (z-score).
+
+    Parameters
+    ----------
+    data : matrix_data
+        Standardized data matrix required.
+    with_mean : bool, optional
+        If True, center the data before scaling.
+    ri_sparse : bool | None, optional
+        (return_is_sparse) Whether to return sparse matrix.
+    is_sklearn : bool, optional
+        This parameter represents whether to use the sklearn package.
+    Returns
+    -------
+    dense_data, sparse_matrix
+        Standardized matrix.
     """
     ul.log(__name__).info("Matrix z-score standardization")
 
@@ -102,10 +132,18 @@ def z_score_normalize(
 
 def z_score_marginal(matrix: matrix_data, axis: Literal[0, 1] = 0) -> Tuple[matrix_data, matrix_data]:
     """
-    Matrix standardization (z-score, marginal)
-    :param matrix: Standardized data matrix required.
-    :param axis: Standardize according to which dimension.
-    :return: Standardized matrix.
+    Matrix standardization (z-score, marginal).
+
+    Parameters
+    ----------
+    matrix : matrix_data
+        Standardized data matrix required.
+    axis : Literal[0, 1], optional
+        Standardize according to which dimension.
+    Returns
+    -------
+    matrix_data, matrix_data
+        Standardized data. First element is the z-score data, second element is the mean data.
     """
     ul.log(__name__).info("Start marginal z-score")
     matrix = np.matrix(to_dense(matrix))
@@ -119,17 +157,38 @@ def z_score_marginal(matrix: matrix_data, axis: Literal[0, 1] = 0) -> Tuple[matr
     return _z_score_, __mean__
 
 
-def z_score_to_p_value(z_score: matrix_data):
+def z_score_to_p_value(z_score: matrix_data) -> matrix_data:
+    """
+    Convert z-score to p-value.
+
+    Parameters
+    ----------
+    z_score : matrix_data
+        Input z-score data.
+    Returns
+    -------
+    matrix_data
+        P-value data.
+    """
     return 2 * (1 - norm.cdf(abs(z_score)))
 
 
 def marginal_normalize(matrix: matrix_data, axis: Literal[0, 1] = 0, default: float = 1e-50) -> matrix_data:
     """
-    Marginal standardization
-    :param matrix: Standardized data matrix required;
-    :param axis: Standardize according to which dimension;
-    :param default: To prevent division by 0, this value needs to be added to the denominator.
-    :return: Standardized data.
+    Marginal standardization.
+
+    Parameters
+    ----------
+    matrix : matrix_data
+        Standardized data matrix required;
+    axis : Literal[0, 1], optional
+        Standardize according to which dimension;
+    default : float, optional
+        To prevent division by 0, this value needs to be added to the denominator.
+    Returns
+    -------
+    matrix_data
+        Standardized data.
     """
     matrix = np.matrix(to_dense(matrix))
     __sum__ = np.sum(matrix, axis=axis)
@@ -138,10 +197,18 @@ def marginal_normalize(matrix: matrix_data, axis: Literal[0, 1] = 0, default: fl
 
 def min_max_norm(data: matrix_data, axis: Literal[0, 1, -1] = -1) -> dense_data:
     """
-    Calculate min max standardized data
-    :param data: input data;
-    :param axis: Standardize according to which dimension.
-    :return: Standardized data.
+    Calculate min max standardized data.
+
+    Parameters
+    ----------
+    data : matrix_data
+        Input data;
+    axis : Literal[0, 1, -1], optional
+        Standardize according to which dimension.
+    Returns
+    -------
+    dense_data
+        Standardized data.
     """
     data = to_dense(data, is_array=True)
 
@@ -176,12 +243,22 @@ def symmetric_scale(
     is_verbose: bool = True
 ) -> matrix_data:
     """
-    Symmetric scale Function
-    :param data: input data;
-    :param axis: Standardize according to which dimension;
-    :param scale: scaling factor.
-    :param is_verbose: log information.
-    :return: Standardized data
+    Symmetric scale Function.
+
+    Parameters
+    ----------
+    data : matrix_data
+        Input data;
+    axis : Literal[0, 1, -1], optional
+        Standardize according to which dimension;
+    scale : Union[number, collection], optional
+        scaling factor.
+    is_verbose : bool, optional
+        log information.
+    Returns
+    -------
+    matrix_data
+        Standardized data.
     """
 
     from scipy import special
@@ -228,11 +305,20 @@ def symmetric_scale(
 
 def mean_symmetric_scale(data: matrix_data, axis: Literal[0, 1, -1] = -1, is_verbose: bool = True) -> matrix_data:
     """
-    Calculate the mean symmetric
-    :param data: input data;
-    :param axis: Standardize according to which dimension.
-    :param is_verbose: log information.
-    :return: Standardized data after average symmetry.
+    Calculate the mean symmetric.
+
+    Parameters
+    ----------
+    data : matrix_data
+        Input data;
+    axis : Literal[0, 1, -1], optional
+        Standardize according to which dimension.
+    is_verbose : bool, optional
+        log information.
+    Returns
+    -------
+    matrix_data
+        Standardized data after average symmetry.
     """
 
     # Judgment dimension
@@ -247,8 +333,25 @@ def mean_symmetric_scale(data: matrix_data, axis: Literal[0, 1, -1] = -1, is_ver
         raise ValueError("The `axis` parameter supports only -1, 0, and 1")
 
 
-def coefficient_of_variation(matrix: matrix_data, axis: Literal[0, 1, -1] = 0, default: float = 0) -> Union[
-    float, collection]:
+def coefficient_of_variation(
+    matrix: matrix_data, axis: Literal[0, 1, -1] = 0, default: float = 0
+) -> Union[float, collection]:
+    """
+    Calculate the coefficient of variation.
+
+    Parameters
+    ----------
+    matrix : matrix_data
+        Input matrix data.
+    axis : Literal[0, 1, -1], optional
+        Axis to calculate the coefficient of variation. Default is 0.
+    default : float, optional
+        Default value for division by zero. Default is 0.
+    Returns
+    -------
+    Union[float, collection]
+        Coefficient of variation.
+    """
     if axis == -1:
         _std_ = np.array(np.std(matrix))
         _mean_ = np.array(np.mean(matrix))
@@ -274,9 +377,16 @@ def coefficient_of_variation(matrix: matrix_data, axis: Literal[0, 1, -1] = 0, d
 
 def is_asc_sort(positions_list: list) -> bool:
     """
-    Judge whether the site is in ascending order
-    :param positions_list: positions list.
-    :return: True for ascending order, otherwise False.
+    Judge whether the site is in ascending order.
+
+    Parameters
+    ----------
+    positions_list : list
+        Positions list.
+    Returns
+    -------
+    bool
+        True for ascending order, otherwise False.
     """
     length: int = len(positions_list)
 
@@ -295,11 +405,20 @@ def is_asc_sort(positions_list: list) -> bool:
 
 def lsi(data: matrix_data, n_components: int = 50, is_to_dense: bool = False) -> dense_data:
     """
-    SVD LSI
-    :param data: input cell feature data;
-    :param n_components: Dimensions that need to be reduced to.
-    :param is_to_dense: Whether to convert the data into a dense matrix.
-    :return: Reduced dimensional data (SVD LSI model).
+    SVD LSI.
+
+    Parameters
+    ----------
+    data : matrix_data
+        Input cell feature data;
+    n_components : int, optional
+        Dimensions that need to be reduced to.
+    is_to_dense : bool, optional
+        Whether to convert the data into a dense matrix.
+    Returns
+    -------
+    dense_data
+        Reduced dimensional data (SVD LSI model).
     """
 
     from sklearn.decomposition import TruncatedSVD
@@ -321,11 +440,20 @@ def lsi(data: matrix_data, n_components: int = 50, is_to_dense: bool = False) ->
 
 def pca(data: matrix_data, n_components: int = 50, is_to_dense: bool = False) -> dense_data:
     """
-    PCA
-    :param data: input cell feature data;
-    :param n_components: Dimensions that need to be reduced to.
-    :param is_to_dense: Whether to convert the data into a dense matrix.
-    :return: Reduced dimensional data.
+    PCA.
+
+    Parameters
+    ----------
+    data : matrix_data
+        Input cell feature data;
+    n_components : int, optional
+        Dimensions that need to be reduced to.
+    is_to_dense : bool, optional
+        Whether to convert the data into a dense matrix.
+    Returns
+    -------
+    dense_data
+        Reduced dimensional data.
     """
     from sklearn.decomposition import PCA
 
@@ -346,10 +474,20 @@ def pca(data: matrix_data, n_components: int = 50, is_to_dense: bool = False) ->
 
 def jaccard_similarity(data: matrix_data, n_jobs: int = -1, is_to_dense: bool = False) -> matrix_data:
     """
-    Calculate the Jaccard similarity matrix
-    :param data: input cell feature data;
-    :param n_jobs: The number of jobs to use for the computation.
-    :param is_to_dense: Whether to convert the data into a dense matrix.
+    Calculate the Jaccard similarity matrix.
+
+    Parameters
+    ----------
+    data : matrix_data
+        Input cell feature data;
+    n_jobs : int, optional
+        The number of jobs to use for the computation.
+    is_to_dense : bool, optional
+        Whether to convert the data into a dense matrix.
+    Returns
+    -------
+    matrix_data
+        Jaccard similarity matrix.
     """
     from sklearn.metrics import pairwise_distances
     from sklearn.preprocessing import binarize
@@ -373,14 +511,25 @@ def spectral_eigenmaps(
     is_to_dense: bool = False
 ) -> dense_data:
     """
-    Spectral Eigenmaps
-    :param data: input cell feature data;
-    :param n_components: Dimensions that need to be reduced to.
-    :param eigen_solver: The eigenvalue decomposition strategy to use.
-    :param affinity: method
-    :param n_jobs: The number of jobs to use for the computation.
-    :param is_to_dense: Whether to convert the data into a dense matrix.
-    :return: Reduced dimensional data.
+    Spectral Eigenmaps.
+
+    Parameters
+    ----------
+    data : matrix_data
+        Input cell feature data;
+    n_components : int, optional
+        Dimensions that need to be reduced to.
+    eigen_solver : Optional[_EigenSolver], optional
+        The eigenvalue decomposition strategy to use.
+    affinity: method
+    n_jobs : int, optional
+        The number of jobs to use for the computation.
+    is_to_dense : bool, optional
+        Whether to convert the data into a dense matrix.
+    Returns
+    -------
+    dense_data
+        Reduced dimensional data.
     """
     from sklearn.manifold import SpectralEmbedding
 
@@ -421,18 +570,30 @@ def semi_mutual_knn_weight(
     is_mknn_fully_connected: bool = True
 ) -> Tuple[matrix_data, matrix_data]:
     """
-    Mutual KNN with weight
-    :param data: Input data matrix;
-    :param k: The number of nearest neighbors (AND);
-    :param or_k: The number of or nearest neighbors (OR);
-    :param weight: The weight of interactions or operations;
-    :param is_for: Obtain the nearest neighbors of each node from each row of the for loop matrix;
+    Mutual KNN with weight.
+
+    Parameters
+    ----------
+    data : matrix_data
+        Input data matrix;
+    k : int, optional
+        The number of nearest neighbors (AND);
+    or_k : int, optional
+        The number of or nearest neighbors (OR);
+    weight : float, optional
+        The weight of interactions or operations;
+    is_for : bool, optional
+        Obtain the nearest neighbors of each node from each row of the for loop matrix;
         Setting it to True is very suitable for situations with large samples and insufficient memory.
-    :param is_mknn_fully_connected: Is the network of MKNN an all connected graph?
+    is_mknn_fully_connected : bool, optional
+        Is the network of MKNN an all connected graph?
         If the value is True, it ensures that a node is connected to at least the node that is not closest to itself.
         This parameter does not affect the result of SM-KNN (the first result), but only affects the result of
         traditional M-KNN (the second result).
-    :return: Adjacency weight matrix
+    Returns
+    -------
+    matrix_data
+        Adjacency weight matrix.
     """
     ul.log(__name__).info("Start semi-mutual KNN")
 
@@ -534,13 +695,22 @@ def semi_mutual_knn_weight(
     return adj_weight, adj_and
 
 
-def k_means(data: matrix_data, n_clusters: int = 8, is_to_dense: bool = False):
+def k_means(data: matrix_data, n_clusters: int = 8, is_to_dense: bool = False) -> collection:
     """
-    Perform k-means clustering on data
-    :param data: Input data matrix;
-    :param n_clusters: The number of clusters to form as well as the number of centroids to generate.
-    :param is_to_dense: Whether to convert the data into a dense matrix.
-    :return: Tags after k-means clustering.
+    Perform k-means clustering on data.
+
+    Parameters
+    ----------
+    data : matrix_data
+        Input data matrix;
+    n_clusters : int, optional
+        The number of clusters to form as well as the number of centroids to generate.
+    is_to_dense : bool, optional
+        Whether to convert the data into a dense matrix.
+    Returns
+    -------
+    collection
+        Tags after k-means clustering.
     """
     ul.log(__name__).info("Start K-means cluster")
     from sklearn.cluster import KMeans
@@ -562,13 +732,24 @@ def spectral_clustering(
     is_to_dense: bool = False
 ) -> collection:
     """
-    Spectral clustering
-    :param data: Input data matrix;
-    :param n_clusters: The dimension of the projection subspace.
-    :param n_components: The dimension of the projection subspace.
-    :param eigen_solver: Default use of Nyström approximation.
-    :param is_to_dense: Whether to convert the data into a dense matrix.
-    :return: Tags after spectral clustering.
+    Spectral clustering on data.
+
+    Parameters
+    ----------
+    data : matrix_data
+        Input data matrix;
+    n_clusters : int, optional
+        The dimension of the projection subspace.
+    n_components : int, optional
+        The dimension of the projection subspace.
+    eigen_solver : str, optional
+        Default use of Nyström approximation.
+    is_to_dense : bool, optional
+        Whether to convert the data into a dense matrix.
+    Returns
+    -------
+    collection
+        Tags after spectral clustering.
     """
     ul.log(__name__).info("Start spectral clustering")
 
@@ -584,11 +765,20 @@ def spectral_clustering(
 
 def tsne(data: matrix_data, n_components: int = 2, is_to_dense: bool = False) -> matrix_data:
     """
-    T-SNE dimensionality reduction
-    :param data: Data matrix that requires dimensionality reduction;
-    :param n_components: Dimension of the embedded space.
-    :param is_to_dense: Whether to convert the data into a dense matrix.
-    :return: Reduced dimensional data matrix
+    T-SNE dimensionality reduction on data.
+
+    Parameters
+    ----------
+    data : matrix_data
+        Data matrix that requires dimensionality reduction;
+    n_components : int, optional
+        Dimension of the embedded space.
+    is_to_dense : bool, optional
+        Whether to convert the data into a dense matrix.
+    Returns
+    -------
+    matrix_data
+        Reduced dimensional data matrix.
     """
     from sklearn.manifold import TSNE
 
@@ -607,25 +797,35 @@ def umap(
     is_to_dense: bool = False
 ) -> matrix_data:
     """
-    UMAP dimensionality reduction
-    :param data: Data matrix that requires dimensionality reduction;
-    :param n_neighbors: float (optional, default 15)
+    UMAP dimensionality reduction on data.
+
+    Parameters
+    ----------
+    data : matrix_data
+        Data matrix that requires dimensionality reduction;
+    n_neighbors : float, optional
         The size of local neighborhood (in terms of number of neighboring
         sample points) used for manifold approximation. Larger values
         result in more global views of the manifold, while smaller
         values result in more local data being preserved. In general
         values should be in the range 2 to 100;
-    :param n_components: The dimension of the space to embed into. This defaults to 2 to
+    n_components : int, optional
+        The dimension of the space to embed into. This defaults to 2 to
         provide easy visualization, but can reasonably be set to any
         integer value in the range 2 to 100.
-    :param min_dist: The effective minimum distance between embedded points. Smaller values
+    min_dist : float, optional
+        The effective minimum distance between embedded points. Smaller values
         will result in a more clustered/clumped embedding where nearby points
         on the manifold are drawn closer together, while larger values will
         result on a more even dispersal of points. The value should be set
         relative to the ``spread`` value, which determines the scale at which
         embedded points will be spread out.
-    :param is_to_dense: Whether to convert the data into a dense matrix.
-    :return: Reduced dimensional data matrix
+    is_to_dense : bool, optional
+        Whether to convert the data into a dense matrix.
+    Returns
+    -------
+    matrix_data
+        Reduced dimensional data matrix.
     """
     import umap as umap_
 
@@ -635,8 +835,23 @@ def umap(
     return embedding
 
 
-def safe_kl_divergence(p: collection, q: collection, epsilon: float = 1e-10):
-    """Safe KL divergence calculation to avoid division by zero"""
+def safe_kl_divergence(p: collection, q: collection, epsilon: float = 1e-10) -> float:
+    """
+    Safe KL divergence calculation to avoid division by zero.
+
+    Parameters
+    ----------
+    p : collection
+        First data.
+    q : collection
+        Second data.
+    epsilon : float, optional
+        The small value to add to the denominator to avoid zeros.
+    Returns
+    -------
+    float
+        KL divergence score.
+    """
 
     # Ensure p and q are probability distributions
     p = to_dense(p, is_array=True).flatten()
@@ -656,10 +871,18 @@ def safe_kl_divergence(p: collection, q: collection, epsilon: float = 1e-10):
 
 def kl_divergence(data1: matrix_data, data2: matrix_data) -> float:
     """
-    Calculate KL divergence for two data
-    :param data1: First data;
-    :param data2: Second data.
-    :return: KL divergence score
+    Calculate KL divergence for two data.
+
+    Parameters
+    ----------
+    data1 : matrix_data
+        First data.
+    data2 : matrix_data
+        Second data.
+    Returns
+    -------
+    float
+        KL divergence score.
     """
     from scipy import stats
 
@@ -678,10 +901,18 @@ def calinski_harabasz(data: matrix_data, labels: collection) -> float:
     """
     The Calinski-Harabasz index is also one of the indicators used to evaluate the quality of clustering models.
     It measures the compactness within the cluster and the separation between clusters in the clustering results. The
-    larger the value, the better the clustering effect
-    :param data: First data;
-    :param labels: Predicted labels for each sample.
-    :return:
+    larger the value, the better the clustering effect.
+
+    Parameters
+    ----------
+    data : matrix_data
+        First data.
+    labels : collection
+        Predicted labels for each sample.
+    Returns
+    -------
+    float
+        Calinski-Harabasz index.
     """
     from sklearn.metrics import calinski_harabasz_score
     return calinski_harabasz_score(to_dense(data, is_array=True), labels)
@@ -689,10 +920,18 @@ def calinski_harabasz(data: matrix_data, labels: collection) -> float:
 
 def silhouette(data: matrix_data, labels: collection) -> float:
     """
-    silhouette
-    :param data: An array of pairwise distances between samples, or a feature array;
-    :param labels: Predicted labels for each sample.
-    :return: index
+    silhouette score.
+
+    Parameters
+    ----------
+    data : matrix_data
+        An array of pairwise distances between samples, or a feature array.
+    labels : collection
+        Predicted labels for each sample.
+    Returns
+    -------
+    float
+        silhouette score.
     """
     from sklearn.metrics import silhouette_score
     return silhouette_score(to_dense(data, is_array=True), labels)
@@ -700,10 +939,18 @@ def silhouette(data: matrix_data, labels: collection) -> float:
 
 def davies_bouldin(data: matrix_data, labels: collection) -> float:
     """
-    Davies-Bouldin index (DBI)
-    :param data: A list of ``n_features``-dimensional data points. Each row corresponds to a single data point;
-    :param labels: Predicted labels for each sample.
-    :return: index
+    Davies-Bouldin index (DBI).
+
+    Parameters
+    ----------
+    data : matrix_data
+        A list of ``n_features``-dimensional data points. Each row corresponds to a single data point;
+    labels : collection
+        Predicted labels for each sample.
+    Returns
+    -------
+    float
+        Davies-Bouldin index.
     """
     from sklearn.metrics import davies_bouldin_score
     return davies_bouldin_score(to_dense(data, is_array=True), labels)
@@ -712,9 +959,17 @@ def davies_bouldin(data: matrix_data, labels: collection) -> float:
 def ari(labels_pred: collection, labels_true: collection) -> float:
     """
     ARI (-1, 1)
-    :param labels_pred: Predictive labels for clustering;
-    :param labels_true: Real labels for clustering.
-    :return: index
+
+    Parameters
+    ----------
+    labels_pred : collection
+        Predictive labels for clustering;
+    labels_true : collection
+        Real labels for clustering.
+    Returns
+    -------
+    float
+        ARI score.
     """
     from sklearn.metrics import adjusted_rand_score
     return adjusted_rand_score(labels_true, labels_pred)
@@ -723,9 +978,17 @@ def ari(labels_pred: collection, labels_true: collection) -> float:
 def ami(labels_pred: collection, labels_true: collection) -> float:
     """
     AMI (0, 1)
-    :param labels_pred: Predictive labels for clustering;
-    :param labels_true: Real labels for clustering.
-    :return: index
+
+    Parameters
+    ----------
+    labels_pred : collection
+        Predictive labels for clustering;
+    labels_true : collection
+        Real labels for clustering.
+    Returns
+    -------
+    float
+        AMI score.
     """
     from sklearn.metrics import adjusted_mutual_info_score
     return adjusted_mutual_info_score(labels_true, labels_pred)
@@ -736,10 +999,18 @@ def binary_indicator(
     labels_pred: collection
 ) -> Tuple[float, float, float, float, float, float, float]:
     """
-    Accuracy, Recall, F1, FPR, TPR, AUROC, AUPRC
-    :param labels_true: Real labels for clustering;
-    :param labels_pred: Predictive labels for clustering.
-    :return: Indicators
+    Accuracy, Recall, F1, FPR, TPR, AUROC, AUPRC.
+
+    Parameters
+    ----------
+    labels_true : collection
+        Real labels for clustering;
+    labels_pred : collection
+        Predictive labels for clustering.
+    Returns
+    -------
+    tuple
+        Binary Indicators.
     """
     from sklearn.metrics import (
         accuracy_score,
@@ -761,12 +1032,21 @@ def binary_indicator(
 
 def euclidean_distances(data1: matrix_data, data2: matrix_data = None, block_size: int = -1) -> matrix_data:
     """
-    Calculate the Euclidean distance between two matrices
-    :param data1: First data;
-    :param data2: Second data (If the second data is empty, it will default to the first data.)
-    :param block_size: The size of the segmentation stored in block wise matrix multiplication.
-        If the value is less than or equal to zero, no block operation will be performed
-    :return: Data of Euclidean distance.
+    Calculate the Euclidean distance between two matrices.
+
+    Parameters
+    ----------
+    data1 : matrix_data
+        First data;
+    data2 : matrix_data
+        Second data (If the second data is empty, it will default to the first data.)
+    block_size : int
+        The size of the segmentation stored in block wise matrix multiplication.
+        If the value is less than or equal to zero, no block operation will be performed.
+    Returns
+    -------
+    matrix_data
+        Data of Euclidean distance.
     """
     ul.log(__name__).info("Start euclidean distances")
 
@@ -791,10 +1071,18 @@ def euclidean_distances(data1: matrix_data, data2: matrix_data = None, block_siz
 
 def _overlap_(regions_sort: DataFrame, variants: DataFrame) -> DataFrame:
     """
-    Relate the peak region and variant site
-    :param regions_sort: peaks information
-    :param variants: variants information
-    :return: The variant maps data in the peak region
+    Relate the peak region and variant site.
+
+    Parameters
+    ----------
+    regions_sort : DataFrame
+        Information of peaks.
+    variants : DataFrame
+        Information of variants.
+    Returns
+    -------
+    DataFrame
+        The variant maps data in the peak region.
     """
 
     columns = ['variant_id', 'index', 'chr', 'position', 'rsId', 'chr_a', 'start', 'end']
@@ -870,10 +1158,18 @@ def _overlap_(regions_sort: DataFrame, variants: DataFrame) -> DataFrame:
 
 def overlap(regions: DataFrame, variants: DataFrame) -> DataFrame:
     """
-    Relate the peak region and variant site
-    :param regions: peaks information
-    :param variants: variants information
-    :return: The variant maps data in the peak region
+    Relate the peak region and variant site.
+
+    Parameters
+    ----------
+    regions : DataFrame
+        Information of peaks.
+    variants : DataFrame
+        Information of variants.
+    Returns
+    -------
+    DataFrame
+        The variant maps data in the peak region.
     """
     regions_columns: list = list(regions.columns)
 
@@ -905,11 +1201,17 @@ def overlap_sum(regions: AnnData, variants: dict, trait_info: DataFrame, n_jobs:
     """
     Overlap regional data and mutation data and sum the PP values of all mutations in a region as the values for that
     region.
-    :param regions: peaks data
-    :param variants: variants data
-    :param trait_info: traits information
-    :param n_jobs: The maximum number of concurrently running jobs
-    :return: overlap data
+
+    Parameters
+    ----------
+    regions : AnnData
+        Data of peaks.
+    variants : dict
+        Data of variants.
+    trait_info : DataFrame
+        Information of traits.
+    n_jobs : int
+        The maximum number of concurrently running jobs.
     """
 
     start_time = time.perf_counter()
@@ -1035,13 +1337,20 @@ def overlap_sum(regions: AnnData, variants: dict, trait_info: DataFrame, n_jobs:
 
 def calculate_fragment_weighted_accessibility(input_data: dict, block_size: int = -1) -> matrix_data:
     """
-    Calculate the initial trait- or disease-related cell score
-    :param input_data:
+    Calculate the initial trait- or disease-related cell score.
+
+    Parameters
+    ----------
+    input_data : dict
         1. data: Convert the `counts` matrix to the `fragments` matrix using the `scvi.data.reads_to_fragments`
         2. overlap_data: Peaks-traits/diseases data
-    :param block_size: The size of the segmentation stored in block wise matrix multiplication.
+    block_size : int
+        The size of the segmentation stored in block wise matrix multiplication.
         If the value is less than or equal to zero, no block operation will be performed
-    :return: Initial TRS
+    Returns
+    -------
+    matrix_data
+        Initial TRS.
     """
 
     if "data" not in input_data:
@@ -1118,18 +1427,31 @@ def calculate_init_score_weight(
 ) -> AnnData:
     """
     Calculate the initial trait- or disease-related cell score with weight.
-    :param adata: scATAC-seq data;
-    :param da_peaks_adata: Differential peak data;
-    :param overlap_adata: Peaks-traits/diseases data;
-    :param layer: The layer value of scATAC-seq data;
-    :param diff_peak_value: Specify the correction value in peak correction of clustering type differences.
+
+    Parameters
+    ----------
+    adata : AnnData
+        scATAC-seq data;
+    da_peaks_adata : AnnData
+        Differential peak data;
+    overlap_adata : AnnData
+        Peaks-traits/diseases data;
+    layer : str
+        Optional. The layer value of scATAC-seq data;
+    diff_peak_value : difference_peak_optional
+        Specify the correction value in peak correction of clustering type differences.
         {'emp_effect', 'bayes_factor', 'emp_prob1', 'all'}
-    :param is_simple: True represents not adding unnecessary intermediate variables, only adding the final result. It
+    is_simple : bool
+        True represents not adding unnecessary intermediate variables, only adding the final result. It
         is worth noting that when set to `True`, the `is_ablation` parameter will become invalid, and when set to
         `False`, `is_ablation` will only take effect;
-    :param block_size: The size of the segmentation stored in block wise matrix multiplication.
+    block_size : int
+        The size of the segmentation stored in block wise matrix multiplication.
         If the value is less than or equal to zero, no block operation will be performed
-    :return: Initial TRS with weight.
+    Returns
+    -------
+    AnnData
+        Initial TRS with weight.
     """
 
     start_time = time.perf_counter()
@@ -1265,12 +1587,20 @@ def calculate_init_score_weight(
     return init_trs_adata
 
 
-def adaptive_gamma_knn(data: matrix_data, k: int = 10):
+def adaptive_gamma_knn(data: matrix_data, k: int = 10) -> np.ndarray:
     """
     Adaptive gamma parameter based on k-nearest neighbors
-    :param data: Data matrix (n_samples, n_features)
-    :param k: Number of neighbors, usually select 5-20
-    :return: Gamma value for each sample (n_samples,)
+
+    Parameters
+    ----------
+    data : matrix_data
+        Data matrix (n_samples, n_features)
+    k : int
+        Number of neighbors, usually select 5-20
+    Returns
+    -------
+    np.ndarray
+        Gamma value for each sample (n_samples,)
     """
 
     from sklearn.neighbors import NearestNeighbors
@@ -1303,20 +1633,34 @@ def obtain_cell_cell_network(
 ) -> AnnData:
     """
     Calculate cell-cell correlation
-    :param adata: scATAC-seq data;
-    :param k: When building an M-KNN network, the number of nodes connected by each node (and);
-    :param or_k: When building an M-KNN network, the number of nodes connected by each node (or);
-    :param weight: The weight of interactions or operations;
-    :param local_k: Determining the number of neighbors for the adaptive kernel;
-    :param kernel: Determine the kernel function to be used;
-    :param gamma: When the value of `kernel` is "laplacian", if it is None, then it is the reciprocal of the
+
+    Parameters
+    ----------
+    adata : AnnData
+        scATAC-seq data;
+    k : int
+        When building an M-KNN network, the number of nodes connected by each node (and);
+    or_k : int
+        When building an M-KNN network, the number of nodes connected by each node (or);
+    weight : float
+        The weight of interactions or operations;
+    local_k : int
+        Number of neighbors for the adaptive kernel;
+    kernel : Literal["laplacian", "gaussian"]
+        Determine the kernel function to be used;
+    gamma : Optional[Union[float, str, collection]]
+        When the value of `kernel` is "laplacian", if it is None, then it is the reciprocal of the
         latent representation dimension of the cell. When the value of `kernel` is "gaussian", if it is None, then it
         defaults to an adaptive value obtained through local information of the parameter `local_k`. Otherwise, it
         should be strictly positive;
-    :param is_simple: True represents not adding unnecessary intermediate variables, only adding the final result.
+    is_simple : bool
+        True represents not adding unnecessary intermediate variables, only adding the final result.
         It is worth noting that when set to `True`, the `is_ablation` parameter will become invalid, and when set to
         `False`, `is_ablation` will only take effect;
-    :return: Cell similarity data.
+    Returns
+    -------
+    AnnData
+        Cell similarity data.
     """
 
     start_time = time.perf_counter()
@@ -1393,9 +1737,17 @@ def obtain_cell_cell_network(
 def perturb_data(data: collection, percentage: float) -> collection:
     """
     Randomly perturbs the positions of a percentage of data.
-    :param data: List of data elements to be perturbed.
-    :param percentage: Percentage of data to be perturbed.
-    :return: Perturbed data list.
+
+    Parameters
+    ----------
+    data : collection
+        List of data elements to be perturbed.
+    percentage : float
+        Percentage of data to be perturbed.
+    Returns
+    -------
+    collection
+        Perturbed data list.
     """
 
     if percentage <= 0 or percentage > 1:
@@ -1454,6 +1806,18 @@ def add_bernoulli_fluctuation_noise(
 def add_noise_perturb(data: matrix_data, rate: float) -> matrix_data:
     """
     Add peak percentage noise to each cell
+
+    Parameters
+    ----------
+    data : matrix_data
+        Input counts matrix
+    rate : float
+        Noise level, i.e., the probability of randomly adding 1 (range: 0.0 - 1.0)
+
+    Returns
+    -------
+    matrix_data
+        Matrix after adding noise
     """
 
     if rate <= 0 or rate >= 1:

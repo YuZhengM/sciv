@@ -34,21 +34,42 @@ def poisson_vi(
     model_dir: Optional[path] = None
 ) -> AnnData:
     """
-    PoissonVI processing of the data results in the current sample representation and peak difference data after Leiden clustering.
-    :param adata: processing data;
-    :param max_epochs: The maximum number of epochs for PoissonVI training;
-    :param lr: Learning rate for optimization;
-    :param batch_size: Minibatch size to use during training;
-    :param eps: Optimizer eps;
-    :param early_stopping: Whether to perform early stopping with respect to the validation set;
-    :param early_stopping_patience: How many epochs to wait for improvement before early stopping;
-    :param strategy: DDP strategy;
-    :param batch_key: Batch information in scATAC-seq data;
-    :param resolution: Resolution of the Leiden Cluster;
-    :param dp_delta: PeakVI method in differential analysis empirical effect size threshold;
-    :param latent_name: The name of latent representation;
-    :param model_dir: The folder name saved by the training module;
-    :return: Differential peak of clustering types.
+    PoissonVI processing of the data results in the current sample representation 
+    and peak difference data after Leiden clustering.
+
+    Parameters
+    ----------
+    adata : AnnData
+        Input data to be processed.
+    max_epochs : int, default 500
+        The maximum number of epochs for PoissonVI training.
+    lr : float, default 1e-4
+        Learning rate for optimization.
+    batch_size : int, default 128
+        Minibatch size to use during training.
+    eps : float, default 1e-08
+        Optimizer epsilon.
+    early_stopping : bool, default True
+        Whether to perform early stopping with respect to the validation set.
+    early_stopping_patience : int, default 50
+        How many epochs to wait for improvement before early stopping.
+    strategy : str, default "ddp_notebook_find_unused_parameters_true"
+        DDP strategy.
+    batch_key : str, optional
+        Batch information in scATAC-seq data.
+    resolution : float, default 0.5
+        Resolution of the Leiden clustering.
+    dp_delta : float, default 0.05
+        Empirical effect size threshold for PeakVI method in differential analysis.
+    latent_name : str, default "latent"
+        The name of latent representation.
+    model_dir : str, optional
+        The folder name for saving the trained model.
+
+    Returns
+    -------
+    AnnData
+        Differential peak data of clustering types.
     """
     ul.log(__name__).info("Start PoissonVI")
 
@@ -66,8 +87,12 @@ def poisson_vi(
         raise ValueError("The parameter `dp_delta` must be greater than zero.")
 
     if batch_key is not None and batch_key not in adata.obs.columns:
-        ul.log(__name__).error(f"The cells information {adata.obs.columns} in data `adata` must include the {batch_key} column.")
-        raise ValueError(f"The cells information {adata.obs.columns} in data `adata` must include the {batch_key} column.")
+        ul.log(__name__).error(
+            f"The cells information {adata.obs.columns} in data `adata` must include the {batch_key} column."
+        )
+        raise ValueError(
+            f"The cells information {adata.obs.columns} in data `adata` must include the {batch_key} column."
+        )
 
     # PoissonVI, Binarization
     ul.log(__name__).info("Calculate fragment counts matrix.")
@@ -158,8 +183,14 @@ def poisson_vi(
                 try:
                     model = scvi.external.POISSONVI.load(model_dir, adata=adata, accelerator="cpu")
                 except Exception as e:
-                    ul.log(__name__).error(f"File `model.pt` failed to load, you can execute `Poisson VI` again by deleting file `model.pt` ({model_dir}/model.pt).\n {e}")
-                    raise ValueError(f"File `model.pt` failed to load, you can execute `Poisson VI` again by deleting file `model.pt` ({model_dir}/model.pt).")
+                    ul.log(__name__).error(
+                        f"File `model.pt` failed to load, you can execute `Poisson VI` again by deleting file \
+                         `model.pt` ({model_dir}/model.pt).\n {e}"
+                    )
+                    raise ValueError(
+                        f"File `model.pt` failed to load, you can execute `Poisson VI` again by deleting file \
+                         `model.pt` ({model_dir}/model.pt)."
+                    )
         else:
             ul.file_method(__name__).makedirs(model_dir)
             model = __train__()
@@ -172,7 +203,10 @@ def poisson_vi(
     adata.obsm[latent_name] = latent
 
     if "clusters" in adata.obs.columns:
-        ul.log(__name__).warning("Due to the original inclusion of the `clusters` column, the original `clusters` column name has been changed to `clusters_x`.")
+        ul.log(__name__).warning(
+            "Due to the original inclusion of the `clusters` column, the original `clusters` column name has \
+             been changed to `clusters_x`."
+        )
         adata.obs["clusters_x"] = adata.obs["clusters"]
 
     ul.log(__name__).info(f"Perform kNN and Leiden clustering.")
@@ -189,7 +223,10 @@ def poisson_vi(
         adata.obs["latent_umap1"] = data_umap[:, 0]
         adata.obs["latent_umap2"] = data_umap[:, 1]
     except Exception as e:
-        ul.log(__name__).warning(f"UMAP error, your system does not support it, but it does not affect the process. Continue with execution: {e}")
+        ul.log(__name__).warning(
+            f"UMAP error, your system does not support it, but it does not affect the process. \
+             Continue with execution: {e}"
+        )
 
     # tsne
     try:
@@ -198,7 +235,10 @@ def poisson_vi(
         adata.obs["latent_tsne1"] = data_tsne[:, 0]
         adata.obs["latent_tsne2"] = data_tsne[:, 1]
     except Exception as e:
-        ul.log(__name__).warning(f"TSNE error, your system does not support it, but it does not affect the process. Continue with execution: {e}")
+        ul.log(__name__).warning(
+            f"TSNE error, your system does not support it, but it does not affect the process. \
+             Continue with execution: {e}"
+        )
 
     clusters_list = list(set(adata.obs["clusters"]))
     clusters_list.sort()
@@ -218,7 +258,10 @@ def poisson_vi(
     matrix_ee = np.ones((len(clusters_list), adata.shape[1]))
 
     if len(clusters_list) == 1:
-        ul.log(__name__).warning(f"The number of clusters is one, ignoring cluster type correction. It is recommended to increase the `resolution` value to make it effective.")
+        ul.log(__name__).warning(
+            f"The number of clusters is one, ignoring cluster type correction. It is recommended to increase the \
+             `resolution` value to make it effective."
+        )
     else:
         # differential peak
         da_peaks_all: dict = {}
@@ -230,12 +273,16 @@ def poisson_vi(
 
             # differential peak
             try:
-                da_peaks = model.differential_accessibility(adata, groupby="clusters", delta=dp_delta, group1=cluster, mode="vanilla", two_sided=False)
+                da_peaks = model.differential_accessibility(
+                    adata, groupby="clusters", delta=dp_delta, group1=cluster, mode="vanilla", two_sided=False
+                )
             except Exception as e:
                 ul.log(__name__).warning(f"GPU failed to run, try to switch to CPU running.\n {e}")
                 # PyTorch uses CPU
                 model.to_device('cpu')
-                da_peaks = model.differential_accessibility(adata, groupby="clusters", delta=dp_delta, group1=cluster, mode="vanilla", two_sided=False)
+                da_peaks = model.differential_accessibility(
+                    adata, groupby="clusters", delta=dp_delta, group1=cluster, mode="vanilla", two_sided=False
+                )
 
             da_peaks_all.update({cluster: da_peaks})
 

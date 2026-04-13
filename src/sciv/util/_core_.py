@@ -101,7 +101,6 @@ def track_with_memory(interval: float = 60) -> Callable:
     def decorator(func) -> Callable:
         @wraps(func)
         def wrapper(*args, **kwargs) -> dict:
-
             process = psutil.Process(os.getpid())
 
             stop_monitor = False
@@ -325,7 +324,7 @@ def get_sub_data(data: collection, size: int) -> collection:
     collection
         Sub data.
     """
-    
+
     # get information
     old_size = len(data)
 

@@ -37,6 +37,57 @@ def violin_base(
     close: bool = False,
     **kwargs: Any
 ) -> None:
+    """
+    Plot violin plot.
+
+    Parameters
+    ----------
+    df : DataFrame
+        Input data.
+    value : str, optional
+        Value column.
+    x_name : str, optional
+        X name.
+    y_name : str, optional
+        Y name.
+    kind : _Kind, optional
+        Kind of plot.
+    clusters : str, optional
+        Clusters column.
+    palette : Union[Tuple, list], optional
+        Palette.
+    hue : str, optional
+        Hue column.
+    width : float, optional
+        Width.
+    height : float, optional
+        Height.
+    bottom : float, optional
+        Bottom.
+    rotation : float, optional
+        Rotation.
+    line_width : float, optional
+        Line width.
+    title : str, optional
+        Title.
+    split : bool, optional
+        Whether to split.
+    is_sort : bool, optional
+        Whether to sort.
+    order_names : list, optional
+        Order names.
+    output : path, optional
+        Output path.
+    show : bool, optional
+        Whether to show.
+    close : bool, optional
+        Whether to close.
+    kwargs : Any, optional
+        Keyword arguments.
+    Returns
+    -------
+    None
+    """
     # judge
     df_columns = list(df.columns)
 
@@ -144,18 +195,82 @@ def violin_trait(
     close: bool = False,
     **kwargs: Any
 ) -> None:
+    """
+    Plot violin plot for trait data.
 
+    This function creates violin plots (or other categorical plots) for trait data,
+    allowing visualization of trait distributions across different clusters.
+
+    Parameters
+    ----------
+    trait_df : DataFrame
+        Input trait data containing trait information and values.
+    trait_name : Union[str, list], optional
+        Name(s) of the trait(s) to plot. Use "All" to plot all traits.
+    trait_column_name : str, optional
+        Column name in trait_df that contains trait identifiers.
+    value : str, optional
+        Column name containing the values to plot.
+    clusters : str, optional
+        Column name containing cluster assignments.
+    kind : _Kind, optional
+        Type of categorical plot to create (e.g., "violin", "box", "strip").
+    x_name : str, optional
+        Label for the x-axis.
+    y_name : str, optional
+        Label for the y-axis.
+    palette : Tuple, optional
+        Color palette for the plot.
+    width : float, optional
+        Width of the figure in inches.
+    height : float, optional
+        Height of the figure in inches.
+    rotation : float, optional
+        Rotation angle for x-axis labels in degrees.
+    line_width : float, optional
+        Width of the plot lines.
+    bottom : float, optional
+        Bottom margin of the figure.
+    split : bool, optional
+        Whether to split the violin plot when using hue.
+    is_sort : bool, optional
+        Whether to sort clusters by median value.
+    order_names : list, optional
+        Custom order for cluster names.
+    title : str, optional
+        Title prefix for the plot.
+    output : path, optional
+        Directory path to save the output files.
+    show : bool, optional
+        Whether to display the plot.
+    close : bool, optional
+        Whether to close the figure after saving.
+    kwargs : Any, optional
+        Additional keyword arguments passed to violin_base.
+
+    Returns
+    -------
+    None
+    """
     data: DataFrame = trait_df.copy()
 
     def trait_plot(_trait_: Union[str, list], _cell_df_: DataFrame) -> None:
         """
-        show plot
-        :param _trait_: trait name
-        :param _cell_df_:
-        :return: None
+        Plot trait violin plot.
+        
+        Parameters
+        ----------
+        _trait_ : Union[str, list]
+            Trait name.
+        _cell_df_ : DataFrame
+            Cell data.
+            
+        Returns
+        -------
+        None
         """
         ul.log(__name__).info("Plotting box {}".format(_trait_))
-        # get gene score
+        # Get gene score
         _filename_: str = _trait_
         trait_score = _cell_df_[_cell_df_[trait_column_name] == _trait_]
         # Sort gene scores from small to large
@@ -185,7 +300,7 @@ def violin_trait(
 
     # noinspection DuplicatedCode
     trait_list = list(set(data[trait_column_name]))
-    # judge trait
+    # Validate trait
     if trait_name != "All":
         if isinstance(trait_name, str):
             if trait_name not in trait_list:
@@ -197,7 +312,7 @@ def violin_trait(
                     ul.log(__name__).error(f"The {tn} trait/disease is not in the trait/disease list {trait_list}.")
                     raise ValueError(f"The {tn} trait/disease is not in the trait/disease list {trait_list}.")
 
-    # plot
+    # Plot
     if trait_name == "All":
         for trait in trait_list:
             trait_plot(trait, trait_df)

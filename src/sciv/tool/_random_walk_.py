@@ -41,16 +41,28 @@ def _random_walk_cpu_(
     p: int = 2
 ) -> collection:
     """
-    Perform a random walk
-    :param seed_cell_vector: seed cells;
-    :param weight: weight matrix;
-    :param gamma: reset weight.
-    :param epsilon: conditions for stopping in random walk;
-    :param max_steps: Maximum number of steps in a random walk with restart;
-    :param p: Distance used for loss {1: Manhattan distance, 2: Euclidean distance};
-    :return: The value after random walk.
-    """
+    Perform a random walk with restart on CPU.
 
+    Parameters
+    ----------
+    seed_cell_vector : Union[list, np.ndarray, np.matrix]
+        Initial seed cell vector representing the starting distribution.
+    weight : matrix_data, optional
+        Transition probability matrix (weight matrix). Defaults to None.
+    gamma : float, optional
+        Restart probability (probability of jumping back to seed cells). Defaults to 0.05.
+    epsilon : float, optional
+        Convergence threshold for stopping criterion. Defaults to 1e-5.
+    max_steps : int, optional
+        Maximum number of iterations. Defaults to 300.
+    p : int, optional
+        Order of the norm used for convergence check {1: Manhattan, 2: Euclidean}. Defaults to 2.
+
+    Returns
+    -------
+    collection
+        The stationary distribution after random walk convergence.
+    """
     # Random walk
     p0 = np.asarray(seed_cell_vector, dtype=float).ravel()[:, np.newaxis]
     pt: matrix_data = p0.copy()
@@ -80,6 +92,9 @@ def _random_walk_cpu_(
 
 
 class RandomWalkModel(nn.Module):
+    """
+    Random walk model for cell type association analysis.
+    """
 
     def __init__(
         self,
@@ -90,6 +105,24 @@ class RandomWalkModel(nn.Module):
         device: str = 'auto',
         pbar=None
     ):
+        """
+        Initialize the random walk model.
+
+        Parameters
+        ----------
+        gamma : float, optional
+            Restart probability (probability of jumping back to seed cells). Defaults to 0.05.
+        epsilon : float, optional
+            Convergence threshold for stopping criterion. Defaults to 1e-5.
+        max_steps : int, optional
+            Maximum number of iterations. Defaults to 300.
+        p : int, optional
+            Order of the norm used for convergence check {1: Manhattan, 2: Euclidean}. Defaults to 2.
+        device : str, optional
+            Device to run the model. Defaults to 'auto'.
+        pbar : tqdm, optional
+            Progress bar to update the progress of the model. Defaults to None.
+        """
         super().__init__()
         self.gamma = gamma
         self.epsilon = epsilon
@@ -103,7 +136,22 @@ class RandomWalkModel(nn.Module):
 
         self.factor = 1 - self.gamma
 
-    def core(self, seed_cell_vector: Tensor, weight: Tensor):
+    def core(self, seed_cell_vector: Tensor, weight: Tensor) -> Tensor:
+        """
+        Perform a random walk with restart on GPU.
+
+        Parameters
+        ----------
+        seed_cell_vector : Tensor
+            Initial seed cell vector representing the starting distribution.
+        weight : Tensor
+            Transition probability matrix (weight matrix). Defaults to None.
+
+        Returns
+        -------
+        Tensor
+            The stationary distribution after random walk convergence.
+        """
 
         p0 = seed_cell_vector
         pt = p0.clone()
@@ -122,7 +170,22 @@ class RandomWalkModel(nn.Module):
 
         return pt.flatten()
 
-    def forward(self, seed_cell_weight: Tensor, weight: Tensor):
+    def forward(self, seed_cell_weight: Tensor, weight: Tensor) -> Tensor:
+        """
+        Forward pass of the random walk model.
+
+        Parameters
+        ----------
+        seed_cell_weight : Tensor
+            Seed cell weight matrix, where each column represents a seed cell.
+        weight : Tensor
+            Transition probability matrix (weight matrix). Defaults to None.
+
+        Returns
+        -------
+        Tensor
+            The association score matrix, where each column represents the association score of a seed cell.
+        """
 
         sample_count = seed_cell_weight.shape[1]
 
@@ -135,8 +198,28 @@ class RandomWalkModel(nn.Module):
 
 
 class TraitDataParallel(nn.DataParallel):
+    """
+    Data parallel module for trait analysis.
+    """
 
     def scatter(self, inputs, kwargs, device_ids):
+        """
+        Scatter the input data to multiple devices.
+
+        Parameters
+        ----------
+        inputs : list
+            List of input data to be scattered.
+        kwargs : dict
+            Dictionary of keyword arguments to be scattered.
+        device_ids : list
+            List of device IDs to scatter the data to.
+
+        Returns
+        -------
+        tuple
+            Tuple of scattered input data and keyword arguments.
+        """
         _seed_cell_weight_, _weight_ = inputs
         scattered_seed_cell_weight = torch.nn.parallel.scatter(_seed_cell_weight_, device_ids, dim=1)
         scattered_weight = [_weight_.to(f'cuda:{device_id}') for device_id in device_ids]
@@ -161,10 +244,19 @@ class TraitDataParallel(nn.DataParallel):
     def gather(self, outputs, output_device):
         """
         Collect the results after parallel processing, check for the existence of results,
-        and merge the results by column (each result matrix has the same number of rows but different numbers of columns)
-        :param outputs: Output results of each device
-        :param output_device: output device
-        :return: Collect and merge the results by column
+        and merge the results by column (each result matrix has the same number of rows but different numbers of columns).
+
+        Parameters
+        ----------
+        outputs : list
+            Output results of each device
+        output_device : int
+            Output device ID.
+
+        Returns
+        -------
+        Tensor
+            The merged results sorted by column.
         """
         return torch.nn.parallel.scatter_gather.gather(outputs, output_device, dim=1)
 
@@ -178,9 +270,33 @@ def _random_walk_gpu_(
     p: int = 2,
     device: str = 'auto'
 ) -> matrix_data:
+    """
+    Random walk analysis on GPU.
+
+    Parameters
+    ----------
+    seed_cell_weight : matrix_data
+        Seed cell weight matrix, where each column represents a seed cell.
+    weight : matrix_data
+        Transition probability matrix (weight matrix). Defaults to None.
+    gamma : float
+        Random walk parameter. Defaults to 0.05.
+    epsilon : float
+        Convergence threshold. Defaults to 1e-5.
+    max_steps : int
+        Maximum number of steps. Defaults to 300.
+    p : int
+        Order of the random walk. Defaults to 2.
+    device : str
+        Device to run the analysis on. Defaults to 'auto'.
+
+    Returns
+    -------
+    matrix_data
+        The association score matrix, where each column represents the association score of a seed cell.
+    """
 
     with tqdm(total=seed_cell_weight.shape[1]) as pbar:
-
         model = RandomWalkModel(gamma, epsilon, max_steps, p, device, pbar)
 
         device = model.device
@@ -209,6 +325,34 @@ def random_walk(
     n_jobs: int = -1,
     device: str = 'auto'
 ) -> matrix_data:
+    """
+    Random walk analysis.
+
+    Parameters
+    ----------
+    seed_cell_weight : matrix_data
+        Seed cell weight matrix, where each column represents a seed cell.
+    weight : matrix_data
+        Transition probability matrix (weight matrix). Defaults to None.
+    gamma : float
+        Random walk parameter. Defaults to 0.05.
+    epsilon : float
+        Convergence threshold. Defaults to 1e-5.
+    max_steps : int
+        Maximum number of steps. Defaults to 300.
+    p : int
+        Order of the random walk. Defaults to 2.
+    n_jobs : int
+        Number of jobs to run in parallel. Defaults to -1, which means using all available processors.
+    device : str
+        Device to run the analysis on. Defaults to 'auto'.
+
+    Returns
+    -------
+    matrix_data
+        The association score matrix, where each column represents the association score of a seed cell.
+    """
+
     availability = check_gpu_availability()
 
     if device == 'cpu' or (device == 'auto' and not availability):
@@ -242,6 +386,23 @@ def random_walk(
 
 
 def trs_scale_norm(score: matrix_data, axis: Literal[0, 1, -1] = 0, is_verbose: bool = True) -> matrix_data:
+    """
+    Standardize and normalize the cell scores.
+
+    Parameters
+    ----------
+    score : matrix_data
+        Cell scores matrix.
+    axis : Literal[0, 1, -1]
+        Axis to apply the standardization and normalization. Defaults to 0.
+    is_verbose : bool
+        Whether to print the progress. Defaults to True.
+
+    Returns
+    -------
+    matrix_data
+        The standardized and normalized cell scores matrix.
+    """
     cell_value = mean_symmetric_scale(score, axis=axis, is_verbose=is_verbose)
     cell_value = np.log1p(min_max_norm(cell_value, axis=axis))
     return cell_value
@@ -249,7 +410,7 @@ def trs_scale_norm(score: matrix_data, axis: Literal[0, 1, -1] = 0, is_verbose: 
 
 class RandomWalk:
     """
-    Random walk
+    Random walk analysis.
     """
 
     def __init__(
@@ -271,28 +432,51 @@ class RandomWalk:
         is_simple: bool = True
     ):
         """
-        Perform random walk steps
-        :param cc_adata: Cell features;
-        :param init_status: For cell scores under each trait;
-        :param epsilon: conditions for stopping in random walk;
-        :param max_steps: Maximum number of steps in a random walk with restart;
-        :param gamma: reset weight for random walk;
-        :param enrichment_gamma: reset weight for random walk for enrichment;
-        :param p: Distance used for loss {1: Manhattan distance, 2: Euclidean distance};
-        :param n_jobs: The maximum number of concurrently running jobs;
-        :param min_seed_cell_rate: The minimum percentage of seed cells in all cells;
-        :param max_seed_cell_rate: The maximum percentage of seed cells in all cells.
-        :param credible_threshold: The threshold for determining the credibility of enriched cells in the context of
-            enrichment, i.e. the threshold for judging enriched cells;
-        :param enrichment_threshold: Only by setting a threshold for the standardized output TRS can a portion of the
+        Perform random walk steps.
+
+        Parameters
+        ----------
+        cc_adata : AnnData
+            Cell features.
+        init_status : AnnData
+            Cell scores under each trait.
+        epsilon : float
+            Convergence threshold for stopping criterion in random walk.
+        max_steps : int
+            Maximum number of steps in a random walk with restart.
+        gamma : float
+            Restart probability for random walk.
+        enrichment_gamma : float
+            Restart probability for random walk for enrichment.
+        p : int
+            Order of the norm used for loss {1: Manhattan distance, 2: Euclidean distance}.
+        n_jobs : int
+            The maximum number of concurrently running jobs.
+        min_seed_cell_rate : float
+            The minimum percentage of seed cells in all cells.
+        max_seed_cell_rate : float
+            The maximum percentage of seed cells in all cells.
+        credible_threshold : float
+            The threshold for determining the credibility of enriched cells in the context of
+            enrichment, i.e. the threshold for judging enriched cells.
+        enrichment_threshold : Union[str, float]
+            Only by setting a threshold for the standardized output TRS can a portion of the
             enrichment results be obtained. Parameters support string types {'golden', 'half', 'e', 'pi', 'none'}, or
             valid floating-point types within the range of (0, log1p(1)).
-        :param is_ablation: True represents obtaining the results of the ablation experiment. This parameter is limited
-            by the `is_simple` parameter, and its effectiveness requires setting `is_simple` to `False`;
-        :param is_simple: True represents not adding unnecessary intermediate variables, only adding the final result.
+        benchmark_count : int
+            Number of benchmark runs.
+        is_ablation : bool
+            True represents obtaining the results of the ablation experiment. This parameter is limited
+            by the `is_simple` parameter, and its effectiveness requires setting `is_simple` to `False`.
+        is_simple : bool
+            True represents not adding unnecessary intermediate variables, only adding the final result.
             It is worth noting that when set to `True`, the `is_ablation` parameter will become invalid, and when set
-            to `False`, `is_ablation` will only take effect;
-        :return: Stable distribution score.
+            to `False`, `is_ablation` will only take effect.
+
+        Returns
+        -------
+        None
+            Stable distribution score is stored in object attributes.
         """
         ul.log(__name__).info("Random walk with weighted seed cells.")
 
@@ -488,12 +672,23 @@ class RandomWalk:
         device: str = 'auto'
     ) -> matrix_data:
         """
-        Perform a random walk
-        :param seed_cell_data: seed cells;
-        :param weight: weight matrix;
-        :param gamma: reset weight.
-        :param device: device.
-        :return: The value after random walk.
+        Perform a random walk.
+
+        Parameters
+        ----------
+        seed_cell_data : matrix_data
+            Seed cells data.
+        weight : matrix_data, optional
+            Weight matrix. Defaults to None.
+        gamma : float, optional
+            Restart probability. Defaults to None.
+        device : str, optional
+            Device to run on. Defaults to None.
+
+        Returns
+        -------
+        matrix_data
+            The value after random walk.
         """
 
         if weight is None:
@@ -526,21 +721,37 @@ class RandomWalk:
 
     def _random_walk_core_(self, seed_cell_data: matrix_data, weight: matrix_data = None) -> matrix_data:
         """
-        Perform a random walk
-        :param seed_cell_data: seed cells;
-        :param weight: weight matrix.
-        :return: The value after random walk.
+        Random walk code function.
+
+        Parameters
+        ----------
+        seed_cell_data : matrix_data
+            Seed cells data.
+        weight : matrix_data, optional
+            Weight matrix. Defaults to None.
+
+        Returns
+        -------
+        matrix_data
+            The value after random walk.
         """
         return self._random_walk_(seed_cell_data, weight, self.gamma)
 
     @staticmethod
     def _get_weight_(cell_cell_matrix: matrix_data) -> sparse_data:
         """
-        Obtain weights in random walk
-        :param cell_cell_matrix: Cell to cell connectivity matrix
-        :return: weight matrix
-            1. The weights used in the iteration of random walk.
-            2. Assign different weight matrices to seed cells.
+        Obtain weights in random walk.
+
+        Parameters
+        ----------
+        cell_cell_matrix : matrix_data
+            Cell to cell connectivity matrix.
+
+        Returns
+        -------
+        sparse_data
+            The weights used in the iteration of random walk.
+            Assign different weight matrices to seed cells.
         """
         ul.log(__name__).info("Obtain transition probability matrix.")
         data_weight = to_dense(cell_cell_matrix, is_array=True)
@@ -549,6 +760,19 @@ class RandomWalk:
         return to_sparse(data_weight / cell_sum_weight)
 
     def _get_cell_weight_(self, seed_cell_size: int) -> matrix_data:
+        """
+        Obtain cell weights in random walk.
+
+        Parameters
+        ----------
+        seed_cell_size : int
+            Number of seed cells.
+
+        Returns
+        -------
+        matrix_data
+            Cell weights.
+        """
         _cell_cell_knn_: matrix_data = self.cell_affinity.copy()
 
         # Obtain numerical values for constructing a k-neighbor network
@@ -559,6 +783,19 @@ class RandomWalk:
         return _cell_cell_knn_
 
     def _get_seed_cell_size_(self, cell_size: int) -> int:
+        """
+        Obtain seed cell size in random walk.
+
+        Parameters
+        ----------
+        cell_size : int
+            Cell size.
+
+        Returns
+        -------
+        int
+            Seed cell size.
+        """
         seed_cell_size: int = self.init_seed_cell_size if self.init_seed_cell_size < cell_size else cell_size
 
         # Control the number of seeds
@@ -575,6 +812,14 @@ class RandomWalk:
         return seed_cell_size
 
     def _get_cluster_info_(self) -> Tuple[list, int]:
+        """
+        Obtain cluster information in random walk.
+
+        Returns
+        -------
+        Tuple[list, int]
+            Cluster types, seed cell size.
+        """
         # cluster size/count
         cluster_types = list(set(self.trs_adata.obs["clusters"]))
         cluster_types.sort()
@@ -600,8 +845,16 @@ class RandomWalk:
         This function is used to obtain the percentage of seed cells that occupy this cell type, i.e., the seed cell
         clustering weight. The purpose of this weight is to provide fair enrichment opportunities for those with fewer
         cell numbers in cell clustering types.
-        :param seed_cell_index: Index of seed cells.
-        :return: The seed cell clustering weight, equity factor.
+
+        Parameters
+        ----------
+        seed_cell_index : collection
+            Index of seed cells.
+
+        Returns
+        -------
+        Tuple[collection, dict]
+            The seed cell clustering weight, equity factor.
         """
         cell_anno: DataFrame = self.cell_anno.copy()
         cell_clusters = cell_anno["clusters"].values
@@ -622,6 +875,23 @@ class RandomWalk:
         value: collection,
         seed_cell_index_enrichment: collection = None
     ) -> collection:
+        """
+        Obtain seed cell weight in random walk.
+
+        Parameters
+        ----------
+        seed_cell_index : collection
+            Index of seed cells.
+        value : collection
+            Seed cell values.
+        seed_cell_index_enrichment : collection, optional
+            Index of seed cells for enrichment. Defaults to None.
+
+        Returns
+        -------
+        collection
+            Seed cell weight.
+        """
 
         if seed_cell_index_enrichment is None:
             seed_cell_index_enrichment = seed_cell_index
@@ -649,10 +919,18 @@ class RandomWalk:
         info: str = None
     ) -> Tuple[collection, collection, matrix_data, matrix_data, matrix_data, matrix_data, matrix_data]:
         """
-        Obtain information related to seed cells
-        :param init_data: Initial TRS data
-        :param info: Log information about seed cells
-        :return:
+        Obtain information related to seed cells.
+
+        Parameters
+        ----------
+        init_data : AnnData, optional
+            Initial TRS data. Defaults to None.
+        info : str, optional
+            Log information about seed cells. Defaults to None.
+
+        Returns
+        -------
+        Tuple[collection, collection, matrix_data, matrix_data, matrix_data, matrix_data, matrix_data]
             1. Set seed cell thresholds for each trait or disease.
             2. Seed cell weights obtained for each trait or disease based on the `init_data` parameter, with each seed
                 cell assigned the same weight. Note that this only takes effect when `is_simple` is true.
@@ -729,7 +1007,8 @@ class RandomWalk:
 
             _seed_cell_en_index = trait_value_sort_index[_enrichment_start:_enrichment_end]
             seed_cell_weight_en[_seed_cell_en_index, i] = self._get_seed_cell_weight_(
-                seed_cell_index=_seed_cell_index if len(_seed_cell_en_index) == len(_seed_cell_index) else _seed_cell_en_index,
+                seed_cell_index=_seed_cell_index if len(_seed_cell_en_index) == len(
+                    _seed_cell_index) else _seed_cell_en_index,
                 value=trait_value,
                 seed_cell_index_enrichment=_seed_cell_en_index
             )
@@ -741,20 +1020,45 @@ class RandomWalk:
 
                 seed_cell_en_value = np.zeros(n_cells)
                 seed_cell_en_value[_seed_cell_en_index] = 1
-                seed_cell_matrix_en[:, i] = seed_cell_en_value / (1 if seed_cell_en_value.sum() == 0 else seed_cell_en_value.sum())
+                seed_cell_matrix_en[:, i] = seed_cell_en_value / (
+                    1 if seed_cell_en_value.sum() == 0 else seed_cell_en_value.sum())
 
         # Parallel processing of all traits and real-time display of progress
         Parallel(n_jobs=self.n_jobs, backend='threading')(
-            delayed(_process_single_trait)(i) for i in tqdm(self.trait_range, desc="Obtain progress of seed cells with weights")
+            delayed(_process_single_trait)(i) for i in
+            tqdm(self.trait_range, desc="Obtain progress of seed cells with weights")
         )
 
         return seed_cell_count, seed_cell_threshold, seed_cell_matrix, seed_cell_weight, seed_cell_index, seed_cell_matrix_en, seed_cell_weight_en
 
     @staticmethod
     def scale_norm(score: matrix_data, is_verbose: bool = False) -> matrix_data:
+        """
+        Scale normalization of the score matrix.
+
+        Parameters
+        ----------
+        score : matrix_data
+            Score matrix.
+        is_verbose : bool, optional
+            Whether to print the progress. Defaults to False.
+
+        Returns
+        -------
+        matrix_data
+            The normalized score matrix.
+        """
         return trs_scale_norm(score, axis=0, is_verbose=is_verbose)
 
     def _simple_error_(self) -> None:
+        """
+        Check if the parameter `is_simple` is True.
+
+        Raises
+        ------
+        ValueError
+        RuntimeError
+        """
 
         if self.is_simple and "is_simple" in self.trs_adata.uns.keys() and self.trs_adata.uns["is_simple"]:
             ul.log(__name__).error("The parameter `is_simple` is True, so running this method is not supported.")
@@ -766,7 +1070,8 @@ class RandomWalk:
         """
         self._simple_error_()
 
-        ul.log(__name__).info(f"Calculate {len(self.trait_list)} traits/diseases for process `run_benchmark` (Count: {self.benchmark_count}). (Randomly perturb seed cells. ===> `benchmark`)")
+        ul.log(__name__).info(f"Calculate {len(self.trait_list)} traits/diseases for process `run_benchmark` \
+                                (Count: {self.benchmark_count}). (Randomly perturb seed cells. ===> `benchmark`)")
 
         total_steps = len(self.trait_list) * self.benchmark_count
         with tqdm(total=total_steps) as pbar:
@@ -785,7 +1090,9 @@ class RandomWalk:
                 for j in range(self.benchmark_count):
                     # Set random seed information
                     random_seed_cell = np.zeros(self.cell_size)
-                    random_seed_index = np.random.choice(np.arange(0, self.cell_size), size=self.seed_cell_count[i], replace=False)
+                    random_seed_index = np.random.choice(
+                        np.arange(0, self.cell_size), size=self.seed_cell_count[i], replace=False
+                    )
 
                     if trait_value_min != trait_value_max:
                         # seed cell weight
@@ -805,6 +1112,19 @@ class RandomWalk:
 
     @staticmethod
     def _get_label_description_(label: str) -> Tuple[str, str]:
+        """
+        Get the description of the label.
+
+        Parameters
+        ----------
+        label : str
+            Label of the information.
+
+        Returns
+        -------
+        Tuple[str, str]
+            Description of the label and the layer of the information.
+        """
         if label == "run_core" or label == "run_en":
             return "Calculate random walk with weighted seed cells.", "trs"
         elif label == "run_ablation_ncsw" or label == "run_en_ablation_ncsw":
@@ -828,16 +1148,29 @@ class RandomWalk:
 
     def _run_(self, seed_cell_data: matrix_data, label: str, weight: matrix_data = None) -> matrix_data:
         """
-        Calculate random walk
-        :param seed_cell_data: Seed cell data
-        :return: Return values without `scale` normalization
+        Calculate random walk.
+
+        Parameters
+        ----------
+        seed_cell_data : matrix_data
+            Seed cell data.
+        label : str
+            Label of the information.
+        weight : matrix_data, optional
+            Weight matrix. Defaults to None.
+
+        Returns
+        -------
+        matrix_data
+            Seed cell data.
         """
 
         if weight is None:
             weight = self.weight
 
         _log_info_, _layer_label_ = self._get_label_description_(label)
-        ul.log(__name__).info(f"Calculate {len(self.trait_list)} traits/diseases for process `{label}`. ({_log_info_} ===> `{_layer_label_}`)")
+        log_info_str: str = f"Calculate {len(self.trait_list)} traits/diseases for process `{label}`. ({_log_info_} ===> `{_layer_label_}`)"
+        ul.log(__name__).info(log_info_str)
 
         score = self._random_walk_core_(seed_cell_data, weight=weight)
 
@@ -853,7 +1186,7 @@ class RandomWalk:
 
     def run_core(self) -> None:
         """
-        Calculate weighted random walk
+        Calculate weighted random walk.
         """
         if not self.is_simple:
             self.trs_adata.layers["seed_cell_weight"] = to_sparse(self.seed_cell_weight)
@@ -869,7 +1202,7 @@ class RandomWalk:
 
     def run_ablation_m_knn(self) -> None:
         """
-        Using M-KNN fully connected cellular network
+        Using M-KNN fully connected cellular network.
         """
         self._simple_error_()
         self.trs_m_knn_source = self._run_(self.seed_cell_weight, "run_ablation_m_knn", self.weight_m_knn)
@@ -893,7 +1226,7 @@ class RandomWalk:
 
     def run_ablation_nsw(self) -> None:
         """
-        Removed cell weights from random walk
+        Removed cell weights from random walk.
         """
         self._simple_error_()
         self.trs_adata.layers["seed_cell_weight_nsw"] = self.seed_cell_weight_nsw
@@ -902,7 +1235,7 @@ class RandomWalk:
 
     def run_ablation_ncsw(self) -> None:
         """
-        Removed cell weights in random walk and cluster type weights in initial scores
+        Removed cell weights in random walk and cluster type weights in initial scores.
         """
         self._simple_error_()
         self.trs_adata.layers["seed_cell_weight_ncsw"] = self.seed_cell_weight_ncsw
@@ -918,8 +1251,14 @@ class RandomWalk:
 
     def _run_enrichment_(self, seed_cell_en_weight: matrix_data, label: str) -> None:
         """
-        Enrichment analysis of traits/cells
-        :param seed_cell_en_weight: Seed cell data
+        Enrichment analysis of traits/cells.
+
+        Parameters
+        ----------
+        seed_cell_en_weight : matrix_data
+            Seed cell data.
+        label : str
+            Label of the information.
         """
 
         _layer_label_: str = "tre"
@@ -928,14 +1267,17 @@ class RandomWalk:
 
         _, _trs_layer_label_ = self._get_label_description_(label)
 
+        def _log_info_str_(_name_: str) -> str:
+            return f"Need to run the `{_name_}` method first in order to run this method. Start run..."
+
         if label == "run_en":
             if not self.is_run_core:
-                ul.log(__name__).warning("Need to run the `run_core` method first in order to run this method. Start run...")
+                ul.log(__name__).warning(_log_info_str_("run_core"))
                 self.run_core()
 
         elif label == "run_en_ablation_m_knn":
             if not self.is_run_ablation_m_knn:
-                ul.log(__name__).warning("Need to run the `run_ablation_m_knn` method first in order to run this method. Start run...")
+                ul.log(__name__).warning(_log_info_str_("run_ablation_m_knn"))
                 self.run_ablation_m_knn()
 
             _layer_label_ = "tre_m_knn"
@@ -943,7 +1285,7 @@ class RandomWalk:
 
         elif label == "run_en_ablation_ncw":
             if not self.is_run_ablation_ncw:
-                ul.log(__name__).warning("Need to run the `run_ablation_ncw` method first in order to run this method. Start run...")
+                ul.log(__name__).warning(_log_info_str_("run_ablation_ncw"))
                 self.run_ablation_ncw()
 
             _layer_label_ = "tre_ncw"
@@ -951,7 +1293,7 @@ class RandomWalk:
 
         elif label == "run_en_ablation_nsw":
             if not self.is_run_ablation_nsw:
-                ul.log(__name__).warning("Need to run the `run_ablation_nsw` method first in order to run this method. Start run...")
+                ul.log(__name__).warning(_log_info_str_("run_ablation_nsw"))
                 self.run_ablation_nsw()
 
             _layer_label_ = "tre_nsw"
@@ -959,23 +1301,30 @@ class RandomWalk:
 
         elif label == "run_en_ablation_ncsw":
             if not self.is_run_ablation_ncsw:
-                ul.log(__name__).warning("Need to run the `run_ablation_ncsw` method first in order to run this method. Start run...")
+                ul.log(__name__).warning(_log_info_str_("run_ablation_ncsw"))
                 self.run_ablation_ncsw()
 
             _layer_label_ = "tre_ncsw"
             source_value = self.trs_ncsw_source
 
         else:
-            raise ValueError(f"{label} error. `run_en`, `run_en_ablation_m_knn`, `run_en_ablation_ncw`, `run_en_ablation_nsw` or `run_en_ablation_ncsw`")
+            log_info_str: str = f"{label} error. `run_en`, `run_en_ablation_m_knn`, `run_en_ablation_ncw`, `run_en_ablation_nsw` or `run_en_ablation_ncsw`"
+            raise ValueError(log_info_str)
 
         cell_anno: DataFrame = self.cell_anno.copy()
-        trs_score = to_dense(self.trs_adata.X if label == "run_en" else self.trs_adata.layers[_trs_layer_label_], is_array=True)
+
+        if label == "run_en":
+            trs_score = to_dense(self.trs_adata.X, is_array=True)
+        else:
+            trs_score = to_dense(self.trs_adata.layers[_trs_layer_label_], is_array=True)
 
         # Initialize enriched container
         trait_cell_enrichment = np.zeros(self.trs_adata.shape).astype(int)
         trait_cell_credible = np.zeros(self.trs_adata.shape).astype(np.float32)
 
-        ul.log(__name__).info(f"Calculate {len(self.trait_list)} traits/diseases for process `{label}`. (Enrichment-random walk)")
+        ul.log(__name__).info(
+            f"Calculate {len(self.trait_list)} traits/diseases for process `{label}`. (Enrichment-random walk)"
+        )
         # Random walk
         cell_value_data = self._random_walk_(
             seed_cell_en_weight,
@@ -983,7 +1332,9 @@ class RandomWalk:
             gamma=self.enrichment_gamma
         )
 
-        ul.log(__name__).info(f"Calculate {len(self.trait_list)} traits/diseases for process `{label}`. (Enrichment-score)")
+        ul.log(__name__).info(
+            f"Calculate {len(self.trait_list)} traits/diseases for process `{label}`. (Enrichment-score)"
+        )
 
         # Process each trait in parallel
         def _process_trait(i):
@@ -991,7 +1342,8 @@ class RandomWalk:
             cell_value = cell_value_data[:, i]
 
             # separate
-            cell_value_credible = mean_symmetric_scale(np.array(source_value[:, i]).flatten() - np.array(cell_value).flatten(), is_verbose=False)
+            cell_value_credible = mean_symmetric_scale(
+                np.array(source_value[:, i]).flatten() - np.array(cell_value).flatten(), is_verbose=False)
 
             # This step is only executed if it contains cell clustering type weights
             if label == "run_en" or label == "run_en_ablation_nsw" or label == "run_en_ablation_m_knn":
@@ -1019,7 +1371,7 @@ class RandomWalk:
 
     def run_enrichment(self) -> None:
         """
-        Enrichment analysis
+        Enrichment analysis.
         """
         self._run_enrichment_(self.seed_cell_weight_en, "run_en")
         self.is_run_enrichment = True
@@ -1034,7 +1386,7 @@ class RandomWalk:
 
     def run_en_ablation_ncw(self) -> None:
         """
-        Removed cell cluster type weights in initial scores
+        Removed cell cluster type weights in initial scores.
         """
         self._simple_error_()
         self._run_enrichment_(self.seed_cell_weight_en_ncw, "run_en_ablation_ncw")
@@ -1050,25 +1402,56 @@ class RandomWalk:
 
     def run_en_ablation_ncsw(self) -> None:
         """
-        Removed cell weights in random walk and cluster type weights in initial scores
+        Removed cell weights in random walk and cluster type weights in initial scores.
         """
         self._simple_error_()
         self._run_enrichment_(self.seed_cell_weight_en_ncsw, "run_en_ablation_ncsw")
         self.is_run_en_ablation_ncsw = True
 
     def run_knock(self, trs: AnnData, knock_trait: str, is_control: bool = False) -> None:
+        """
+        Knockout analysis.
+
+        Parameters
+        ----------
+        trs : AnnData
+            Input `AnnData` object.
+        knock_trait : str
+            Knockout trait or disease.
+        is_control : bool, optional
+            Whether to control the knockout.
+            default is False.
+        """
 
         if trs.shape[0] != self.cell_size:
-            ul.log(__name__).error(f"The number of cells ({trs.shape[0]}) in the input `trs` is inconsistent with the number of cells ({self.cell_size}) in the knockdown after knockout")
-            raise ValueError(f"The number of cells ({trs.shape[0]}) in the input `trs` is inconsistent with the number of cells ({self.cell_size}) in the knockdown after knockout.")
+            ul.log(__name__).error(
+                f"The number of cells ({trs.shape[0]}) in the input `trs` is inconsistent with the number of cells \
+                 ({self.cell_size}) in the knockdown after knockout"
+            )
+            raise ValueError(
+                f"The number of cells ({trs.shape[0]}) in the input `trs` is inconsistent with the number of cells \
+                 ({self.cell_size}) in the knockdown after knockout."
+            )
 
         if "trs_source" not in trs.layers:
-            ul.log(__name__).error("`trs_source` is not in `trs.layers`, please execute function `ml.core` first to obtain the result as input for the `trs` parameter.")
-            raise ValueError("`trs_source` is not in `trs.layers`, please execute function `ml.core` first to obtain the result as input for the `trs` parameter.")
+            ul.log(__name__).error(
+                "`trs_source` is not in `trs.layers`, please execute function `ml.core` first to obtain the result \
+                 as input for the `trs` parameter."
+            )
+            raise ValueError(
+                "`trs_source` is not in `trs.layers`, please execute function `ml.core` first to obtain the result \
+                 as input for the `trs` parameter."
+            )
 
         if "seed_cell_index" not in trs.layers:
-            ul.log(__name__).error("`seed_cell_index` is not in `trs.layers`, please execute function `ml.core` first to obtain the result as input for the `trs` parameter.")
-            raise ValueError("`seed_cell_index` is not in `trs.layers`, please execute function `ml.core` first to obtain the result as input for the `trs` parameter.")
+            ul.log(__name__).error(
+                "`seed_cell_index` is not in `trs.layers`, please execute function `ml.core` first to obtain the \
+                 result as input for the `trs` parameter."
+            )
+            raise ValueError(
+                "`seed_cell_index` is not in `trs.layers`, please execute function `ml.core` first to obtain the \
+                 result as input for the `trs` parameter."
+            )
 
         if knock_trait not in trs.var["id"]:
             ul.log(__name__).error(f"`{knock_trait}` trait or disease does not exist.")
@@ -1089,10 +1472,12 @@ class RandomWalk:
         self.trs_adata.layers["init_trait_negative"] = to_sparse(init_trait_negative_effect)
 
         init_trait_positive_adata = check_adata_get(self.trs_adata, "init_trait_positive")
-        (_, positive_seed_cell_threshold, _, positive_seed_cell_weight, _, _, _,) = self._get_seed_cell_(init_data=init_trait_positive_adata, info="knock (positive)")
+        (_, positive_seed_cell_threshold, _, positive_seed_cell_weight, _, _, _,) = self._get_seed_cell_(
+            init_data=init_trait_positive_adata, info="knock (positive)")
 
         init_trait_negative_adata = check_adata_get(self.trs_adata, "init_trait_negative")
-        (_, negative_seed_cell_threshold, _, negative_seed_cell_weight, _, _, _,) = self._get_seed_cell_(init_data=init_trait_negative_adata, info="knock (negative)")
+        (_, negative_seed_cell_threshold, _, negative_seed_cell_weight, _, _, _,) = self._get_seed_cell_(
+            init_data=init_trait_negative_adata, info="knock (negative)")
 
         self.trs_adata.var["positive_seed_cell_threshold"] = positive_seed_cell_threshold
         self.trs_adata.var["negative_seed_cell_threshold"] = negative_seed_cell_threshold
@@ -1105,14 +1490,32 @@ class RandomWalk:
 
         # Obtain the result after random walk
         _positive_label_: str = "control & positive" if is_control else "positive"
-        self.trs_source_positive = self._run_(positive_seed_cell_weight, f"{knock_info_content} ({_positive_label_})")
+        self.trs_source_positive = self._run_(
+            positive_seed_cell_weight,
+            f"{knock_info_content} ({_positive_label_})"
+        )
         _negative_label_: str = "control & negative" if is_control else "negative"
-        self.trs_source_negative = self._run_(negative_seed_cell_weight, f"{knock_info_content} ({_negative_label_})")
+        self.trs_source_negative = self._run_(
+            negative_seed_cell_weight,
+            f"{knock_info_content} ({_negative_label_})"
+        )
 
-        self.trs_adata.layers["knock_effect_positive_control" if is_control else "knock_effect_positive"] = to_sparse(self.trs_source_positive)
-        self.trs_adata.layers["knock_effect_negative_control" if is_control else "knock_effect_negative"] = to_sparse(self.trs_source_negative)
+        self.trs_adata.layers["knock_effect_positive_control" if is_control else "knock_effect_positive"] = to_sparse(
+            self.trs_source_positive
+        )
+        self.trs_adata.layers["knock_effect_negative_control" if is_control else "knock_effect_negative"] = to_sparse(
+            self.trs_source_negative
+        )
 
-        ul.log(__name__).info("Obtain the effect size of knocking out or knocking down ==> .layers[\"{}\"]".format("knock_effect_control" if is_control else "knock_effect"))
+        ul.log(__name__).info(
+            "Obtain the effect size of knocking out or knocking down ==> .layers[\"{}\"]".format(
+                "knock_effect_control" if is_control else "knock_effect"
+            )
+        )
         knock_effect_value = self.trs_source_positive - self.trs_source_negative
-        self.trs_adata.layers["knock_effect_source_control" if is_control else "knock_effect_source"] = to_sparse(knock_effect_value)
-        self.trs_adata.layers["knock_effect_control" if is_control else "knock_effect"] = to_sparse(mean_symmetric_scale(knock_effect_value, axis=0, is_verbose=False))
+        self.trs_adata.layers["knock_effect_source_control" if is_control else "knock_effect_source"] = to_sparse(
+            knock_effect_value
+        )
+        self.trs_adata.layers["knock_effect_control" if is_control else "knock_effect"] = to_sparse(
+            mean_symmetric_scale(knock_effect_value, axis=0, is_verbose=False)
+        )

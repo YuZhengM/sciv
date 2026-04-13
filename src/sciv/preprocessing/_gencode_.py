@@ -18,8 +18,26 @@ def get_gene_anno(
     feature: _Feature = None,
     gtf_file: Optional[str] = None,
     filter_chromatin: bool = True,
-    columns: Optional[List[str]] = None,
+    columns: Optional[List[str]] = None
 ) -> DataFrame:
+    """
+    Get gene annotation from GTF file.
+
+    Parameters
+    ----------
+    feature : _Feature, optional
+        Feature type to filter.
+    gtf_file : Optional[str], optional
+        Path to GTF file.
+    filter_chromatin : bool, optional
+        Whether to filter out non-chromatin features.
+    columns : Optional[List[str]], optional
+        Columns to keep.
+    Returns
+    -------
+    DataFrame
+        Gene annotation DataFrame.
+    """
 
     from gtfparse import read_gtf
 
@@ -59,7 +77,8 @@ def get_gene_anno(
         chr_list: list = list(chrtype.categories)
         data = data[data["seqname"].isin(chr_list)]
 
-    _columns_: list[str] = ['seqname', 'source', 'feature', 'start', 'end', 'strand', 'gene_id', 'gene_type', 'gene_name']
+    _columns_: list[str] = ['seqname', 'source', 'feature', 'start', 'end', 'strand', 'gene_id', 'gene_type',
+                            'gene_name']
 
     if columns is not None:
         _columns_ = columns

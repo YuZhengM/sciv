@@ -27,6 +27,23 @@ __name__: str = "tool_matrix"
 
 
 def split_matrix(data: matrix_data, axis: Literal[0, 1] = 0, chunk_number: int = 1000) -> list:
+    """
+    Split matrix into multiple parts.
+
+    Parameters
+    ----------
+    data : matrix_data
+        Input matrix data.
+    axis : Literal[0, 1], optional
+        Axis to split the matrix. Default is 0.
+    chunk_number : int, optional
+        Number of parts to split the matrix. Default is 1000.
+
+    Returns
+    -------
+    list
+        List of split matrix data.
+    """
     # get size
     new_data = to_dense(data, is_array=True)
     rows, cols = new_data.shape
@@ -56,7 +73,22 @@ def split_matrix(data: matrix_data, axis: Literal[0, 1] = 0, chunk_number: int =
     return split_data_list
 
 
-def merge_matrix(datas: list, axis: Literal[0, 1] = 0) -> list:
+def merge_matrix(datas: list, axis: Literal[0, 1] = 0) -> matrix_data:
+    """
+    Merge multiple matrix data into one matrix.
+
+    Parameters
+    ----------
+    datas : list
+        List of matrix data.
+    axis : Literal[0, 1], optional
+        Axis to merge the matrix. Default is 0.
+
+    Returns
+    -------
+    matrix_data
+        Merged matrix data.
+    """
     # get size
     size = len(datas)
     range_size = range(size)
@@ -101,10 +133,19 @@ def merge_matrix(datas: list, axis: Literal[0, 1] = 0) -> list:
 
 def down_sampling_data(data: Union[matrix_data | collection], sample_number: int = 1000000) -> list:
     """
-    down-sampling
-    :param data: Data that requires down-sampling;
-    :param sample_number: How many samples (values) were down-sampled.
-    :return: Data after down-sampling.
+    Down-sampling data.
+
+    Parameters
+    ----------
+    data : Union[matrix_data | collection]
+        Data that requires down-sampling;
+    sample_number : int, optional
+        How many samples (values) were down-sampled.
+
+    Returns
+    -------
+    list
+        Data after down-sampling.
     """
 
     if isinstance(data, collection):
@@ -198,14 +239,25 @@ def matrix_dot_block_storage(
 ) -> matrix_data:
     """
     Perform Cartesian product of two matrices through block storage method.
-    :param data1: Matrix 1
-    :param data2: Matrix 2
-    :param block_size: The size of the segmentation stored in block wise matrix multiplication.
+
+    Parameters
+    ----------
+    data1 : matrix_data
+        Matrix 1
+    data2 : matrix_data
+        Matrix 2
+    block_size : int, optional
+        The size of the segmentation stored in block wise matrix multiplication.
         If the value is less than or equal to zero, no block operation will be performed.
-    :param is_return_sparse: Whether to return sparse matrix
-    :param data: Return the placeholder variables of the result matrix.
+    is_return_sparse : bool, optional
+        Whether to return sparse matrix.
+    data : matrix_data, optional
+        Return the placeholder variables of the result matrix.
         If there is value, it will reduce the consumption of memory space.
-    :return: Cartesian product result
+    Returns
+    -------
+    matrix_data
+        Cartesian product result
     """
 
     n, m = data1.shape
@@ -276,13 +328,23 @@ def matrix_multiply_block_storage(
 ) -> matrix_data:
     """
     Perform Hadamard product of two matrices through block storage method.
-    :param data1: Matrix 1
-    :param data2: Matrix 2
-    :param block_size: The size of the segmentation stored in block wise matrix multiplication.
+
+    Parameters
+    ----------
+    data1 : matrix_data
+        Matrix 1
+    data2 : matrix_data
+        Matrix 2
+    block_size : int, optional
+        The size of the segmentation stored in block wise matrix multiplication.
         If the value is less than or equal to zero, no block operation will be performed.
-    :param data: Return the placeholder variables of the result matrix.
+    data : matrix_data, optional
+        Return the placeholder variables of the result matrix.
         If there is value, it will reduce the consumption of memory space.
-    :return: Hadamard product result
+    Returns
+    -------
+    matrix_data
+        Hadamard product result
     """
     n, m = data1.shape
     n1, m1 = data2.shape
@@ -353,13 +415,25 @@ def matrix_operation_memory_efficient(
 ) -> sparse_matrix:
     """
     Perform element-wise addition, subtraction, multiplication, and division on two sparse matrices by blocks, supporting memory-efficient processing.
-    :param data1: Sparse matrix 1
-    :param data2: Sparse matrix 2
-    :param chunk_size: The size of the segmentation stored in block wise element-wise operation.
+
+    Parameters
+    ----------
+    data1 : matrix_data
+        Sparse matrix 1
+    data2 : Union[matrix_data, number]
+        Sparse matrix 2
+    chunk_size : int, optional
+        The size of the segmentation stored in block wise element-wise operation.
         If the value is less than or equal to zero, no block operation will be performed.
-    :param default: 1e+8
-    :param operation: Element-wise operation type, optional '+', '-', '*', '/'
-    :return: Result sparse matrix (CSR format)
+    default : float, optional
+        Default value for division operation when denominator is 0.
+        If the value is 0, it will raise a ValueError.
+    operation : Literal['+', '-', '*', '/'], optional
+        Element-wise operation type, optional '+', '-', '*', '/'
+    Returns
+    -------
+    sparse_matrix
+        Result sparse matrix (CSR format)
     """
     n, m = data1.shape
 
@@ -369,8 +443,12 @@ def matrix_operation_memory_efficient(
 
         # Element-wise operations follow below
         if n != n1 or m != m1:
-            ul.log(__name__).error(f"Need to satisfy the element-wise operation principle in matrices. ({(n, m)} != {n1, m1})")
-            raise ValueError(f"Need to satisfy the element-wise operation principle in matrices. ({(n, m)} != {n1, m1})")
+            ul.log(__name__).error(
+                f"Need to satisfy the element-wise operation principle in matrices. ({(n, m)} != {n1, m1})"
+            )
+            raise ValueError(
+                f"Need to satisfy the element-wise operation principle in matrices. ({(n, m)} != {n1, m1})"
+            )
     else:
 
         if operation == "/" and data2 == 0:
@@ -379,7 +457,9 @@ def matrix_operation_memory_efficient(
                 ul.log(__name__).error(f"The denominator (`data2`) cannot be zero.")
                 raise ValueError(f"The denominator (`data2`) cannot be zero.")
 
-            ul.log(__name__).warning(f"The denominator (`data2`) cannot be zero, it defaults to the `default` parameter value.")
+            ul.log(__name__).warning(
+                f"The denominator (`data2`) cannot be zero, it defaults to the `default` parameter value."
+            )
             data2 = default
 
     if chunk_size <= 0:
@@ -475,14 +555,24 @@ def vector_multiply_block_storage(
     data: matrix_data = None
 ) -> matrix_data:
     """
-    Two vectors are broadcast in rows and columns respectively and multiplied by Hadamard product
-    :param data1: Vector 1
-    :param data2: Vector 2
-    :param block_size: The size of the segmentation stored in block wise matrix multiplication.
+    Two vectors are broadcast in rows and columns respectively and multiplied by Hadamard product.
+
+    Parameters
+    ----------
+    data1 : collection
+        Vector 1
+    data2 : collection
+        Vector 2
+    block_size : int, optional
+        The size of the segmentation stored in block wise matrix multiplication.
         If the value is less than or equal to zero, no block operation will be performed.
-    :param data: Return the placeholder variables of the result matrix.
+    data : matrix_data, optional
+        Return the placeholder variables of the result matrix.
         If there is value, it will reduce the consumption of memory space.
-    :return: Matrix
+    Returns
+    -------
+    matrix_data
+        Result Matrix (CSR format)
     """
 
     vector1 = to_dense(data1, is_array=True).flatten()[:, np.newaxis]
@@ -530,13 +620,23 @@ def matrix_division_block_storage(
 ) -> matrix_data:
     """
     Dividing a matrix by another value, vector, or matrix.
-    :param matrix: Matrix
-    :param value: Value, vector, or matrix
-    :param block_size: The size of the segmentation stored in block wise matrix multiplication.
+
+    Parameters
+    ----------
+    matrix : matrix_data
+        Matrix
+    value : Union[float, int, collection, matrix_data]
+        Value, vector, or matrix
+    block_size : int, optional
+        The size of the segmentation stored in block wise matrix multiplication.
         If the value is less than or equal to zero, no block operation will be performed.
-    :param data: Return the placeholder variables of the result matrix.
+    data : matrix_data, optional
+        Return the placeholder variables of the result matrix.
         If there is value, it will reduce the consumption of memory space.
-    :return: Matrix
+    Returns
+    -------
+    matrix_data
+        Result Matrix (CSR format)
     """
 
     n, m = matrix.shape
@@ -621,14 +721,24 @@ def matrix_callback_block_storage(
     data: matrix_data = None
 ) -> matrix_data:
     """
-    Dividing a matrix by another value, vector, or matrix.
-    :param matrix: Matrix
-    :param callback: callback function
-    :param block_size: The size of the segmentation stored in block wise matrix multiplication.
+    Callback matrix.
+
+    Parameters
+    ----------
+    matrix : matrix_data
+        Matrix
+    callback : callable
+        callback function
+    block_size : int, optional
+        The size of the segmentation stored in block wise matrix multiplication.
         If the value is less than or equal to zero, no block operation will be performed.
-    :param data: Return the placeholder variables of the result matrix.
+    data : matrix_data, optional
+        Return the placeholder variables of the result matrix.
         If there is value, it will reduce the consumption of memory space.
-    :return: Matrix
+    Returns
+    -------
+    matrix_data
+        Result Matrix (CSR format)
     """
 
     n, m = matrix.shape

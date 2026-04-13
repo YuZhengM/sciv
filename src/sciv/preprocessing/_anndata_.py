@@ -23,14 +23,26 @@ def adata_group(
 ) -> AnnData:
     """
     Return reshaped AnnData organized by given `column` values.
-    :param adata: input data;
-    :param column: grouping `column`;
-    :param extra_column: Extra columns reserved based on grouped `column`;
-    :param axis: Which dimension is used for grouping. {1: adata.obs, 0: adata.var};
-    :param layer: Specify the matrix to be processed;
-    :param method: The method of grouping strategy supports the following 5 types and their combinations.
+
+    Parameters
+    ----------
+    adata : AnnData
+        input data;
+    column : str
+        grouping `column`;
+    extra_column : Optional[str], optional
+        Extra columns reserved based on grouped `column`;
+    axis : Literal[0, 1], optional
+        Which dimension is used for grouping. {1: adata.obs, 0: adata.var};
+    layer : str, optional
+        Specify the matrix to be processed;
+    method : collection | str, optional
+        The method of grouping strategy supports the following 5 types and their combinations.
         The five methods are {"mean", "sum", "median", "max", "min"}.
-    :return: Data grouped by AnnData.
+    Returns
+    -------
+    AnnData
+        Data grouped by AnnData.
     """
     # judge input data
     if adata.shape[0] == 0:
@@ -62,7 +74,8 @@ def adata_group(
         raise ValueError(f"The grouped column {column} are not in the corresponding columns {data_obs.columns}")
 
     if extra_column is not None and extra_column not in data_obs.columns:
-        ul.log(__name__).error(f"The grouped extra-column {extra_column} are not in the corresponding columns {data_obs.columns}")
+        ul.log(__name__).error(
+            f"The grouped extra-column {extra_column} are not in the corresponding columns {data_obs.columns}")
         raise ValueError(
             f"The grouped extra-column {extra_column} are not in the corresponding columns {data_obs.columns}"
         )
@@ -132,11 +145,20 @@ def adata_map_df(
     layer: str = None
 ) -> DataFrame:
     """
-    Convert AnnData to a form of `row   column  value`
-    :param adata: Enter the AnnData data to be converted;
-    :param column: Specify the column name of the value;
-    :param layer: Specify the matrix to be processed;
-    :return: The DataFrame data of the `row   column  value`.
+    Convert AnnData to a form of `row   column  value`.
+
+    Parameters
+    ----------
+    adata : AnnData
+        Enter the AnnData data to be converted;
+    column : str
+        Specify the column name of the value;
+    layer : str, optional
+        Specify the matrix to be processed;
+    Returns
+    -------
+    DataFrame
+        The DataFrame data of the `row   column  value`.
     """
     # judge input data
     data: AnnData = check_adata_get(adata, layer=layer)

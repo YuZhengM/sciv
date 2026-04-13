@@ -50,10 +50,73 @@ def scatter_base(
     close: bool = False,
     **kwargs: Any
 ) -> None:
+    """
+    Create a base scatter plot with customizable aesthetics.
+    
+    Parameters
+    ----------
+    df : DataFrame
+        Input data containing x, y coordinates and optional hue values
+    x : str
+        Column name for x-axis values
+    y : str
+        Column name for y-axis values
+    hue : str, optional
+        Column name for color grouping
+    hue_order : list, optional
+        Order of hue categories for legend
+    x_name : str, optional
+        Label for x-axis
+    y_name : str, optional
+        Label for y-axis
+    title : str, optional
+        Plot title
+    bar_label : str, optional
+        Label for colorbar when number=True
+    cmap : str, default "Oranges"
+        Colormap for continuous coloring
+    width : float, default 2
+        Figure width in inches
+    height : float, default 2
+        Figure height in inches
+    right : float, default 0.9
+        Position for legend anchor
+    bottom : float, default 0
+        Bottom margin adjustment
+    text_fontsize : float, default 7
+        Font size for annotation text
+    legend_fontsize : float, default 7
+        Font size for legend text
+    start_color_index : int, default 0
+        Starting index in color palette
+    color_step_size : int, default 0
+        Step size for color selection
+    type_colors : collection, optional
+        Custom color palette
+    edge_color : str, optional
+        Edge color for scatter points
+    size : Union[float, collection], default 1.0
+        Size of scatter points
+    legend : dict, optional
+        Mapping to rename hue categories
+    number : bool, default False
+        Whether to use continuous color scale
+    is_text : bool, default False
+        Whether to add text annotations
+    output : path, optional
+        Output file path
+    show : bool, default True
+        Whether to display the plot
+    close : bool, default False
+        Whether to close the figure after saving
+    **kwargs : Any
+        Additional arguments passed to sns.scatterplot
+    """
     fig, ax = plot_start(width, height, bottom, output, show)
 
     # scatter
     if number:
+        # Create continuous color scale for numerical hue values
         norm = plt.Normalize(df[hue].min(), df[hue].max())
         sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
         sm.set_array([])
@@ -70,19 +133,24 @@ def scatter_base(
             **kwargs
         )
     else:
+        # Get unique hue categories and sort them
         __hue_order__ = list(np.sort(list(set(df[hue]))))
 
+        # Select appropriate default color palette based on number of categories
         if type_colors is None:
             type_colors = type_20_colors if len(__hue_order__) <= 20 else type_50_colors
 
         colors = {}
 
+        # Create a copy of hue column for legend renaming if needed
         if legend is not None:
             df.loc[:, "__hue__"] = df[hue].copy()
 
+        # Assign colors to each category
         i = 0
         for elem in __hue_order__:
             if legend is not None:
+                # Rename categories according to legend mapping
                 df.loc[df[df["__hue__"] == elem].index, "__hue__"] = legend[elem]
                 colors.update(
                     {legend[elem]: type_colors[start_color_index + i * color_step_size + __hue_order__.index(elem)]}
@@ -95,6 +163,7 @@ def scatter_base(
                 )
             i += 1
 
+        # Determine hue order for plotting
         if legend is not None:
             if hue_order is None:
                 hue_order = list(np.sort(list(set(df["__hue__"]))))
@@ -102,6 +171,7 @@ def scatter_base(
             if hue_order is None:
                 hue_order = __hue_order__
 
+        # Create scatter plot with categorical colors
         sns.scatterplot(
             data=df,
             x=x,
@@ -114,6 +184,7 @@ def scatter_base(
             **kwargs
         )
 
+        # Add text annotations at centroid positions if requested
         if is_text:
 
             df_anno = df[[hue, x, y]].groupby(hue, as_index=False).mean()
@@ -134,6 +205,7 @@ def scatter_base(
                     fontsize=text_fontsize
                 )
 
+        # Add legend outside the plot area
         ax.legend(
             loc="center left",
             bbox_to_anchor=(right, 0.5),
@@ -181,6 +253,63 @@ def scatter_3d(
     close: bool = False,
     **kwargs: Any
 ):
+    """
+    Create a 3D scatter plot with customizable aesthetics.
+    
+    Parameters
+    ----------
+    df : DataFrame
+        Input data containing x, y, z coordinates
+    x : str
+        Column name for x-axis values
+    y : str
+        Column name for y-axis values
+    z : str
+        Column name for z-axis values
+    hue : str, optional
+        Column name for color grouping
+    x_name : str, optional
+        Label for x-axis
+    y_name : str, optional
+        Label for y-axis
+    z_name : str, optional
+        Label for z-axis
+    title : str, optional
+        Plot title
+    width : float, default 7
+        Figure width in inches
+    height : float, default 7
+        Figure height in inches
+    elev : float, default 30
+        Elevation angle for 3D view
+    azim : float, default -60
+        Azimuth angle for 3D view
+    is_add_legend : bool, default True
+        Whether to add legend
+    cmap : Union[str, ListedColormap], default 'tab20'
+        Colormap for coloring
+    font_size : int, default 14
+        Font size for labels and title
+    edge_color : str, optional
+        Edge color for scatter points
+    size : Union[float, collection], default 0.1
+        Size of scatter points
+    legend_name : str, optional
+        Title for legend
+    is_add_max_label : bool, default False
+        Whether to add label for maximum z value point
+    text_left_offset : float, default 0.5
+        Horizontal offset for max value label
+    output : path, optional
+        Output file path
+    show : bool, default True
+        Whether to display the plot
+    close : bool, default False
+        Whether to close the figure after saving
+    **kwargs : Any
+        Additional arguments passed to ax.scatter
+    """
+
     if output is None and not show:
         ul.log(__name__).error(f"At least one of the `output` and `show` parameters is required")
         raise ValueError(f"At least one of the `output` and `show` parameters is required")
@@ -230,13 +359,12 @@ def scatter_3d(
         ax.legend(handles=legend_elements, title=legend_name, loc='upper left')
 
     if is_add_max_label:
-
         max_idx = df[z].idxmax()
         max_x = df.loc[max_idx, x]
         max_y = df.loc[max_idx, y]
         max_value = df.loc[max_idx, z]
 
-        # 在最大值点的位置添加文本标签
+        # Add text label at the position of the maximum value point
         ax.text(
             max_x - text_left_offset,
             max_y,
@@ -272,6 +400,53 @@ def scatter_atac(
     close: bool = False,
     **kwargs: Any
 ) -> None:
+    """
+    Create a scatter plot for ATAC-seq data with cluster coloring.
+    
+    Parameters
+    ----------
+    adata : AnnData
+        AnnData object containing observations and coordinates
+    columns : Tuple[str, str], default ("UMAP1", "UMAP2")
+        Column names for x and y coordinates in adata.obs
+    clusters : str, default "clusters"
+        Column name for cluster labels in adata.obs
+    hue_order : list, optional
+        Order of clusters for legend
+    width : float, default 2
+        Figure width in inches
+    height : float, default 2
+        Figure height in inches
+    x_name : str, optional
+        Label for x-axis
+    y_name : str, optional
+        Label for y-axis
+    start_color_index : int, default 0
+        Starting index in color palette
+    color_step_size : int, default 0
+        Step size for color selection
+    type_colors : collection, optional
+        Custom color palette
+    edge_color : str, optional
+        Edge color for scatter points
+    size : float, default 1.0
+        Size of scatter points
+    text_fontsize : float, default 7
+        Font size for annotation text
+    legend_fontsize : float, default 7
+        Font size for legend text
+    is_text : bool, default False
+        Whether to add text annotations
+    output : path, optional
+        Output file path
+    show : bool, default True
+        Whether to display the plot
+    close : bool, default False
+        Whether to close the figure after saving
+    **kwargs : Any
+        Additional arguments passed to scatter_base
+    """
+
     # DataFrame
     df: DataFrame = adata.obs.copy()
     df[clusters] = df[clusters].astype(str)
@@ -330,6 +505,64 @@ def scatter_trait(
     close: bool = False,
     **kwargs: Any
 ) -> None:
+    """
+    Plot trait data scatter plot.
+
+    Parameters
+    ----------
+    trait_adata : AnnData
+        AnnData object containing trait/disease scores and cell metadata
+    title : str, optional
+        Title prefix for the plot
+    bar_label : str, optional
+        Label for colorbar when number=True
+    trait_name : str, default "All"
+        Name of trait/disease to plot, or "All" to plot all traits
+    layers : Union[None, collection], optional
+        List of layer names to plot from trait_adata.layers
+    columns : Tuple[str, str], default ("UMAP1", "UMAP2")
+        Column names for x and y coordinates in trait_adata.obs
+    cmap : str, default "viridis"
+        Colormap for continuous coloring
+    width : float, default 2
+        Figure width in inches
+    height : float, default 2
+        Figure height in inches
+    right : float, default 0.9
+        Position for legend anchor
+    x_name : str, optional
+        Label for x-axis
+    y_name : str, optional
+        Label for y-axis
+    number : bool, default True
+        Whether to use continuous color scale for trait scores
+    edge_color : str, optional
+        Edge color for scatter points
+    size : Union[float, collection], default 1.0
+        Size of scatter points
+    text_fontsize : float, default 7
+        Font size for annotation text
+    legend_fontsize : float, default 7
+        Font size for legend text
+    start_color_index : int, default 0
+        Starting index in color palette
+    color_step_size : int, default 0
+        Step size for color selection
+    type_colors : collection, optional
+        Custom color palette
+    is_text : bool, default False
+        Whether to add text annotations
+    legend : dict, optional
+        Mapping to rename hue categories
+    output : path, optional
+        Output directory path for saving plots
+    show : bool, default True
+        Whether to display the plot
+    close : bool, default False
+        Whether to close the figure after saving
+    **kwargs : Any
+        Additional arguments passed to scatter_base
+    """
     data: AnnData = trait_adata.copy()
 
     # judge layers
@@ -442,7 +675,58 @@ def volcano_base(
     show: bool = True,
     close: bool = False,
     **kwargs: Any
-):
+) -> None:
+    """
+    Plot volcano plot.
+
+    Parameters
+    ----------
+    df : DataFrame
+        Data frame.
+    x : str, optional
+        X-axis.
+    y : str, optional
+        Y-axis.
+    hue : str, optional
+        Hue.
+    size : int, optional
+        Size.
+    palette : Optional[list], optional
+        Palette.
+    width : float, optional
+        Width.
+    height : float, optional
+        Height.
+    bottom : float, optional
+        Bottom.
+    y_min : float, optional
+        Y-min.
+    axh_value : float, optional
+        Axh-value.
+    axv_left_value : float, optional
+        Axv-left-value.
+    axv_right_value : float, optional
+        Axv-right-value.
+    title : str, optional
+        Title.
+    x_name : Optional[str], optional
+        X-name.
+    y_name : Optional[str], optional
+        Y-name.
+    output : path, optional
+        Output.
+    show : bool, optional
+        Show to display the plot.
+    close : bool, optional
+        Close to close the figure after saving.
+    kwargs : Any, optional
+        Additional keyword arguments passed to sns.scatterplot.
+
+    Returns
+    -------
+    None
+    """
+
     fig, ax = plot_start(width, height, bottom, output, show)
 
     if palette is None:
@@ -482,7 +766,55 @@ def manhattan_causal_variant(
     show: bool = True,
     close: bool = False,
     **kwargs: Any
-):
+) -> None:
+    """
+    Create a Manhattan plot for causal variant visualization across chromosomes.
+    
+    Parameters
+    ----------
+    df : DataFrame
+        Input data containing variant information with chromosome and position data
+    y : str, default "pp"
+        Column name for y-axis values (typically posterior probability or p-value)
+    chr_name : str, default "chr"
+        Column name for chromosome identifiers
+    label : str, default "rsId"
+        Column name for variant labels/identifiers
+    size : int, default 30
+        Size of scatter points
+    labels : Optional[list], optional
+        List of specific variant labels to annotate on the plot
+    colors : Optional[list], optional
+        Custom color palette for different chromosomes
+    width : float, default 8
+        Figure width in inches
+    height : float, default 2
+        Figure height in inches
+    bottom : float, default 0
+        Bottom margin adjustment
+    title : str, optional
+        Plot title
+    is_sort : bool, default True
+        Whether to sort data by chromosome
+    line_width : float, default 0.5
+        Width of separator lines between chromosomes and grid lines
+    y_round : int, default 3
+        Number of decimal places for y-value annotations
+    x_name : Optional[str], default "Chromosome"
+        Label for x-axis
+    y_name : Optional[str], default "pp"
+        Label for y-axis
+    y_limit : Tuple[float, float], default (0, 1)
+        Y-axis limits for the plot
+    output : path, optional
+        Output file path
+    show : bool, default True
+        Whether to display the plot
+    close : bool, default False
+        Whether to close the figure after saving
+    **kwargs : Any
+        Additional arguments passed to ax.axvline
+    """
     df[chr_name] = df[chr_name].astype(chrtype)
 
     if is_sort:
@@ -561,7 +893,49 @@ def pseudo_time_score(
     show: bool = True,
     close: bool = False,
     **kwargs: Any
-):
+) -> None:
+    """
+    Create a scatter plot showing pseudo-time scores with a smoothed trend line.
+    
+    Parameters
+    ----------
+    df : DataFrame
+        Input data containing pseudo-time and score values
+    x : str
+        Column name for pseudo-time values (x-axis)
+    y : str
+        Column name for score values (y-axis)
+    x_name : str, optional
+        Label for x-axis
+    y_name : str, optional
+        Label for y-axis
+    title : str, optional
+        Plot title
+    width : float, default 2
+        Figure width in inches
+    height : float, default 1.2
+        Figure height in inches
+    bottom : float, default 0
+        Bottom margin adjustment
+    alpha : float, default 0.65
+        Transparency of scatter points
+    line_width : float, default 1.5
+        Width of the smoothed trend line
+    step_length : int, default 5
+        Step length for determining Savitzky-Golay filter window size
+    polyorder : int, default 1
+        Polynomial order for Savitzky-Golay filter
+    size : Union[float, collection], default 1.0
+        Size of scatter points
+    output : path, optional
+        Output file path
+    show : bool, default True
+        Whether to display the plot
+    close : bool, default False
+        Whether to close the figure after saving
+    **kwargs : Any
+        Additional arguments passed to ax.scatter
+    """
     from scipy.signal import savgol_filter
 
     fig, ax = plot_start(width, height, bottom, output, show)

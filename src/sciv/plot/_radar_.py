@@ -37,7 +37,58 @@ def radar(
     show: bool = True,
     close: bool = False,
     **kwargs: Any
-):
+) -> None:
+    """
+    Plot a radar chart.
+
+    Parameters
+    ----------
+    ax_x : collection
+        Category labels for the radar chart.
+    ax_y : collection
+        Data values for each category.
+    x_name : str, optional
+        Label for the x-axis.
+    y_name : str, optional
+        Label for the y-axis.
+    title : str, optional
+        Title of the chart.
+    colors : collection, optional
+        Colors for the radar chart.
+    width : float, optional
+        Width of the chart.
+    height : float, optional
+        Height of the chart.
+    bottom : float, optional
+        Bottom margin adjustment.
+    center_text : str, optional
+        Center text for the chart.
+    rotation : float, optional
+        Angle rotation for the radar chart.
+    value_top : float, optional
+        Value top for the radar chart.
+    text_top : float, optional
+        Text top for the radar chart.
+    is_fixed : bool, optional
+        Whether to fix the radar chart.
+    is_angle : bool, optional
+        Whether to use angle for the radar chart.
+    y_limit : Tuple, optional
+        Y-axis limit.
+    y_axis_scale : Tuple, optional
+        Y-axis scale.
+    output : path, optional
+        Output path.
+    show : bool, optional
+        Whether to show.
+    close : bool, optional
+        Whether to close.
+    kwargs : Any, optional
+        Keyword arguments.
+    Returns
+    -------
+    None
+    """
 
     if output is None and not show:
         ul.log(__name__).error(f"At least one of the `output` and `show` parameters is required")
@@ -76,7 +127,10 @@ def radar(
         height = bar.get_height()
         angle = np.degrees(theta[i])
         label_position = theta[i]
-        ax.text(label_position, height + value_top if not is_fixed else value_top, round(height, 3), ha='center', va='center', color='#1f1f1f', rotation=-angle + rotation if is_angle else rotation)
+        ax.text(
+            label_position, height + value_top if not is_fixed else value_top, round(height, 3),
+            ha='center', va='center', color='#1f1f1f', rotation=-angle + rotation if is_angle else rotation
+        )
 
     # Add radar line
     ax.plot(theta, ax_y, color='gray', linewidth=1, zorder=1)
@@ -97,7 +151,10 @@ def radar(
     # Draw peripheral category labels
     for i, label in enumerate(ax_x):
         angle = np.degrees(theta[i])
-        ax.text(theta[i], text_top, label, ha='center', va='center', color='#1f1f1f', zorder=20, rotation=-angle + rotation if is_angle else rotation)
+        ax.text(
+            theta[i], text_top, label, ha='center', va='center', color='#1f1f1f', zorder=20,
+            rotation=-angle + rotation if is_angle else rotation
+        )
 
     # Adjust the layout to prevent label overlap
     plt.tight_layout()
@@ -127,7 +184,56 @@ def base_radar(
     close: bool = False,
     **kwargs: Any
 ) -> None:
+    """
+    Plot a radar chart with multiple groups.
 
+    Parameters
+    ----------
+    df : DataFrame
+        Input data containing the values to plot.
+    ax_x : str
+        Column name for category labels (x-axis categories).
+    ax_y : str
+        Column name for values to plot (y-axis values).
+    hue : str
+        Column name for grouping different lines.
+    x_name : str, optional
+        Label for the x-axis.
+    y_name : str, optional
+        Label for the y-axis.
+    title : str, optional
+        Title of the chart.
+    width : float, optional
+        Width of the chart figure.
+    height : float, optional
+        Height of the chart figure.
+    bottom : float, optional
+        Bottom margin adjustment.
+    colors : collection, optional
+        Colors for each group line.
+    line_width : float, optional
+        Width of the radar lines.
+    y_limit : Tuple, optional
+        Y-axis limit range.
+    bbox_to_anchor : Tuple, optional
+        Position for the legend box.
+    is_fill : bool, optional
+        Whether to fill the radar area.
+    fill_alpha : float, optional
+        Transparency level for the filled area.
+    output : path, optional
+        Output path to save the figure.
+    show : bool, optional
+        Whether to display the figure.
+    close : bool, optional
+        Whether to close the figure after display.
+    kwargs : Any, optional
+        Additional keyword arguments for plotting.
+
+    Returns
+    -------
+    None
+    """
     if output is None and not show:
         ul.log(__name__).error(f"At least one of the `output` and `show` parameters is required")
         raise ValueError(f"At least one of the `output` and `show` parameters is required")
@@ -172,7 +278,6 @@ def base_radar(
     plot_end(fig, title, x_name, y_name, output, show, close)
 
 
-
 def radar_trait(
     trait_df: DataFrame,
     trait_name: str = "All",
@@ -196,6 +301,72 @@ def radar_trait(
     close: bool = False,
     **kwargs: Any
 ):
+    """
+    Plot radar charts for trait enrichment analysis.
+
+    This function creates radar charts to visualize trait/disease enrichment scores
+    across different clusters. It can plot either a single trait or all traits in the dataset.
+
+    Parameters
+    ----------
+    trait_df : DataFrame
+        Input dataframe containing trait enrichment data.
+    trait_name : str, optional
+        Name of the trait to plot. Use "All" to plot all traits. Default is "All".
+    trait_column_name : str, optional
+        Column name in trait_df that contains trait identifiers. Default is "id".
+    value : str, optional
+        Column name containing the enrichment values to plot. Default is "rate".
+    clusters : str, optional
+        Column name containing cluster identifiers. Default is "clusters".
+    color : Union[collection, str], optional
+        Colors for the radar chart bars. Can be a column name (str) or a collection of colors.
+    clusters_sort : Optional[list], optional
+        Custom order for clusters. If None, clusters are sorted by value in descending order.
+    width : float, optional
+        Width of the figure in inches. Default is 4.
+    height : float, optional
+        Height of the figure in inches. Default is 4.
+    rotation : float, optional
+        Rotation angle for text labels in degrees. Default is 65.
+    title : str, optional
+        Base title for the plot. Trait name will be appended if provided.
+    value_top : float, optional
+        Vertical offset for value labels above bars. Default is 0.1.
+    text_top : float, optional
+        Radial position for category labels. Default is 1.2.
+    is_fixed : bool, optional
+        If True, value labels are placed at a fixed position. Default is False.
+    is_angle : bool, optional
+        If True, rotate labels to align with radar angles. Default is True.
+    y_limit : Tuple, optional
+        Y-axis limits as (min, max). Default is (-0.5, 1).
+    y_axis_scale : Tuple, optional
+        Scale range for y-axis ticks as (min, max). Default is (0, 1).
+    output : path, optional
+        Directory path to save output PDF files. If None, files are not saved.
+    show : bool, optional
+        Whether to display the plot. Default is True.
+    close : bool, optional
+        Whether to close the figure after display. Default is False.
+    kwargs : Any, optional
+        Additional keyword arguments passed to the radar function.
+
+    Returns
+    -------
+    None
+        The function saves plots to files and/or displays them based on parameters.
+
+    Raises
+    ------
+    ValueError
+        If the specified trait_name is not found in the trait list.
+
+    Examples
+    --------
+    >>> radar_trait(df, trait_name="Trait1", output="/path/to/output")
+    >>> radar_trait(df, trait_name="All", clusters_sort=["C1", "C2", "C3"])
+    """
 
     def trait_plot(trait_: str, cell_df_: DataFrame) -> None:
         """

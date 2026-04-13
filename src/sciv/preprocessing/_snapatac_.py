@@ -20,6 +20,20 @@ __name__: str = "preprocessing_snapatac2"
 
 
 def get_feature_count(raw_count: int, need_features: Optional[Union[int | float]]) -> int:
+    """
+    Get feature count.
+    
+    Parameters
+    ----------
+    raw_count : int
+        Raw count of features.
+    need_features : Optional[Union[int | float]], optional
+        Need features to use.
+    Returns
+    -------
+    int
+        Feature count.
+    """
     return int(raw_count * need_features) if need_features <= 1 else int(need_features)
 
 
@@ -35,8 +49,38 @@ def _process_sc_atac_(
     is_filter_doublets: bool = True,
     need_features: Optional[Union[int | float]] = None
 ):
-    ul.log(__name__).info(f"Read {fragment_file}")
-
+    """
+    Process scATAC-seq data.
+    
+    Parameters
+    ----------
+    fragment_file : path | List[path]
+        scATAC-seq data.
+    genome_anno : DataFrame
+        Genome annotation.
+    h5ad_file : Optional[path | List[path]], optional
+        H5AD file.
+    min_num_fragments : int, optional
+        Minimum number of fragments to use.
+    sorted_by_barcode : bool, optional
+        Whether to sort by barcode.
+    bin_size : int, optional
+        Bin size to use.
+    min_tsse : float, optional
+        Minimum TSSE to use.
+    counting_strategy : Literal['fragment', 'insertion', 'paired-insertion'], optional
+        Counting strategy to use.
+    is_filter_doublets : bool, optional
+        Whether to filter doublets.
+    need_features : Optional[Union[int | float]], optional
+        Need features to use.
+    Returns
+    -------
+    scATAC-seq data: AnnData
+        Processed scATAC-seq data.
+    features: Optional[str]
+        Features to use.
+    """
     import snapatac2 as snap
 
     data = snap.pp.import_data(
@@ -111,7 +155,6 @@ def _process_sc_atac_(
 
     return data, features
 
-
 def get_sc_atac(
     fragment_file: path,
     genome_anno,
@@ -124,12 +167,54 @@ def get_sc_atac(
     need_features: Optional[Union[int | float]] = None,
     is_filter_doublets: bool = True
 ):
-
+    """
+    Get scATAC-seq data from fragment file or h5ad file.
+    
+    This function processes scATAC-seq data by importing fragment files,
+    performing quality control, adding tile matrices, selecting features,
+    and filtering doublets. It can also read pre-processed h5ad files.
+    
+    Parameters
+    ----------
+    fragment_file : path
+        Path to the fragment file or h5ad file.
+    genome_anno : DataFrame
+        Genome annotation.
+    h5ad_file : Optional[path], optional
+        Path to save the h5ad file. If None, a temporary cache file will be used.
+    min_num_fragments : int, optional
+        Minimum number of fragments required for a cell to pass filtering.
+    sorted_by_barcode : bool, optional
+        Whether the input fragment file is sorted by barcode.
+    bin_size : int, optional
+        Size of consecutive genomic regions used to record the counts.
+    min_tsse : float, optional
+        Minimum TSS enrichment score required for a cell to pass filtering.
+    counting_strategy : Literal['fragment', 'insertion', 'paired-insertion'], optional
+        Strategy to count fragments in bins.
+    need_features : Optional[Union[int | float]], optional
+        Number or proportion of features to select.
+    is_filter_doublets : bool, optional
+        Whether to filter doublets.
+    
+    Returns
+    -------
+    tuple
+        - adata : AnnData
+            Processed scATAC-seq data.
+        - selected_list : Optional[np.ndarray]
+            Boolean array indicating selected features.
+        - h5ad_file : path
+            Path to the h5ad file.
+    """
+    # Initialize features variable to track feature selection status
     features: Optional[str] = None
 
+    # If input is already an h5ad file, use it directly
     if fragment_file.endswith(".h5ad"):
         h5ad_file = fragment_file
 
+    # Check if h5ad file exists and read it directly
     if h5ad_file is not None and os.path.exists(h5ad_file):
         ul.log(__name__).warning(
             "Suggest using fragments files to scATAC-seq data. (If the reading process is completed through snapATAC2, "
@@ -137,16 +222,17 @@ def get_sc_atac(
         )
         adata = read_sc_atac(h5ad_file)
     else:
-
+        # Create a temporary cache directory for processing
         _cache_file_path_ = os.path.join(ul.project_cache_path, generate_str())
         _is_cache_ = False
 
+        # If no h5ad file specified, use cache directory
         if h5ad_file is None:
             _is_cache_ = True
             ul.file_method(__name__).makedirs(_cache_file_path_)
             h5ad_file = os.path.join(_cache_file_path_, generate_str() + ".h5ad")
 
-        # import the fragment files and process them
+        # Import the fragment files and process them
         adata, features = _process_sc_atac_(
             fragment_file=fragment_file,
             genome_anno=genome_anno,
@@ -159,15 +245,20 @@ def get_sc_atac(
             is_filter_doublets=is_filter_doublets,
             need_features=need_features
         )
+        # Close the AnnData object after processing
         adata.close()
 
+        # Read the processed h5ad file
         adata = read_sc_atac(h5ad_file)
 
+        # Clean up temporary cache directory if used
         if _is_cache_ and os.path.exists(_cache_file_path_):
             shutil.rmtree(_cache_file_path_)
 
+        # Clean up temporary variables
         del _cache_file_path_, _is_cache_
 
+    # Extract selected features list if feature selection was performed
     selected_list = None
 
     if features is not None:
@@ -193,24 +284,54 @@ def merge_sc_atac(
     output_path: Optional[path] = None
 ) -> AnnData:
     """
-    Integrate multiple scATAC-seq data through snapATAC2 (https://kzhang.org/SnapATAC2/tutorials/integration.html)
-        Note: Please do not move the generated files during this processing
-    :param files: {file_key: file path of scATAC-seq data, ...} scATAC-seq data information that needs to be integrated
-    :param genome_anno: Reference genome, commonly known as `snap.genome.hg38` and `snap.genome.hg19`
-    :param merge_key: Finally form the file name of H5AD
-    :param min_num_fragments: Number of unique fragments threshold used to filter cells
-    :param sorted_by_barcode: Is the input fragments file sorted
-    :param bin_size: The size of consecutive genomic regions used to record the counts.
-    :param min_tsse: Minimum TSS enrichment score required for a cell to pass filtering.
-    :param max_iter_harmony: The maximum number of iterations in the `harmony` algorithm.
-    :param harmony_groupby: If specified, split the data into groups and perform batch correction on each group separately.
-    :param is_selected: If True, based on the feature selection in the `snap.pp.select_features` method, further
-        filtering is performed according to the features of each sample.
-    :param is_batch: If True, batch correction by sample.
-    :param need_features: If `need_features` <=1, it represents the retention of `need_features`% of the overall
-        features. Otherwise, it is considered an integer and `need_features` features are filtered.
-    :param output_path: Path to generate file
-    :return: Integrated scATAC-seq data
+    Integrate multiple scATAC-seq data through snapATAC2.
+
+    This function integrates multiple scATAC-seq datasets using snapATAC2.
+    Reference: https://kzhang.org/SnapATAC2/tutorials/integration.html
+
+    Note: Please do not move the generated files during this processing.
+
+    Parameters
+    ----------
+    files : dict
+        Dictionary mapping sample names to file paths of scATAC-seq data.
+        Format: {file_key: file_path, ...}
+    genome_anno : DataFrame
+        Genome annotation. Commonly `snap.genome.hg38` or `snap.genome.hg19`.
+    merge_key : str, optional
+        Key used to form the final H5AD file name. Default is "merge_sc_atac".
+    min_num_fragments : int, optional
+        Minimum number of unique fragments required for a cell to pass filtering.
+        Default is 200.
+    sorted_by_barcode : bool, optional
+        Whether the input fragment file is sorted by barcode. Default is False.
+    bin_size : int, optional
+        Size of consecutive genomic regions used to record counts. Default is 500.
+    min_tsse : float, optional
+        Minimum TSS enrichment score required for a cell to pass filtering.
+        Default is 5.0.
+    counting_strategy : Literal['fragment', 'insertion', 'paired-insertion'], optional
+        Strategy to count fragments in bins. Default is 'paired-insertion'.
+    max_iter_harmony : int, optional
+        Maximum number of iterations for the harmony algorithm. Default is 20.
+    harmony_groupby : Optional[Union[str, list[str]]], optional
+        If specified, split data into groups and perform batch correction
+        on each group separately.
+    is_selected : bool, optional
+        If True, perform additional filtering based on feature selection
+        from each sample using the `snap.pp.select_features` method.
+    is_batch : bool, optional
+        If True, perform batch correction by sample. Default is True.
+    need_features : Optional[Union[int, float]], optional
+        Number or proportion of features to select. If <= 1, interpreted as
+        a proportion of total features. If > 1, interpreted as absolute number.
+    output_path : Optional[path], optional
+        Directory path for output files. If None, temporary files are used.
+
+    Returns
+    -------
+    AnnData
+        Integrated scATAC-seq data.
     """
     ul.log(__name__).info("Start integrating scATAC-seq data.")
 
@@ -344,7 +465,39 @@ def get_gene_expression(
     is_filter_doublets: bool = True,
     gene_save_file: Optional[path] = None
 ) -> AnnData:
+    """
+    Get gene expression matrix.
 
+    Parameters
+    ----------
+    fragment_file : path
+        Fragment file path.
+    genome_anno : DataFrame
+        Genome annotation.
+    h5ad_file : Optional[path], optional
+        H5ad file path.
+    min_num_fragments : int, optional
+        Minimum number of fragments.
+    sorted_by_barcode : bool, optional
+        Whether to sort by barcode.
+    bin_size : int, optional
+        Bin size.
+    min_tsse : float, optional
+        Minimum tSNE distance.
+    need_features : Optional[Union[int | float]], optional
+        Need features to use.
+    min_cells : int, optional
+        Minimum cells.
+    is_filter_doublets : bool, optional
+        Whether to filter doublets.
+    gene_save_file : Optional[path], optional
+        Gene save file path.
+    Returns
+    -------
+    AnnData
+        Gene expression matrix.
+    """
+    
     import snapatac2 as snap
 
     # import the fragment files and process them
@@ -413,10 +566,62 @@ def get_peak_matrix(
     is_filter_doublets: bool = True,
     peak_matrix_save_file: Optional[path] = None
 ):
+    """
+    Generate peak matrix from scATAC-seq data.
+
+    This function processes scATAC-seq fragment files to generate a cell-by-peak
+    matrix through peak calling using MACS3. It performs quality control, tile
+    matrix generation, feature selection, and peak calling at the specified
+    cluster level.
+
+    Parameters
+    ----------
+    fragment_file : path
+        Path to the fragment file or h5ad file containing scATAC-seq data.
+    genome_anno : DataFrame
+        Genome annotation information.
+    cluster : str
+        Column name in cell annotation indicating cluster labels for peak calling.
+    cell_anno : Optional[DataFrame], optional
+        Cell annotation DataFrame containing cluster information.
+    h5ad_file : Optional[path], optional
+        Path to save the intermediate h5ad file.
+    min_num_fragments : int, optional
+        Minimum number of fragments required for a cell to pass filtering.
+        Default is 200.
+    sorted_by_barcode : bool, optional
+        Whether the input fragment file is sorted by barcode. Default is False.
+    bin_size : int, optional
+        Size of consecutive genomic regions used to record counts. Default is 500.
+    min_tsse : float, optional
+        Minimum TSS enrichment score required for a cell to pass filtering.
+        Default is 5.0.
+    need_features : Optional[Union[int, float]], optional
+        Number or proportion of features to select. If <= 1, interpreted as
+        a proportion of total features. If > 1, interpreted as absolute number.
+    is_filter_doublets : bool, optional
+        Whether to filter doublets. Default is True.
+    peak_matrix_save_file : Optional[path], optional
+        Path to save the output peak matrix h5ad file.
+
+    Returns
+    -------
+    tuple
+        - adata : AnnData
+            Full processed scATAC-seq data.
+        - selected_adata : AnnData
+            Subset of adata with selected features.
+        - h5ad_file : path
+            Path to the h5ad file.
+        - peaks : DataFrame
+            Merged peaks information.
+        - peak_mat : AnnData
+            Cell-by-peak matrix.
+    """
 
     import snapatac2 as snap
 
-    # import the fragment files and process them
+    # Import the fragment files and process them
     adata, selected_list, h5ad_file = get_sc_atac(
         fragment_file=fragment_file,
         genome_anno=genome_anno,
@@ -429,7 +634,7 @@ def get_peak_matrix(
         need_features=need_features
     )
 
-    # add cell annotation information
+    # Add cell annotation information
     adata.obs = add_cluster_info(adata.obs, cell_anno, cluster)
 
     if cluster not in adata.obs.columns:
@@ -479,6 +684,29 @@ def _process_info_to_adata_(
     obs_info: DataFrame,
     h5ad_file: str
 ) -> AnnData:
+    """
+    Process info to AnnData.
+
+    Parameters
+    ----------
+    adata : AnnData
+        Full processed scATAC-seq data.
+    selected_adata : AnnData
+        Subset of adata with selected features.
+    cluster : str
+        Cluster name.
+    info_data : DataFrame
+        Info data.
+    obs_info : DataFrame
+        Obs info.
+    h5ad_file : str
+        H5ad file path.
+    Returns
+    -------
+    AnnData
+        Processed cell type-TF/peak matrix.
+    """
+    
     obs_unique = list(obs_info.index)
     obs_unique_dict: dict = dict(zip(obs_unique, range(len(obs_unique))))
     # var
@@ -539,7 +767,45 @@ def get_tf_data(
     peak_matrix_save_file: Optional[path] = None,
     tf_save_file: Optional[path] = None
 ) -> AnnData:
+    """
+    Get TF data.
 
+    Parameters
+    ----------
+    fragment_file : path
+        Fragment file path.
+    genome_anno : DataFrame
+        Genome annotation.
+    cluster : str
+        Cluster name.
+    cell_anno : Optional[DataFrame], optional
+        Cell annotation.
+    h5ad_file : Optional[path], optional
+        H5ad file path.
+    min_num_fragments : int, optional
+        Minimum number of fragments.
+    sorted_by_barcode : bool, optional
+        Whether to sort by barcode.
+    bin_size : int, optional
+        Bin size.
+    min_tsse : float, optional
+        Minimum tSNE distance.
+    need_features : Optional[Union[int | float]], optional
+        Need features to use.
+    p_value : float, optional
+        P-value threshold.
+    is_filter_doublets : bool, optional
+        Whether to filter doublets.
+    peak_matrix_save_file : Optional[path], optional
+        Peak matrix save file.
+    tf_save_file : Optional[path], optional
+        TF save file.
+    Returns
+    -------
+    AnnData
+        TF data.
+    """
+    
     import snapatac2 as snap
 
     # import the fragment files and process them
@@ -649,6 +915,46 @@ def get_difference_peaks(
     peak_matrix_save_file: Optional[path] = None,
     diff_peaks_save_file: Optional[path] = None
 ) -> AnnData:
+    """
+    Get difference peaks.
+
+    Parameters
+    ----------
+    fragment_file : path
+        Fragment file path.
+    genome_anno : DataFrame
+        Genome annotation.
+    cluster : str
+        Cluster name.
+    cell_anno : Optional[DataFrame], optional
+        Cell annotation.
+    h5ad_file : Optional[path], optional
+        H5ad file path.
+    min_num_fragments : int, optional
+        Minimum number of fragments.
+    sorted_by_barcode : bool, optional
+        Whether to sort by barcode.
+    bin_size : int, optional
+        Bin size.
+    min_tsse : float, optional
+        Minimum tSNE distance.
+    need_features : Optional[Union[int | float]], optional
+        Need features to use.
+    is_filter_doublets : bool, optional
+        Whether to filter doublets.
+    min_log_fc : float, optional
+        Minimum log2 fold change.
+    min_pct : float, optional
+        Minimum percentage.
+    peak_matrix_save_file : Optional[path], optional
+        Peak matrix save file.
+    diff_peaks_save_file : Optional[path], optional
+        Difference peaks save file.
+    Returns
+    -------
+    AnnData
+        Difference peaks data.
+    """
 
     import snapatac2 as snap
 

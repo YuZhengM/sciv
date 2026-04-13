@@ -20,16 +20,36 @@ _Datasets = Optional[Literal['Human', 'Mouse', 'Yeast', 'Fly', 'Fish', 'Worm']]
 def gsea_enrichr(
     gene_list: list[str],
     gene_sets: Union[list[str], set] = (
-        "GO_Biological_Process_2023",
-        "GO_Cellular_Component_2023",
-        "GO_Molecular_Function_2023",
-        "GWAS_Catalog_2023",
-        "KEGG_2016"
+            "GO_Biological_Process_2023",
+            "GO_Cellular_Component_2023",
+            "GO_Molecular_Function_2023",
+            "GWAS_Catalog_2023",
+            "KEGG_2016"
     ),
     organism: _Datasets = "human",
     is_verbose: bool = True,
-    output_dir: Optional[str] = None
+    output_dir: Optional[str] = None,
 ) -> DataFrame:
+    """
+    GSEA enrichr analysis.
+
+    Parameters
+    ----------
+    gene_list : list[str]
+        Gene list.
+    gene_sets : Union[list[str], set], optional
+        Gene sets to use.
+    organism : _Datasets, optional
+        Organism to use.
+    is_verbose : bool, optional
+        Whether to print verbose messages.
+    output_dir : Optional[str], optional
+        Output directory.
+    Returns
+    -------
+    DataFrame
+        GSEA enrichr results DataFrame.
+    """
 
     import gseapy as gp
 
@@ -59,15 +79,43 @@ def get_gene_enrichment(
     is_order_or_lt: bool = True,
     is_top: bool = True,
     gene_sets: Union[list[str], set] = (
-        "GO_Biological_Process_2023",
-        "GO_Cellular_Component_2023",
-        "GO_Molecular_Function_2023",
-        "GWAS_Catalog_2023",
-        "KEGG_2016"
+            "GO_Biological_Process_2023",
+            "GO_Cellular_Component_2023",
+            "GO_Molecular_Function_2023",
+            "GWAS_Catalog_2023",
+            "KEGG_2016"
     ),
     organism: _Datasets = "human",
-    output_dir: Optional[str] = None,
+    output_dir: Optional[str] = None
 ) -> DataFrame:
+    """
+    Get gene enrichment analysis.
+    
+    Parameters
+    ----------
+    adata : AnnData
+        Input data;
+    top_number : int, optional
+        Top number of genes to use.
+    threshold : float, optional
+        Threshold to use.
+    layer : Optional[str], optional
+        Specify the matrix to be processed;
+    is_order_or_lt : bool, optional
+        Whether to order or filter by `threshold`.
+    is_top : bool, optional
+        Whether to get top `top_number` genes.
+    gene_sets : Union[list[str], set], optional
+        Gene sets to use.
+    organism : _Datasets, optional
+        Organism to use.
+    output_dir : Optional[str], optional
+        Output directory.
+    Returns
+    -------
+    DataFrame
+        GSEA enrichr results DataFrame.
+    """
     ul.log(__name__).info("Gene enrichment analysis.")
     # get data
     new_adata = check_adata_get(adata, layer=layer)
@@ -78,7 +126,8 @@ def get_gene_enrichment(
     gene_list: list = list(new_adata.obs_names)
 
     if is_top and len(gene_list) < top_number:
-        ul.log(__name__).warning(f"The number of parameters `top_number` ({top_number}) is greater than the number of genes ({len(gene_list)}).")
+        ul.log(__name__).warning(
+            f"The number of parameters `top_number` ({top_number}) is greater than the number of genes ({len(gene_list)}).")
         top_number = len(gene_list)
 
     # Add data

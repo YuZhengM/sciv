@@ -29,6 +29,49 @@ def three_venn(
     close: bool = False,
     **kwargs: Any
 ) -> None:
+    """
+    Plot three Venn diagram.
+
+    Parameters
+    ----------
+    set1 : collection
+        First set of elements.
+    set2 : collection
+        Second set of elements.
+    set3 : collection
+        Third set of elements.
+    name1 : str, optional
+        Name of the first set.
+    name2 : str, optional
+        Name of the second set.
+    name3 : str, optional
+        Name of the third set.
+    width : float, optional
+        Width of the diagram.
+    height : float, optional
+        Height of the diagram.
+    bottom : float, optional
+        Bottom of the diagram.
+    colors : list, optional
+        Colors for the sets.
+    x_name : str, optional
+        X name.
+    y_name : str, optional
+        Y name.
+    title : str, optional
+        Title of the diagram.
+    output : path, optional
+        Output path.
+    show : bool, optional
+        Whether to show.
+    close : bool, optional
+        Whether to close.
+    kwargs : Any, optional
+        Keyword arguments.
+    Returns
+    -------
+    None
+    """
     fig, ax = plot_start(width, height, bottom, output, show)
 
     if colors is None:
@@ -75,6 +118,45 @@ def two_venn(
     close: bool = False,
     **kwargs: Any
 ) -> None:
+    """
+    Plot two Venn diagram.
+
+    Parameters
+    ----------
+    set1 : collection
+        First set of elements.
+    set2 : collection
+        Second set of elements.
+    name1 : str, optional
+        Name of the first set.
+    name2 : str, optional
+        Name of the second set.
+    width : float, optional
+        Width of the diagram.
+    height : float, optional
+        Height of the diagram.
+    bottom : float, optional
+        Bottom of the diagram.
+    colors : list, optional
+        Colors for the sets.
+    x_name : str, optional
+        X name.
+    y_name : str, optional
+        Y name.
+    title : str, optional
+        Title of the diagram.
+    output : path, optional
+        Output path.
+    show : bool, optional
+        Whether to show.
+    close : bool, optional
+        Whether to close.
+    kwargs : Any, optional
+        Keyword arguments.
+    Returns
+    -------
+    None
+    """
     fig, ax = plot_start(width, height, bottom, output, show)
 
     if colors is None:

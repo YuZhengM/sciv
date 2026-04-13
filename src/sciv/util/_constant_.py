@@ -30,32 +30,45 @@ from scipy.sparse import (
     sparray
 )
 
+# Project version
 project_version = "0.0.1"
+# Project name
 project_name = "SCIV"
 
+# User path
 user_path = os.path.expanduser("~")
+# Project cache path
 project_cache_path: str = os.path.join(user_path, ".cache", project_name)
-
+# Whether to form log file
 is_form_log_file: bool = False
+# Log file path
 log_file_path: str = os.path.join(project_cache_path, "log")
 
+# set matplotlib log level to error
 matplotlib.set_loglevel("error")
 
+# Path type
 path = Union[str, Path]
+# Number type
 number = Union[int, float]
+# Collection type
 collection = Union[list, set, Tuple, ndarray]
-
+# Sparse array type
 sparse_array = Union[coo_array, csr_array, csc_array, dok_array, lil_array, bsr_array, dia_array, sparray]
+# Sparse matrix type
 sparse_matrix = Union[coo_matrix, csr_matrix, csc_matrix, dok_matrix, lil_matrix, bsr_matrix, dia_matrix, spmatrix]
-
+# Sparse data type
 sparse_data = Union[sparse_array, sparse_matrix]
+# Dense data type
 dense_data = Union[ndarray, matrix, list]
-
+# Matrix data type
 matrix_data = Union[sparse_data, dense_data]
-
+# Enrichment optional
 enrichment_optional = Literal['golden', 'half', 'e', 'pi', 'none']
+# Difference peak optional
 difference_peak_optional = Literal['emp_effect', 'bayes_factor', 'emp_prob1', 'all']
 
+# Plot rc config
 plot_rc_config = {
     "font.family": 'Arial',
     "axes.labelsize": 7,
@@ -67,13 +80,15 @@ plot_rc_config = {
 }
 rcParams.update(plot_rc_config)
 
+# Define cmap
 colors.define_cmap()
+# 50 colors cmap
 type_50_colors = colormaps.get("cmap50").colors.copy()
 plot_cmap_50 = ListedColormap(type_50_colors)
-
+# 20 colors cmap
 type_20_colors = list(colormaps.get("tab20").colors).copy()
 plot_cmap_20 = ListedColormap(type_20_colors)
-
+# Set colors cmap
 type_set_colors = [
     "#66c2a5", "#fc8d62", "#8da0cb", "#e78ac3", "#a6d854", "#f4d037",
     "#e5c494", "#f2f0a7", "#9a60b4", "#c16772", "#c1c167", "#b3b3b3",
@@ -82,13 +97,14 @@ type_set_colors = [
     "#daa520"
 ]
 plot_cmap_set = ListedColormap(type_set_colors)
-
+# Plot color types
 plot_color_types: dict = {
     "20": type_20_colors,
     "50": type_50_colors,
     "set": type_set_colors
 }
 
+# Chromosome type
 chrtype = CategoricalDtype(
     [
         "chr1",

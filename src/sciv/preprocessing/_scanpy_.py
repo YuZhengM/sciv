@@ -31,20 +31,36 @@ def filter_data(
     is_min_peak: bool = False
 ) -> AnnData:
     """
-    Filter scATAC-seq data
-    :param adata: scATAC-seq data
-    :param min_peaks_counts: Minimum number of counts required for a peak to pass filtering
-    :param min_cells: Minimum number of cells expressed required for a peak to pass filtering
-    :param min_cells_counts: Minimum number of counts required for a cell to pass filtering
-    :param min_peaks: Minimum number of peaks expressed required for a cell to pass filtering
-    :param cell_rate: Removing the percentage of cell count in total cell count only takes effect when the min_cells
+    Filter scATAC-seq data.
+    
+    Parameters
+    ----------
+    adata : AnnData
+        scATAC-seq data
+    min_peaks_counts : int, optional
+        Minimum number of counts required for a peak to pass filtering
+    min_cells : int, optional
+        Minimum number of cells expressed required for a peak to pass filtering
+    min_cells_counts : int, optional
+        Minimum number of counts required for a cell to pass filtering
+    min_peaks : int, optional
+        Minimum number of peaks expressed required for a cell to pass filtering
+    cell_rate : Optional[float], optional
+        Removing the percentage of cell count in total cell count only takes effect when the min_cells
         parameter is None
-    :param peak_rate: Removing the percentage of peak count in total peak count only takes effect when the min_peaks
+    peak_rate : Optional[float], optional
+        Removing the percentage of peak count in total peak count only takes effect when the min_peaks
         parameter is None
-    :param is_copy: Do you want to deeply copy data
-    :param is_min_cell: Whether to screen cells
-    :param is_min_peak: Whether to screen peaks
-    :return: scATAC-seq data
+    is_copy : bool, optional
+        Do you want to deeply copy data.
+    is_min_cell : bool, optional
+        Whether to screen cells
+    is_min_peak : bool, optional
+        Whether to screen peaks
+    Returns
+    -------
+    AnnData
+        scATAC-seq data
     """
 
     # start time
@@ -122,6 +138,26 @@ def get_difference_genes(
     cell_anno: Optional[DataFrame] = None,
     diff_genes_file: Optional[str] = None
 ) -> AnnData:
+    """
+    Get differentially expressed genes.
+
+    Parameters
+    ----------
+    adata : AnnData
+        scATAC-seq data
+    cluster : str
+        Cluster name
+    method : _Method, optional
+        Method to use for differentially expressed gene analysis.
+    cell_anno : Optional[DataFrame], optional
+        Cell annotation DataFrame.
+    diff_genes_file : Optional[str], optional
+        Output file name.
+    Returns
+    -------
+    AnnData
+        scATAC-seq data
+    """
 
     import scanpy as sc
 
@@ -180,8 +216,10 @@ def get_difference_genes(
             _gene_index_: int = gene_dict[_gene_name_]
             diff_genes_score_matrix[_gene_index_, _cluster_index_] = 0 if np.isnan(_score_) else _score_
             diff_genes_p_value_matrix[_gene_index_, _cluster_index_] = 1 if np.isnan(_p_value_) else _p_value_
-            diff_genes_adjusted_p_value_matrix[_gene_index_, _cluster_index_] = 1 if np.isnan(_adjusted_p_value_) else _adjusted_p_value_
-            diff_genes_log2_fold_change_matrix[_gene_index_, _cluster_index_] = 0 if np.isnan(_log2_fold_change_) else _log2_fold_change_
+            diff_genes_adjusted_p_value_matrix[_gene_index_, _cluster_index_] = 1 if np.isnan(
+                _adjusted_p_value_) else _adjusted_p_value_
+            diff_genes_log2_fold_change_matrix[_gene_index_, _cluster_index_] = 0 if np.isnan(
+                _log2_fold_change_) else _log2_fold_change_
 
         del _cluster_data_, _cluster_index_
 
@@ -190,8 +228,10 @@ def get_difference_genes(
     set_inf_value(diff_genes_adjusted_p_value_matrix)
     set_inf_value(diff_genes_log2_fold_change_matrix)
 
-    diff_genes_p_value_matrix[diff_genes_p_value_matrix == 0] = np.min(diff_genes_p_value_matrix[diff_genes_p_value_matrix != 0])
-    diff_genes_adjusted_p_value_matrix[diff_genes_adjusted_p_value_matrix == 0] = np.min(diff_genes_adjusted_p_value_matrix[diff_genes_adjusted_p_value_matrix != 0])
+    diff_genes_p_value_matrix[diff_genes_p_value_matrix == 0] = np.min(
+        diff_genes_p_value_matrix[diff_genes_p_value_matrix != 0])
+    diff_genes_adjusted_p_value_matrix[diff_genes_adjusted_p_value_matrix == 0] = np.min(
+        diff_genes_adjusted_p_value_matrix[diff_genes_adjusted_p_value_matrix != 0])
 
     # create
     diff_genes_adata: AnnData = AnnData(diff_genes_score_matrix, obs=adata.var, var=cluster_info)
@@ -220,6 +260,35 @@ def paga_trajectory(
     resolution: float = 1.0,
     is_denoise: bool = True,
 ) -> None:
+    """
+    Get paga trajectory.
+
+    Parameters
+    ----------
+    adata : AnnData
+        scATAC-seq data
+    layer : Optional[str], optional
+        Specify the matrix to be processed;
+    latent : str, optional
+        Latent space to use.
+    groups : str, optional
+        Group name to use.
+    position : Optional[collection], optional
+        Position to use.
+    lsi_components : int, optional
+        Number of components to use.
+    root_cluster : Optional[str], optional
+        Root cluster to use.
+    n_neighbors : int, optional
+        Number of neighbors to use.
+    resolution : float, optional
+        Resolution to use.
+    is_denoise : bool, optional
+        Whether to denoise.
+    Returns
+    -------
+    None
+    """
     import scanpy as sc
 
     if position is not None:
@@ -229,7 +298,9 @@ def paga_trajectory(
             raise ValueError("The `position` parameter must contain two elements, for example: `(UMAP1, UMAP2)`.")
 
         if position[0] not in adata.obs.columns or position[1] not in adata.obs.columns:
-            ul.log(__name__).error("The value in the `position` parameter must be one of the column names in `adata.obs`.")
+            ul.log(__name__).error(
+                "The value in the `position` parameter must be one of the column names in `adata.obs`."
+            )
             raise ValueError("The value in the `position` parameter must be one of the column names in `adata.obs`.")
 
     fixed_name: str = "X_pca"
@@ -279,8 +350,12 @@ def paga_trajectory(
             ul.log(__name__).info("Run louvain")
             sc.tl.louvain(adata, resolution=resolution)
         else:
-            ul.log(__name__).error("The value of the `groups` parameter is 'louvain' or needs to be included in `adata.obs.columns`.")
-            raise ValueError("The value of the `groups` parameter is 'louvain' or needs to be included in `adata.obs.columns`.")
+            ul.log(__name__).error(
+                "The value of the `groups` parameter is 'louvain' or needs to be included in `adata.obs.columns`."
+            )
+            raise ValueError(
+                "The value of the `groups` parameter is 'louvain' or needs to be included in `adata.obs.columns`."
+            )
 
     ul.log(__name__).info("Run PAGA")
     sc.tl.paga(adata, groups=groups)
