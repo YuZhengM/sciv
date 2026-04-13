@@ -30,18 +30,59 @@ __name__: str = "util_core"
 
 
 def file_method(name: str = None) -> StaticMethod:
+    """
+    Create file method handler class
+    
+    Create a StaticMethod class instance based on the given name for handling file operations.
+    If a name is provided, it will be combined with the project name as the handler file name;
+    otherwise, only the project name will be used.
+    
+    Parameters
+    ----------
+    name : str, optional
+        File handler name suffix, default is None
+        
+    Returns
+    -------
+    StaticMethod
+        Configured StaticMethod class instance
+    """
+    # Build handler file name: if name is provided, concatenate project name and name; otherwise use project name
     name = f"{project_name}_{name}" if name is not None else project_name
+    # Create and return StaticMethod instance, specifying handler file path and whether to format handler file
     return StaticMethod(log_file=os.path.join(ul.log_file_path, name), is_form_log_file=ul.is_form_log_file)
 
 
 def log(name: str = None) -> Logger:
+    """
+    Create log handler class
+    
+    Create a Logger class instance based on the given name for logging.
+    If a name is provided, it will be combined with the project name as the log file name;
+    otherwise, only the project name will be used.
+    
+    Parameters
+    ----------
+    name : str, optional
+        Log handler name suffix, default is None
+        
+    Returns
+    -------
+    Logger
+        Configured Logger class instance
+    """
+    # Build log file name: if name is provided, concatenate project name and name; otherwise use project name
     name = f"{project_name}_{name}" if name is not None else project_name
+    # Create and return Logger instance, specifying log file path and whether to format log file
     return Logger(name, log_path=os.path.join(ul.log_file_path, name), is_form_file=ul.is_form_log_file)
 
 
 def track_with_memory(interval: float = 60) -> Callable:
     """
-    Decorator: Records memory usage at fixed intervals during function execution and returns the result, elapsed time, and memory list.
+    Create memory tracking decorator
+    
+    Create a decorator function that records memory usage at fixed intervals during function execution.
+    Returns the result, elapsed time, and memory list.
 
     Parameters
     ----------
@@ -102,9 +143,16 @@ def track_with_memory(interval: float = 60) -> Callable:
 def to_dense(sm: matrix_data, is_array: bool = False) -> dense_data:
     """
     Convert sparse matrix to dense matrix
-    :param sm: sparse matrix
-    :param is_array: True converted to array form, False natural output
-    :return: dense matrix
+    
+    Convert a sparse matrix to a dense matrix.
+    If sm is None, return an empty dense matrix.
+    If sm is a dense matrix, return it as is.
+    If sm is a sparse matrix, return it converted to array form.
+    
+    Returns
+    -------
+    dense_data
+        Converted dense matrix.
     """
 
     if sm is None:
@@ -121,10 +169,16 @@ def to_dense(sm: matrix_data, is_array: bool = False) -> dense_data:
 def to_sparse(dm: dense_data, way_callback=sparse.csr_matrix, is_matrix: bool = True) -> sparse_matrix:
     """
     Convert dense matrix to sparse matrix
-    :param dm: dense matrix
-    :param way_callback: How to form sparse matrix
-    :param is_matrix: True converted to matrix form, False natural output
-    :return: sparse matrix
+    
+    Convert a dense matrix.
+    If dm is None, return an empty sparse matrix.
+    If dm is a sparse matrix, return it as is.
+    If dm is a dense matrix, return it converted to sparse form.
+    
+    Returns
+    -------
+    sparse_matrix
+        Converted sparse matrix.
     """
 
     if dm is None:
@@ -141,9 +195,16 @@ def to_sparse(dm: dense_data, way_callback=sparse.csr_matrix, is_matrix: bool = 
 def sum_min_max(data: matrix_data, axis: int = 1) -> Tuple[number, number]:
     """
     Obtain the minimum/maximum sum of rows in the matrix
-    :param data: matrix data
-    :param axis: {0, 1} 1: row, 0: col
-    :return: Minimum value of rows, maximum value of rows
+    
+    Obtain the minimum/maximum sum of rows in the matrix.
+    If data is None, return (0, 0).
+    If data is a dense matrix, return the minimum/maximum sum of rows.
+    If data is a sparse matrix, return the minimum/maximum sum of rows.
+    
+    Returns
+    -------
+    Tuple[number, number]
+        Minimum value of rows, maximum value of rows.
     """
     rows, cols = data.shape
 
@@ -158,11 +219,21 @@ def get_index(position: number, positions_list: list, is_sort: bool = True) -> U
     """
     Search for position information. Similar to half search.
         If the position exists in the list, return the index.
-        If it does not exist, return the index located between the two indexes
-    :param position: position
-    :param positions_list: position list
-    :param is_sort: True
-    :return: position index
+        If it does not exist, return the index located between the two indexes.
+    
+    Parameters
+    ----------
+    position : number
+        Position to search for.
+    positions_list : list
+        Position list.
+    is_sort : bool, optional
+        Whether to sort the list. Default is True.
+    
+    Returns
+    -------
+    Union[int, Tuple[int, int]]
+        Position index.
     """
 
     if is_sort:
@@ -187,9 +258,20 @@ def get_index(position: number, positions_list: list, is_sort: bool = True) -> U
 
 def list_duplicate_set(data: list) -> list:
     """
-    Append numbering to duplicate information
-    :param data: input data
-    :return: Unique data with constant quantity
+    Append numbering to duplicate information.
+    If data is None, return an empty list.
+    If data is a list, return it as is.
+    If data is a collection, return it converted to a list.
+    
+    Parameters
+    ----------
+    data : list
+        Input data.
+    
+    Returns
+    -------
+    list
+        Unique data with constant quantity.
     """
 
     if len(data) == len(set(data)):
@@ -228,6 +310,22 @@ def list_duplicate_set(data: list) -> list:
 
 
 def get_sub_data(data: collection, size: int) -> collection:
+    """
+    Get sub data from a collection.
+
+    Parameters
+    ----------
+    data : collection
+        Input data.
+    size : int
+        Size of sub data.
+    
+    Returns
+    -------
+    collection
+        Sub data.
+    """
+    
     # get information
     old_size = len(data)
 
@@ -247,6 +345,23 @@ def get_sub_data(data: collection, size: int) -> collection:
 
 
 def split_matrix(data: matrix_data, axis: Literal[0, 1] = 0, chunk_number: int = 1000) -> list:
+    """
+    Split a matrix into multiple parts.
+    
+    Parameters
+    ----------
+    data : matrix_data
+        Input data.
+    axis : Literal[0, 1], optional
+        Axis to split the matrix. Default is 0.
+    chunk_number : int, optional
+        Number of parts to split the matrix. Default is 1000.
+    
+    Returns
+    -------
+    list
+        Split data.
+    """
     # get size
     new_data = to_dense(data, is_array=True)
     rows, cols = new_data.shape
@@ -277,6 +392,21 @@ def split_matrix(data: matrix_data, axis: Literal[0, 1] = 0, chunk_number: int =
 
 
 def merge_matrix(datas: list, axis: Literal[0, 1] = 0) -> list:
+    """
+    Merge multiple matrices into one matrix.
+    
+    Parameters
+    ----------
+    datas : list
+        Input data.
+    axis : Literal[0, 1], optional
+        Axis to merge the matrices. Default is 0.
+    
+    Returns
+    -------
+    list
+        Merged data.
+    """
     # get size
     size = len(datas)
     range_size = range(size)
@@ -318,6 +448,20 @@ def merge_matrix(datas: list, axis: Literal[0, 1] = 0) -> list:
 
 
 def list_index(data: list) -> Tuple[list, collection]:
+    """
+    Get the index of each element in a list.
+    
+    Parameters
+    ----------
+    data : list
+        Input data.
+    
+    Returns
+    -------
+    Tuple[list, collection]
+        Index of each element in the list.
+        Types of the elements in the list.
+    """
     info: list = []
 
     size: int = len(data)
@@ -335,6 +479,24 @@ def list_index(data: list) -> Tuple[list, collection]:
 
 
 def numerical_bisection_step(min_value: float, max_value: float, step_length: float) -> Tuple[collection, int]:
+    """
+    Get the numerical bisection step.
+    
+    Parameters
+    ----------
+    min_value : float
+        Minimum value of the step.
+    max_value : float
+        Maximum value of the step.
+    step_length : float
+        Step length of the bisection.
+    
+    Returns
+    -------
+    Tuple[collection, int]
+        Numerical bisection step.
+        Number of steps.
+    """
     if min_value > max_value:
         log(__name__).error(f"`min_value` ({min_value}) must be smaller than `max_value` ({max_value}).")
         raise ValueError(f"`min_value` ({min_value}) must be smaller than `max_value` ({max_value}).")
@@ -356,6 +518,27 @@ def get_real_predict_label(
     clusters: str = "clusters",
     value: str = "value"
 ) -> Tuple[DataFrame, int, list]:
+    """
+    Get the real and predict label of the trait.
+    
+    Parameters
+    ----------
+    df : DataFrame
+        Input data.
+    map_cluster : Union[str, collection]
+        Map of the cluster.
+    clusters : str, optional
+        Name of the column of the cluster. Default is "clusters".
+    value : str, optional
+        Name of the column of the value. Default is "value".
+    
+    Returns
+    -------
+    Tuple[DataFrame, int, list]
+        Sorted DataFrame.
+        Number of the cluster.
+        List of the cluster.
+    """
     df_sort: DataFrame = df.sort_values([value], ascending=False)
 
     # Obtain the type of positive set clustering corresponding to the trait
@@ -385,6 +568,21 @@ def get_real_predict_label(
 
 
 def strings_map_numbers(str_list: list, start: int = 0) -> list:
+    """
+    Map strings to numerical values.
+    
+    Parameters
+    ----------
+    str_list : list
+        Input strings.
+    start : int, optional
+        Start value of the mapping. Default is 0.
+    
+    Returns
+    -------
+    list
+        Mapped numerical values.
+    """
     # Create an empty dictionary to store the mapping of strings to numerical values
     mapping = {}
 
@@ -399,10 +597,31 @@ def strings_map_numbers(str_list: list, start: int = 0) -> list:
 
 
 def generate_str(length: int = 10) -> str:
+    """
+    Generate a random string.
+    
+    Parameters
+    ----------
+    length : int, optional
+        Length of the string. Default is 10.
+    
+    Returns
+    -------
+    str
+        Random string.
+    """
     return ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(length))
 
 
 def set_inf_value(matrix: matrix_data) -> None:
+    """
+    Set the infinite value of the matrix to the maximum value of the matrix.
+    
+    Parameters
+    ----------
+    matrix : matrix_data
+        Input matrix.
+    """
     # solve -Inf/Inf value
     matrix_inf = np.logical_and(np.isinf(matrix), matrix > 0)
     matrix__inf = np.logical_and(np.isinf(matrix), matrix < 0)
@@ -417,6 +636,25 @@ def set_inf_value(matrix: matrix_data) -> None:
 
 
 def check_adata_get(adata: AnnData, layer: str = None, is_dense: bool = True, is_matrix: bool = False) -> AnnData:
+    """
+    Check the AnnData object and get the data.
+    
+    Parameters
+    ----------
+    adata : AnnData
+        Input AnnData object.
+    layer : str, optional
+        Layer of the data. Default is None.
+    is_dense : bool, optional
+        Whether to return dense matrix. Default is True.
+    is_matrix : bool, optional
+        Whether to return matrix. Default is False.
+    
+    Returns
+    -------
+    AnnData
+        Data.
+    """
     # judge input data
     if adata.shape[0] == 0:
         log(__name__).warning("Input data is empty")
@@ -440,6 +678,23 @@ def check_adata_get(adata: AnnData, layer: str = None, is_dense: bool = True, is
 
 
 def add_cluster_info(data: DataFrame, data_ref: DataFrame, cluster: str) -> DataFrame:
+    """
+    Add cluster information to the DataFrame.
+    
+    Parameters
+    ----------
+    data : DataFrame
+        Input DataFrame.
+    data_ref : DataFrame, optional
+        Reference DataFrame. Default is None.
+    cluster : str
+        Cluster column name.
+    
+    Returns
+    -------
+    DataFrame
+        DataFrame with cluster information.
+    """
     new_data: DataFrame = data.copy()
     if data_ref is not None and cluster not in new_data.columns:
 
@@ -467,6 +722,19 @@ def add_cluster_info(data: DataFrame, data_ref: DataFrame, cluster: str) -> Data
 
 
 def check_gpu_availability(verbose: bool = False) -> bool:
+    """
+    Check the availability of GPU.
+    
+    Parameters
+    ----------
+    verbose : bool, optional
+        Whether to print the information. Default is False.
+    
+    Returns
+    -------
+    bool
+        Whether the GPU is available.
+    """
     available = torch.cuda.is_available()
 
     if verbose:
@@ -488,6 +756,29 @@ def plot_start(
     output: str = None,
     show: bool = True
 ):
+    """
+    Start a plot.
+    
+    Parameters
+    ----------
+    width : float, optional
+        Width of the plot. Default is 2.
+    height : float, optional
+        Height of the plot. Default is 2.
+    bottom : float, optional
+        Bottom margin of the plot. Default is 0.
+    output : str, optional
+        Output file path. Default is None.
+    show : bool, optional
+        Whether to show the plot. Default is True.
+    
+    Returns
+    -------
+    fig : Figure
+        Figure object.
+    ax : Axes
+        Axes object.
+    """
     if output is None and not show:
         ul.log(__name__).error(f"At least one of the `output` and `show` parameters is required")
         raise ValueError(f"At least one of the `output` and `show` parameters is required")
@@ -510,6 +801,32 @@ def plot_end(
     close: bool = False,
     dpi: float = 300
 ):
+    """
+    End a plot.
+    
+    Parameters
+    ----------
+    fig : Figure
+        Figure object.
+    title : str, optional
+        Title of the plot. Default is None.
+    x_name : str, optional
+        X-axis label. Default is None.
+    y_name : str, optional
+        Y-axis label. Default is None.
+    output : str, optional
+        Output file path. Default is None.
+    show : bool, optional
+        Whether to show the plot. Default is True.
+    close : bool, optional
+        Whether to close the plot. Default is False.
+    dpi : float, optional
+        DPI of the plot. Default is 300.
+    
+    Returns
+    -------
+    None
+    """
     if title is not None:
         plt.title(title)
 
@@ -538,7 +855,20 @@ def plot_end(
         plt.close('all')
 
 
-def generate_hex_colors(num_colors):
+def generate_hex_colors(num_colors: int) -> list:
+    """
+    Generate random hex colors.
+    
+    Parameters
+    ----------
+    num_colors : int
+        Number of colors to generate.
+    
+    Returns
+    -------
+    list
+        List of random hex colors.
+    """
     colors = []
 
     while len(colors) < num_colors:

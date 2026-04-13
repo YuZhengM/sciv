@@ -3,12 +3,12 @@
 
 .. contents::
    :local:
-   :depth: 4
+   :depth: 1
 
-File (file)
+File (.fl)
 ---------------------------
 
-文件读写相关接口，用于处理单细胞 ATAC 数据、H5AD、H5 等格式文件。
+File read-write interface, used for processing single-cell ATAC data, H5AD, H5 and other format files.
 
 .. currentmodule:: sciv.file
 .. autosummary::
@@ -28,10 +28,10 @@ File (file)
    save_h5
    save_pkl
 
-Model (model)
+Model (.ml)
 ---------------------------
 
-模型核心接口，提供细胞类型关联分析和因果变异识别功能。
+The core interface of the model provides functions for cell type association analysis and causal variation recognition.
 
 .. currentmodule:: sciv.model
 .. autosummary::
@@ -41,15 +41,15 @@ Model (model)
    association_score
    knock
 
-Plot (plot)
+Plot (.pl)
 ---------------------------
 
-可视化接口，包含多种图表类型用于数据分析和展示。
+Visual interface, including multiple chart types for data analysis and presentation.
 
 Graph
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-网络图可视化功能。
+Network diagram visualization function.
 
 .. currentmodule:: sciv.plot
 .. autosummary::
@@ -62,7 +62,7 @@ Graph
 Heatmap
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-热图可视化功能。
+Heatmap visualization function.
 
 .. currentmodule:: sciv.plot
 .. autosummary::
@@ -74,7 +74,7 @@ Heatmap
 Scatter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-散点图可视化功能。
+Scatter chart visualization function.
 
 .. currentmodule:: sciv.plot
 .. autosummary::
@@ -91,7 +91,7 @@ Scatter
 Violin
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-小提琴图可视化功能。
+Violin chart visualization function.
 
 .. currentmodule:: sciv.plot
 .. autosummary::
@@ -103,7 +103,7 @@ Violin
 Box
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-箱线图可视化功能。
+Visualization function of box diagram.
 
 .. currentmodule:: sciv.plot
 .. autosummary::
@@ -115,7 +115,7 @@ Box
 KDE
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-核密度估计图可视化功能。
+Visualization function of kernel density estimation map.
 
 .. currentmodule:: sciv.plot
 .. autosummary::
@@ -126,7 +126,7 @@ KDE
 Line
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-折线图可视化功能。
+Line chart visualization function.
 
 .. currentmodule:: sciv.plot
 .. autosummary::
@@ -137,7 +137,7 @@ Line
 Bar
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-柱状图可视化功能。
+Bar chart visualization function.
 
 .. currentmodule:: sciv.plot
 .. autosummary::
@@ -152,7 +152,7 @@ Bar
 Barcode
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-条形码图可视化功能。
+Barcode visualization function.
 
 .. currentmodule:: sciv.plot
 .. autosummary::
@@ -164,7 +164,7 @@ Barcode
 Pie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-饼图可视化功能。
+Pie chart visualization function.
 
 .. currentmodule:: sciv.plot
 .. autosummary::
@@ -177,7 +177,7 @@ Pie
 Bubble
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-气泡图可视化功能。
+Bubble chart visualization function.
 
 .. currentmodule:: sciv.plot
 .. autosummary::
@@ -188,7 +188,7 @@ Bubble
 Radar
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-雷达图可视化功能。
+Radar visualization function.
 
 .. currentmodule:: sciv.plot
 .. autosummary::
@@ -201,7 +201,7 @@ Radar
 Venn
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-韦恩图可视化功能。
+Wayne diagram visualization function.
 
 .. currentmodule:: sciv.plot
 .. autosummary::
@@ -213,7 +213,7 @@ Venn
 Core
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-核心绘图功能。
+Core drawing function.
 
 .. currentmodule:: sciv.plot
 .. autosummary::
@@ -232,7 +232,7 @@ Core
 Preprocessing (preprocessing)
 ---------------------------
 
-数据预处理接口，用于单细胞数据清洗、差异分析和富集分析。
+Data preprocessing interface, used for single-cell data cleaning, differential analysis, and enrichment analysis.
 
 .. currentmodule:: sciv.preprocessing
 .. autosummary::
@@ -253,15 +253,15 @@ Preprocessing (preprocessing)
    get_peak_matrix
    get_tf_data
 
-Tool (tool)
+Tool (.tl)
 ---------------------------
 
-工具函数接口，包含算法、矩阵操作和随机游走等核心计算功能。
+Tool function interface, including core computing functions such as algorithms, matrix operations, and random walks.
 
 Algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-算法相关功能。
+Algorithm related functions.
 
 .. currentmodule:: sciv.tool
 .. autosummary::
@@ -308,7 +308,7 @@ Algorithm
 Random Walk
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-随机游走相关功能。
+Random walk related functions.
 
 .. currentmodule:: sciv.tool
 .. autosummary::
@@ -322,7 +322,7 @@ Random Walk
 Matrix
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-矩阵操作相关功能。
+Matrix operation related functions.
 
 .. currentmodule:: sciv.tool
 .. autosummary::
@@ -338,15 +338,15 @@ Matrix
    matrix_division_block_storage
    matrix_callback_block_storage
 
-Util (util)
+Util (.ul)
 ---------------------------
 
-通用工具接口，包含常量定义、日志记录和辅助函数。
+A universal tool interface that includes constant definitions, logging, and auxiliary functions.
 
 Constant
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-常量定义。
+Constant definition.
 
 .. currentmodule:: sciv.util
 .. autosummary::
@@ -379,7 +379,7 @@ Constant
 Core
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-核心辅助函数。
+Core auxiliary functions.
 
 .. currentmodule:: sciv.util
 .. autosummary::
