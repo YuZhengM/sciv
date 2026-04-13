@@ -1,13 +1,22 @@
 # Configuration file for the Sphinx documentation builder.
 
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).parent.parent
+sys.path[:0] = [str(HERE.parent / "src"), str(HERE.parent), str(HERE / "extensions")]
+
 # -- Project information
 
 project = 'SCIV'
 copyright = '2025, Zheng-Min Yu'
 author = 'Zheng-Min Yu'
+repository_url = "https://github.com/YuZhengM/sciv"
 
 release = '1.0.0'
 version = '1.0.0'
+
+autosummary_generate = True
 
 # -- General configuration
 
