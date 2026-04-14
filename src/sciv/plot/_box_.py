@@ -36,6 +36,56 @@ def box_base(
     close: bool = False,
     **kwargs: Any
 ) -> None:
+    """
+    Create a box plot with customizable styling options.
+
+    Parameters
+    ----------
+    df : DataFrame
+        Input data containing the values to plot.
+    x : str, default "clusters"
+        Column name for the x-axis categorical variable.
+    y : str, default "value"
+        Column name for the y-axis numerical variable.
+    x_name : str, optional
+        Custom label for the x-axis. If None, uses the x column name.
+    y_name : str, default "value"
+        Custom label for the y-axis.
+    palette : Union[Tuple, list], optional
+        Color palette for the boxes. If None and "color" column exists, uses that.
+    width : float, default 2
+        Width of the figure in inches.
+    height : float, default 2
+        Height of the figure in inches.
+    bottom : float, default 0.3
+        Bottom margin adjustment for the plot.
+    line_width : float, default 0.3
+        Width of lines in the plot (box edges, whiskers, etc.).
+    marker_size : float, default 0.2
+        Size of outlier markers.
+    rotation : float, default 65
+        Rotation angle for x-axis tick labels in degrees.
+    orient : str, optional
+        Orientation of the plot ("v" for vertical, "h" for horizontal).
+    title : str, optional
+        Title of the plot.
+    whis : float, default 1.5
+        Proportion of the IQR past the low and high quartiles to extend the whiskers.
+    show_fliers : bool, default True
+        Whether to display outlier points beyond the whiskers.
+    is_sort : bool, default True
+        Whether to sort boxes by median value in descending order.
+    order_names : list, optional
+        Custom order for x-axis categories. Only used if is_sort is False.
+    output : path, optional
+        File path to save the plot. If None, plot is not saved.
+    show : bool, default True
+        Whether to display the plot.
+    close : bool, default False
+        Whether to close the figure after displaying.
+    **kwargs : Any
+        Additional keyword arguments passed to seaborn.boxplot.
+    """
 
     # judge
     df_columns = list(df.columns)
@@ -151,15 +201,76 @@ def box_trait(
     close: bool = False,
     **kwargs: Any
 ) -> None:
+    """
+    Create box plots for trait/disease data across different clusters.
+
+    This function generates box plots for each trait or a specific trait from the input dataframe.
+    It filters data by trait and creates individual box plots using the box_base function.
+
+    Parameters
+    ----------
+    trait_df : DataFrame
+        Input data containing trait/disease information and values to plot.
+    trait_name : str, default "All"
+        Name of the trait/disease to plot. Use "All" to plot all traits.
+    trait_column_name : str, default "id"
+        Column name in trait_df that contains trait/disease identifiers.
+    value : str, default "value"
+        Column name for the numerical values to be plotted on y-axis.
+    clusters : str, default "clusters"
+        Column name for the cluster categories to be plotted on x-axis.
+    x_name : str, optional
+        Custom label for the x-axis. If None, uses the clusters column name.
+    y_name : str, default "value"
+        Custom label for the y-axis.
+    palette : Union[Tuple, list], optional
+        Color palette for the boxes.
+    orient : str, optional
+        Orientation of the plot ("v" for vertical, "h" for horizontal).
+    width : float, default 2
+        Width of the figure in inches.
+    height : float, default 2
+        Height of the figure in inches.
+    line_width : float, default 0.1
+        Width of lines in the plot.
+    marker_size : float, default 0.5
+        Size of outlier markers.
+    bottom : float, default 0.3
+        Bottom margin adjustment for the plot.
+    rotation : float, default 65
+        Rotation angle for x-axis tick labels in degrees.
+    whis : float, default 1.5
+        Proportion of the IQR to extend the whiskers.
+    show_fliers : bool, default True
+        Whether to display outlier points beyond the whiskers.
+    is_sort : bool, default True
+        Whether to sort boxes by median value.
+    order_names : list, optional
+        Custom order for x-axis categories.
+    title : str, optional
+        Base title for the plots. Trait name will be appended.
+    output : path, optional
+        Directory path to save the plots. If None, plots are not saved.
+    show : bool, default True
+        Whether to display the plots.
+    close : bool, default False
+        Whether to close the figure after displaying.
+    **kwargs : Any
+        Additional keyword arguments passed to box_base function.
+    """
 
     data: DataFrame = trait_df.copy()
 
     def trait_plot(trait_: str, atac_cell_df_: DataFrame) -> None:
         """
-        show plot
-        :param trait_: trait name
-        :param atac_cell_df_:
-        :return: None
+        Generate a box plot for a specific trait.
+
+        Parameters
+        ----------
+        trait_ : str
+            The name of the trait/disease to plot.
+        atac_cell_df_ : DataFrame
+            The input dataframe containing trait data and values.
         """
         ul.log(__name__).info("Plotting box {}".format(trait_))
         # get gene score

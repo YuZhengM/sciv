@@ -74,68 +74,121 @@ def heatmap_annotation(
 ) -> None:
     """
     Generate a heatmap with row and column annotations.
-    :param row_score_name:
-    :param category_height:
-    :param selected_anno_label_height:
-    :param anno_label_height:
-    :param frac:
-    :param relpos:
-    :param level_bar_height:
-    :param anno_specific_labels:
-    :param adata: input data;
-    :param layer: Layer for processing data;
-    :param width: The width of the file or image;
-    :param height: The height of the file or image;
-    :param title: Title of the image;
-    :param label: Explanation (title) of the heatmap display value icon in the figure;
-    :param row_name: Information on row annotations in the figure;
-    :param col_name: Information on column annotations in the figure;
-    :param row_names: The information of the row in the picture;
-    :param col_names: The information of the column in the figure;
-    :param row_anno_label: Whether to display the label of row comments;
-    :param col_anno_label: Whether to display the label of column comments;
-    :param row_anno_text: Whether to display row comment information in row comments;
-    :param col_anno_text: Whether to display column comment information in column comments;
-    :param row_legend: Whether to display the category description of the row in the row comments;
-    :param col_legend: Whether to display the category description of the column in the column comments;
-    :param row_show_names: If set to `true`, display the name of each element in the row;
-    :param col_show_names: If set to `true`, display the name of each element in the column;
-    :param row_cluster: Set to `true`, perform row clustering;
-    :param col_cluster: Set to `true`, perform column clustering;
-    :param cluster_method: If `row_cluster` or `col_cluster` is true, the clustering method will be used;
-    :param cluster_metric: If `row_cluster` or `col_cluster` is true, the clustering method will be used;
-    :param row_names_side: Direction of row names display. Effective when `row_names_side` is `true`;
-    :param col_names_side: Direction of column names display. Effective when `col_show_names` is `true`;
-    :param bottom: The gap at the bottom in the picture.
-    :param label_size: The size of the font for row or column names. Effective when `row_names_side` or `col_show_names` is `true`;
-    :param fontsize: The size of the row or column title. Effective when `x_name` or `y_name` not is `None`;
-    :param x_label_rotation: The degree of rotation for row names. Effective when `row_names_side` is `true`;
-    :param y_label_rotation: The degree of rotation for column names. Effective when `col_show_names` is `true`;
-    :param row_color_start_index: Row annotation specifies the starting index of different colors;
-    :param col_color_start_index: Column annotation specifies the starting index of different colors;
-    :param row_split_order: list or str
-        a list to specify the order of row_split, could also be 'cluster_between_groups', if cluster_between_groups was specified,
-        hierarchical clustering will be performed on the mean values for each groups and pass the clustered order to row_split_order.
-        For example,see https://dingwb.github.io/PyComplexHeatmap/build/html/notebooks/advanced_usage.html#Cluster-between-groups
-    :param col_split_order: list or str
-        a list to specify the order of col_split, could also be 'cluster_between_groups', if cluster_between_groups was specified,
-        hierarchical clustering will be performed on the mean values for each groups and pass the clustered order to row_split_order.
-    :param row_split_gap: default are 0.5 and 0.2 mm for row and col.
-    :param col_split_gap: default are 0.5 and 0.2 mm for row and col.
-    :param row_split: int or pd.Series or pd.DataFrame
-        number of cluster for hierarchical clustering or pd.Series or pd.DataFrame, used to split rows or rows into subplots.
-    :param col_split: int or pd.Series or pd.DataFrame
-        int or pd.Series or pd.DataFrame, used to split rows or columns into subplots.
-    :param x_name: Title of row name;
-    :param y_name: Title of column name;
-    :param cmap: Display color themes for heat maps;
-    :param is_sort: If set to true, when displaying the heatmap, the row and column names are sorted and displayed;
-    :param show: If true, display the image;
-    :param close: If true, close the image;
-    :param output: Output file for image saving;
-    :return: Display of image or saved file.
-    """
 
+    Parameters
+    ----------
+    adata : AnnData
+        Input AnnData object containing the data matrix and metadata.
+    layer : Optional[str], default None
+        Layer name in adata.layers to use for plotting. If None, uses adata.X.
+    width : float, default 4
+        Width of the figure in inches.
+    height : float, default 4
+        Height of the figure in inches.
+    title : Optional[str], default None
+        Title of the figure.
+    label : str, default "value"
+        Label for the heatmap color bar.
+    row_name : Optional[str], default None
+        Column name in adata.obs for row annotations.
+    col_name : Optional[str], default None
+        Column name in adata.var for column annotations.
+    row_names : Optional[str], default None
+        Column name in adata.obs to use as row index labels.
+    col_names : Optional[str], default None
+        Column name in adata.var to use as column index labels.
+    row_anno_label : bool, default False
+        Whether to display merged labels for row annotations.
+    col_anno_label : bool, default False
+        Whether to display merged labels for column annotations.
+    row_anno_text : bool, default False
+        Whether to display text labels on row annotation bars.
+    col_anno_text : bool, default False
+        Whether to display text labels on column annotation bars.
+    row_legend : bool, default False
+        Whether to show legend for row annotations.
+    col_legend : bool, default False
+        Whether to show legend for column annotations.
+    row_show_names : bool, default False
+        Whether to display row names (index labels) on the heatmap.
+    col_show_names : bool, default False
+        Whether to display column names (index labels) on the heatmap.
+    row_cluster : bool, default False
+        Whether to perform hierarchical clustering on rows.
+    col_cluster : bool, default False
+        Whether to perform hierarchical clustering on columns.
+    cluster_method : str, default "average"
+        Linkage method for hierarchical clustering (e.g., "average", "single", "complete").
+    cluster_metric : str, default "correlation"
+        Distance metric for hierarchical clustering (e.g., "correlation", "euclidean").
+    row_names_side : str, default "left"
+        Side to display row names ("left" or "right").
+    col_names_side : str, default "bottom"
+        Side to display column names ("top" or "bottom").
+    bottom : float, default 0.01
+        Bottom margin of the figure.
+    label_size : float, default 9
+        Font size for row and column name labels.
+    fontsize : float, default 9
+        Font size for axis titles.
+    level_bar_height : float, default None
+        Height of the association score bar plot annotation.
+    anno_specific_labels : list, default None
+        List of specific row labels to highlight in the annotation.
+    x_label_rotation : float, default 245
+        Rotation angle for x-axis labels (column names).
+    y_label_rotation : float, default 0
+        Rotation angle for y-axis labels (row names).
+    row_color_start_index : int, default 0
+        Starting index in the color palette for row annotations.
+    col_color_start_index : int, default 10
+        Starting index in the color palette for column annotations.
+    row_split : Union[int, pd.Series], default None
+        Number of clusters or grouping series for splitting rows.
+    col_split : Union[int, pd.Series], default None
+        Number of clusters or grouping series for splitting columns.
+    row_split_order : Union[list, str], default None
+        Order for row splits or 'cluster_between_groups' for auto-clustering.
+    col_split_order : Union[list, str], default None
+        Order for column splits or 'cluster_between_groups' for auto-clustering.
+    row_split_gap : float, default 0.5
+        Gap size between row splits in mm.
+    col_split_gap : float, default 0.2
+        Gap size between column splits in mm.
+    frac : float, default 0.2
+        Fraction parameter for annotation label positioning.
+    relpos : Tuple, default (0, 1)
+        Relative position for annotation labels.
+    anno_label_height : Optional[float], default None
+        Height of the annotation label bar.
+    selected_anno_label_height : float, default 2.5
+        Height of the selected annotation label bar.
+    category_height : Optional[float], default 2.5
+        Height of the category annotation bar.
+    x_name : Optional[str], default None
+        Label for the x-axis.
+    y_name : Optional[str], default None
+        Label for the y-axis.
+    row_score_name : str, default "association_score"
+        Column name in adata.obs for the association score bar plot.
+    cmap : str, default "Oranges"
+        Colormap for the heatmap.
+    is_sort : bool, default True
+        Whether to sort rows and columns before plotting.
+    show : bool, default True
+        Whether to display the figure.
+    close : bool, default False
+        Whether to close the figure after saving.
+    output : path, default None
+        File path to save the figure. If None, figure is not saved.
+    **kwargs
+        Additional keyword arguments passed to ClusterMapPlotter.
+
+    Returns
+    -------
+    None
+        Displays or saves the heatmap figure.
+    """
     ul.log(__name__).info("Start plotting the heatmap")
     fig, ax = plot_start(width, height, bottom, output, show)
 
@@ -313,6 +366,55 @@ def heatmap(
     close: bool = False,
     **kwargs: Any
 ) -> None:
+    """
+    Generate a simple heatmap using seaborn.
+
+    Parameters
+    ----------
+    adata : AnnData
+        Input AnnData object containing the data matrix.
+    layer : str, default None
+        Layer name in adata.layers to use for plotting. If None, uses adata.X.
+    title : Optional[str], default None
+        Title of the figure.
+    width : float, default 4
+        Width of the figure in inches.
+    height : float, default 4
+        Height of the figure in inches.
+    bottom : float, default 0
+        Bottom margin of the figure.
+    annot : bool, default False
+        Whether to annotate each cell with its numeric value.
+    square : bool, default True
+        Whether to make cells square-shaped.
+    is_cluster : bool, default False
+        Whether to perform hierarchical clustering (uses clustermap instead of heatmap).
+    cmap : str, default "Oranges"
+        Colormap for the heatmap.
+    line_widths : float, default 1
+        Width of the lines that divide cells.
+    fmt : str, default ".2f"
+        String formatting code for annotations.
+    rotation : float, default 65
+        Rotation angle for x-axis labels.
+    x_name : str, default None
+        Label for the x-axis.
+    y_name : str, default None
+        Label for the y-axis.
+    output : path, default None
+        File path to save the figure. If None, figure is not saved.
+    show : bool, default True
+        Whether to display the figure.
+    close : bool, default False
+        Whether to close the figure after saving.
+    **kwargs : Any
+        Additional keyword arguments passed to seaborn heatmap or clustermap.
+
+    Returns
+    -------
+    None
+        Displays or saves the heatmap figure.
+    """
     fig, ax = plot_start(width, height, bottom, output, show)
 
     data = adata.copy()

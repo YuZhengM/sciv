@@ -22,10 +22,19 @@ __name__: str = "file_read"
 
 def read_h5ad(file: path, is_verbose: bool = True) -> AnnData:
     """
-    Read AnnData data.
-    :param file: file path;
-    :param is_verbose: Set true to print log;
-    :return: AnnData data.
+    Read AnnData from an h5ad file.
+
+    Parameters
+    ----------
+    file : path
+        Path to the h5ad file.
+    is_verbose : bool, default=True
+        If True, print log information. Default is True.
+
+    Returns
+    -------
+    AnnData
+        The loaded AnnData object.
     """
     if is_verbose:
         ul.log(__name__).info("Reading AnnData file: {}".format(file))
@@ -35,10 +44,19 @@ def read_h5ad(file: path, is_verbose: bool = True) -> AnnData:
 
 def read_h5(file: path, is_close: bool = False):
     """
-    Read AnnData data
-    :param file: file path
-    :param is_close: file path
-    :return: AnnData data
+    Read AnnData data from an h5 file.
+
+    Parameters
+    ----------
+    file : path
+        Path to the h5 file.
+    is_close : bool, default=False
+        If True, close the file. Default is False.
+
+    Returns
+    -------
+    AnnData data.
+        The loaded AnnData data from the h5 file.
     """
     file = h5py.File(file, 'r')
     keys = file.keys()
@@ -51,10 +69,19 @@ def read_h5(file: path, is_close: bool = False):
 
 def read_pkl(file: path, is_verbose: bool = True):
     """
-    Read pkl data
-    :param file: file path
-    :param is_verbose: Set true to print log;
-    :return: Python variable data
+    Read data from a pickle file.
+
+    Parameters
+    ----------
+    file : path
+        Path to the pickle file.
+    is_verbose : bool, default=True
+        If True, print log information. Default is True.
+
+    Returns
+    -------
+    Python variable data.
+        The loaded Python variable data from the pickle file.
     """
     if is_verbose:
         ul.log(__name__).info("Reading pkl file: {}".format(file))
@@ -76,15 +103,29 @@ def handle_file_data_cell(
 ) -> Tuple[DataFrame, DataFrame]:
     """
     Read table file to generate AnnData format data.
-    :param file: A table with cell or peak column and column indexes, and the content is the number of fragments;
-    :param clusters: The column name for cell clusters or cell types. (In most cases, this column can be ignored.)
+
+    Parameters
+    ----------
+    file : path
+        Path to the table file with cell or peak column and column indexes, and the content is the number of fragments.
+    clusters : str, optional
+        The column name for cell clusters or cell types. (In most cases, this column can be ignored.)
         It is worth noting that only the values in this column are judged to determine whether they contain NA values;
         If they do, they are assigned the value `unknown`, and if not, no operation is performed;
-    :param barcode_split_character: A barcode separated character symbol. (meta)
-    :param on_barcode_split_character: A barcode separated character symbol. (matrix)
-    :param is_transpose: Whether transpose is required to read the matrix file, default to True;
-    :param cluster_anno_file: The file that adds information about cells must contain the column name `barcodes`;
-    :return: Cell annotation data, counts data.
+    barcode_split_character : str, default='-'
+        A barcode separated character symbol. (meta)
+    on_barcode_split_character : str, optional
+        A barcode separated character symbol. (matrix)
+    is_transpose : bool, default=True
+        Whether transpose is required to read the matrix file, default to True.
+    cluster_anno_file : path, optional
+        The file that adds information about cells must contain the column name `barcodes`;
+    
+    Returns
+    -------
+    Cell annotation data, counts data.
+        The first element is the Cell annotation data.
+        The second element is the counts matrix data.
     """
 
     if file is None:
@@ -123,13 +164,23 @@ def handle_file_data_cell(
 
 def barcodes_add_anno(annotation_file: path, cell_anno: DataFrame, clusters: str = None) -> DataFrame:
     """
-    Add user inputted cell information
-    :param annotation_file: The file that adds information about cells must contain the column name `barcodes`, the file input by the user.
-    :param cell_anno: Read the cell description in the scATAC-seq data generated from the file.
-    :param clusters: The column name for cell clusters or cell types. (In most cases, this column can be ignored.)
+    Add user inputted cell information to the cell annotation data.
+
+    Parameters
+    ----------
+    annotation_file : path
+        The file that adds information about cells must contain the column name `barcodes`, the file input by the user.
+    cell_anno : DataFrame
+        Read the cell description in the scATAC-seq data generated from the file.
+    clusters : str, optional
+        The column name for cell clusters or cell types. (In most cases, this column can be ignored.)
         It is worth noting that only the values in this column are judged to determine whether they contain NA values.
         If they do, they are assigned the value `unknown`, and if not, no operation is performed.
-    :return: Complete cell annotation data
+    
+    Returns
+    -------
+    Complete cell annotation data
+        Complete cell annotation data with user inputted cell information.
     """
     ul.log(__name__).info("Add annotation file")
     # add annotation file
@@ -152,15 +203,21 @@ def barcodes_add_anno(annotation_file: path, cell_anno: DataFrame, clusters: str
 
     if clusters is not None:
         if clusters not in list(cell_annotation_file.columns):
-            ul.log(__name__).error(f"The comment file must contain a column name with `{clusters}`, Try changing the `clusters` parameter")
-            raise ValueError(f"The comment file must contain a column name with `{clusters}`, Try changing the `clusters` parameter")
+            ul.log(__name__).error(
+                f"The comment file must contain a column name with `{clusters}`, Try changing the `clusters` parameter"
+            )
+            raise ValueError(
+                f"The comment file must contain a column name with `{clusters}`, Try changing the `clusters` parameter"
+            )
 
         if clusters not in list(cell_anno.columns):
             cell_anno = cell_anno.rename(columns={f"{clusters}_y": clusters})
 
         # nan set unknown
         if cell_anno[cell_anno[clusters].isna()].shape[0] > 0:
-            ul.log(__name__).warning(f"Due to the presence of `NA` in the `{clusters}`, it is forcibly assigned as `unknown`.")
+            ul.log(__name__).warning(
+                f"Due to the presence of `NA` in the `{clusters}`, it is forcibly assigned as `unknown`."
+            )
             cell_anno.loc[cell_anno[clusters].isna(), clusters] = "unknown"
 
     if "barcode" not in list(cell_anno.columns):
@@ -176,6 +233,27 @@ def read_barcodes_file(
     barcode_split_character: str = '-',
     annotation_file: path = None,
 ) -> DataFrame:
+    """
+    Read barcodes file.
+
+    Parameters
+    ----------
+    barcodes_file : path
+        Barcodes file.
+    clusters : str, optional
+        The column name for cell clusters or cell types. (In most cases, this column can be ignored.)
+        It is worth noting that only the values in this column are judged to determine whether they contain NA values.
+        If they do, they are assigned the value `unknown`, and if not, no operation is performed.
+    barcode_split_character : str, default='-'
+        A barcode separated character symbol. (meta)
+    annotation_file : path, optional
+        The file that adds information about cells must contain the column name `barcodes`, the file input by the user.
+    
+    Returns
+    -------
+    Cell annotation data
+        Cell annotation data with user inputted cell information.
+    """
     ul.log(__name__).info("handle cells information")
     # read file
     cell_anno = pd.read_csv(barcodes_file, header=None, index_col=None)
@@ -203,7 +281,9 @@ def read_barcodes_file(
             __is_with__ = False
 
         if __cell_annot__.shape[0] != np.unique(__cell_annot__[0]).size:
-            ul.log(__name__).info("After extracting `batch_id`, there are duplicate barcodes, so `batch_id` is not extracted.")
+            ul.log(__name__).info(
+                "After extracting `batch_id`, there are duplicate barcodes, so `batch_id` is not extracted."
+            )
             __is_with__ = False
 
         if __is_with__:
@@ -233,15 +313,28 @@ def _read_info_by_metadata_(
 ) -> AnnData:
     """
     Read metadata outputted by 10x Genomics software.
-    :param base_path: Path to directory with matrix, bed file, etc. (It can be obtained through cell-ranger)
-    :param feature_file_name: feature file name;
-    :param is_transpose: Whether transpose is required to read the matrix file, default to True;
-    :param clusters: The column name for cell clusters or cell types. (In most cases, this column can be ignored.)
+
+    Parameters
+    ----------
+    base_path : path
+        Path to directory with matrix, bed file, etc. (It can be obtained through cell-ranger)
+    feature_file_name : str
+        feature file name;
+    is_transpose : bool, default=True
+        Whether transpose is required to read the matrix file, default to True;
+    clusters : str, optional
+        The column name for cell clusters or cell types. (In most cases, this column can be ignored.)
         It is worth noting that only the values in this column are judged to determine whether they contain NA values;
         If they do, they are assigned the value `unknown`, and if not, no operation is performed;
-    :param barcode_split_character: A barcode separated character symbol. (meta)
-    :param annotation_file: The file that adds information about cells must contain the column name `barcodes`;
-    :return: sequence data
+    barcode_split_character : str, default='-'
+        A barcode separated character symbol. (meta)
+    annotation_file : path, optional
+        The file that adds information about cells must contain the column name `barcodes`, the file input by the user.
+    
+    Returns
+    -------
+    AnnData
+        AnnData with user inputted cell information.
     """
     # read features file
     ul.log(__name__).info("handle features information")
@@ -277,9 +370,25 @@ def _process_peaks_(
 ) -> Tuple[DataFrame, list, list, list]:
     """
     Processing peak set.
-    :param data: Input peak set;
-    :param peak_split_character: The connection symbol between chromosome, start and end;
-    :return: Peak information, chromosome list, start position list, end position list.
+
+    Parameters
+    ----------
+    data : collection
+        Input peak set;
+    peak_split_character : Tuple, default=(":", "-")
+        The connection symbol between chromosome, start and end;
+        default to `(":", "-")`.
+
+    Returns
+    -------
+    DataFrame
+        Peak information.
+    list
+        Chromosome list.
+    list
+        Start position list.
+    list
+        End position list.
     """
     # format peaks information
     ul.log(__name__).info("handle peaks information")
@@ -320,7 +429,19 @@ def _process_peaks_(
 
 
 def collect_datasets(dsets: dict, group: h5py.Group):
+    """
+    Collect datasets from h5py.Group.
+    
+    Parameters
+    ----------
+    dsets : dict
+        Dictionary to store datasets.
+    group : h5py.Group
+        Group to collect datasets from.
+    """
+
     for k, v in group.items():
+
         if isinstance(v, h5py.Dataset):
             dsets[k] = v[()]
         else:
@@ -330,11 +451,21 @@ def collect_datasets(dsets: dict, group: h5py.Group):
 def read_v3_10x_h5(filename: path) -> AnnData:
     """
     Read hdf5 file from Cell Ranger v3 or later versions.
-    :param filename: H5 file
-    :return: scATAC-seq data
+    
+    Parameters
+    ----------
+    filename : path
+        H5 file path.
+    
+    Returns
+    -------
+    AnnData
+        scATAC-seq data.
     """
     ul.log(__name__).info('Start read hdf5 file')
+
     with h5py.File(str(filename), 'r') as f:
+
         try:
             dsets = {}
             collect_datasets(dsets, f["matrix"])
@@ -343,13 +474,16 @@ def read_v3_10x_h5(filename: path) -> AnnData:
 
             m, n = dsets['shape']
             data = dsets['data']
+
             if dsets['data'].dtype == np.dtype('int32'):
                 data = dsets['data'].view('float32')
                 data[:] = dsets['data']
+
             matrix = csr_matrix(
                 (data, dsets['indices'], dsets['indptr']),
                 shape=(n, m),
             )
+
             adata = AnnData(
                 matrix,
                 obs=dict(obs_names=dsets['barcodes'].astype(str)),
@@ -374,14 +508,26 @@ def read_sc_atac_10x_h5(
 ) -> AnnData:
     """
     Read hdf5 file from Cell Ranger v3 or later versions.
-    :param file: A comprehensive h5ad file. (It can be obtained through cell-ranger)
-    :param clusters: The column name for cell clusters or cell types. (In most cases, this column can be ignored.)
+    
+    Parameters
+    ----------
+    file : path
+        A comprehensive h5ad file. (It can be obtained through cell-ranger)
+    clusters : str, optional
+        The column name for cell clusters or cell types. (In most cases, this column can be ignored.)
         It is worth noting that only the values in this column are judged to determine whether they contain NA values.
         If they do, they are assigned the value `unknown`, and if not, no operation is performed.
-    :param barcode_split_character: A barcode separated character symbol (meta)
-    :param annotation_file: The file that adds information about cells must contain the column name `barcodes`
-    :param peak_split_character: A peak separated character symbol
-    :returns: scATAC-seq data
+    barcode_split_character : str, default='-'
+        A barcode separated character symbol (meta)
+    annotation_file : path, optional
+        The file that adds information about cells must contain the column name `barcodes`
+    peak_split_character : tuple, default=(':','-')
+        A peak separated character symbol
+    
+    Returns
+    -------
+    AnnData
+        scATAC-seq data.
     """
     ul.log(__name__).info("Reading scATAC-seq 10x data")
     sc_atac: AnnData = read_v3_10x_h5(file)
@@ -433,21 +579,38 @@ def read_sc_atac(
     peak_split_character: Tuple = (":", "-")
 ) -> AnnData:
     """
-    Return scATAC-seq data in AnnData format.
-    :param resource:
-        1. Path to directory with matrix, bed file, etc. (It can be obtained through cell-ranger)
-        2. H5 file obtained through cell-ranger.
-        3. A comprehensive h5ad file.
-        4. A table with cell or peak column and column indexes, and the content is the number of fragments;
-    :param is_transpose: Whether transpose is required to read the matrix file, default to True;
-    :param barcode_split_character: A barcode separated character symbol. (meta)
-    :param on_barcode_split_character: A barcode separated character symbol. (matrix)
-    :param annotation_file: The file that adds information about cells must contain the column name `barcodes`;
-    :param clusters: The column name for cell clusters or cell types. (In most cases, this column can be ignored.)
-        It is worth noting that only the values in this column are judged to determine whether they contain NA values;
-        If they do, they are assigned the value `unknown`, and if not, no operation is performed;
-    :param peak_split_character: A peak separated character symbol;
-    :return: scATAC-seq data.
+    Read scATAC-seq data and return it in AnnData format.
+
+    Parameters
+    ----------
+    resource : path, optional
+        Input data source. Can be one of the following:
+        1. Path to directory containing matrix, bed file, etc. (output from cell-ranger)
+        2. H5 file obtained through cell-ranger
+        3. A comprehensive h5ad file
+        4. A table file with cell or peak columns and indexes, where content is fragment counts
+        Default is None.
+    is_transpose : bool, default=True
+        Whether transpose is required to read the matrix file.
+    barcode_split_character : str, default='-'
+        Character used to split barcode information (for metadata).
+    on_barcode_split_character : str, optional
+        Character used to split barcode information (for matrix). 
+        If None, uses barcode_split_character. Default is None.
+    annotation_file : path, optional
+        File containing additional cell information. Must contain a 'barcodes' column.
+        Default is None.
+    clusters : str, optional
+        Column name for cell clusters or cell types. If NA values exist in this column,
+        they will be assigned as 'unknown'. Default is None.
+    peak_split_character : Tuple, default=(":", "-")
+        Characters used to split peak information (chromosome, start, end).
+        First element splits chromosome from start, second splits start from end.
+
+    Returns
+    -------
+    AnnData
+        scATAC-seq data in AnnData format with cell and peak annotations.
     """
     ul.log(__name__).info("Read scATAC-seq data")
 
@@ -573,17 +736,39 @@ def read_variants(
     repeat_symbol: str = "_#"
 ) -> Tuple[dict, DataFrame]:
     """
-    Read variant file set
-    :param base_path: Path for storing mutation trait data;
-        The file must contain the following names `{chr, position, rsId, pp}`, where ID represents the representative of the trait name;
-    :param files: Collection of mutation trait data;
-    :param labels: Classification labels for each trait or disease;
-    :param column_map: The mapping of column names facilitates mapping the corresponding column names in the mutation file to the specified column name information,
-        i.e. `{0: "chr", 1: "position", 2: "rsId", 3: "pp"}`;
-    :param repeat_symbol: If you encounter two names with the same abbreviation, you can add a symbol and numerical value to one of the abbreviations.
-    :return: Data on traits or diseases
-        1. PP data for each trait or disease。
-        2. Annotated information on traits or diseases。
+    Read variant file set.
+
+    Parameters
+    ----------
+    base_path : path, optional
+        Path for storing mutation trait data.
+        The file must contain the following column names: `chr`, `position`, `rsId`, `pp`,
+        where ID represents the representative of the trait name.
+        Default is None.
+    files : collection, optional
+        Collection of mutation trait data file paths.
+        Default is None.
+    labels : dict, optional
+        Classification labels for each trait or disease.
+        Default is None.
+    column_map : dict, optional
+        Mapping of column names to facilitate mapping the corresponding column names
+        in the mutation file to the specified column name information.
+        For example: `{0: "chr", 1: "position", 2: "rsId", 3: "pp"}`.
+        Default is None.
+    repeat_symbol : str, default="_#"
+        Symbol used to distinguish duplicate trait names.
+        If two files have the same name abbreviation, a symbol and numerical value
+        will be added to one of the abbreviations.
+
+    Returns
+    -------
+    dict
+        Dictionary containing AnnData objects for each trait or disease,
+        where keys are trait names and values are AnnData objects with variant information.
+    DataFrame
+        Annotated information on traits or diseases, including summary statistics
+        such as pp_sum, pp_mean, count, and filename.
     """
     ul.log(__name__).info("Read variants file information")
     variant_columns: list = ["chr", "position", "rsId", "pp"]
@@ -640,7 +825,9 @@ def read_variants(
         columns = variant.columns
 
         if not set(need_variant_columns).issubset(set(columns)):
-            ul.log(__name__).error(f"The column name of the {variant_file} file needs to include {need_variant_columns}")
+            ul.log(__name__).error(
+                f"The column name of the {variant_file} file needs to include {need_variant_columns}"
+            )
             raise ValueError(f"The column name of the {variant_file} file needs to include {need_variant_columns}")
 
         if variant.shape[0] == 0:

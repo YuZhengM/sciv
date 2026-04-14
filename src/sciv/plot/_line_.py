@@ -43,6 +43,72 @@ def base_line(
     close: bool = False,
     **kwargs: Any
 ) -> None:
+    """
+    Base line plot function for visualizing data trends over time or categories.
+
+    This function creates a line plot from either AnnData or DataFrame objects,
+    supporting grouped data visualization with customizable colors, legends, and styling.
+
+    Parameters
+    ----------
+    data : Union[AnnData, DataFrame]
+        Input data object, can be either AnnData (single-cell data) or pandas DataFrame.
+    x : str
+        Column name to use for x-axis values.
+    y : str
+        Column name to use for y-axis values.
+    layer : Optional[str], default None
+        Specific layer to use from AnnData.layers when data is AnnData.
+    width : float, default 2
+        Figure width in inches.
+    height : float, default 2
+        Figure height in inches.
+    bottom : float, default 0
+        Bottom margin adjustment for the plot.
+    title : Optional[str], default None
+        Title of the plot.
+    x_name : Optional[str], default None
+        Label for x-axis. If None, uses x column name.
+    y_name : Optional[str], default None
+        Label for y-axis. If None, uses y column name.
+    label : Optional[str], default None
+        Column name used for grouping data (creates separate lines).
+    legend : Optional[str], default None
+        Title for the legend. If None and label is provided, uses "category".
+    legend_list : list, default None
+        List of specific group values to include in the plot.
+    start_color_index : int, default 0
+        Starting index for color selection from the color palette.
+    color_step_size : int, default 0
+        Step size for selecting colors from the palette.
+    color_type : str, default "set"
+        Type of color palette to use (key from plot_color_types).
+    colors : list, default None
+        Custom list of colors to use for the plot.
+    line_width : float, default 1.5
+        Width of the lines in the plot.
+    x_name_rotation : float, default 65
+        Rotation angle for x-axis tick labels (in degrees).
+    x_ticks : Optional[Union[int, collection]], default None
+        Custom tick positions or number of ticks for x-axis.
+    y_limit : Tuple[float, float], default (0, 1)
+        Y-axis limits as (min, max) tuple.
+    output : Optional[path], default None
+        File path to save the figure. If None, figure is not saved.
+    is_str : bool, default True
+        Whether to treat x-axis values as strings (affects tick formatting).
+    show : bool, default True
+        Whether to display the plot.
+    close : bool, default False
+        Whether to close the figure after display.
+    **kwargs : Any
+        Additional keyword arguments passed to seaborn.lineplot.
+
+    Returns
+    -------
+    None
+        The function displays and/or saves the plot but does not return any value.
+    """
     fig, ax = plot_start(width, height, bottom, output, show)
 
     new_data = data.copy()

@@ -29,7 +29,7 @@ from ._constant_ import dense_data, sparse_data, sparse_matrix, matrix_data, num
 __name__: str = "util_core"
 
 
-def file_method(name: str = None) -> StaticMethod:
+def file_method(name: str = None, is_verbose: bool = False) -> StaticMethod:
     """
     Create file method handler class
     
@@ -41,7 +41,9 @@ def file_method(name: str = None) -> StaticMethod:
     ----------
     name : str, optional
         File handler name suffix, default is None
-        
+    is_verbose : bool, default is False
+        Is log information displayed
+
     Returns
     -------
     StaticMethod
@@ -49,8 +51,8 @@ def file_method(name: str = None) -> StaticMethod:
     """
     # Build handler file name: if name is provided, concatenate project name and name; otherwise use project name
     name = f"{project_name}_{name}" if name is not None else project_name
-    # Create and return StaticMethod instance, specifying handler file path and whether to format handler file
-    return StaticMethod(log_file=os.path.join(ul.log_file_path, name), is_form_log_file=ul.is_form_log_file)
+    log_file = os.path.join(ul.log_file_path, name)
+    return StaticMethod(log_file=log_file, is_form_log_file=ul.is_form_log_file, is_verbose=is_verbose)
 
 
 def log(name: str = None) -> Logger:
@@ -92,10 +94,10 @@ def track_with_memory(interval: float = 60) -> Callable:
     Returns
     -------
     Callable
-        Decorator function; when the wrapped function is called, it returns a dictionary containing:
-        - 'result': the original function's return value
-        - 'time': function execution time (seconds) if is_monitor is True, otherwise None.
-        - 'memory': list of sampled memory usage (bytes) if is_monitor is True, otherwise None.
+        Decorator function; when the wrapped function is called, it returns a dictionary containing:<br/>
+        - 'result': the original function's return value.<br/>
+        - 'time': function execution time (seconds) if is_monitor is True, otherwise None.<br/>
+        - 'memory': list of sampled memory usage (bytes) if is_monitor is True, otherwise None.<br/>
     """
 
     def decorator(func) -> Callable:
@@ -636,7 +638,7 @@ def set_inf_value(matrix: matrix_data) -> None:
 
 def check_adata_get(adata: AnnData, layer: str = None, is_dense: bool = True, is_matrix: bool = False) -> AnnData:
     """
-    Check the AnnData object and get the data.
+    Check if `layer` is in `.layers`, and instantiate a new AnnData with it as `.X`.
     
     Parameters
     ----------
@@ -678,8 +680,8 @@ def check_adata_get(adata: AnnData, layer: str = None, is_dense: bool = True, is
 
 def add_cluster_info(data: DataFrame, data_ref: DataFrame, cluster: str) -> DataFrame:
     """
-    Add cluster information to the DataFrame.
-    
+    Map a specific column (e.g., cluster) from data_ref to data aligned by index.
+
     Parameters
     ----------
     data : DataFrame
@@ -688,13 +690,14 @@ def add_cluster_info(data: DataFrame, data_ref: DataFrame, cluster: str) -> Data
         Reference DataFrame. Default is None.
     cluster : str
         Cluster column name.
-    
+
     Returns
     -------
     DataFrame
         DataFrame with cluster information.
     """
     new_data: DataFrame = data.copy()
+
     if data_ref is not None and cluster not in new_data.columns:
 
         new_data: DataFrame = pd.merge(new_data, data_ref, how="left", left_index=True, right_index=True)
@@ -733,6 +736,10 @@ def check_gpu_availability(verbose: bool = False) -> bool:
     -------
     bool
         Whether the GPU is available.
+
+    Examples
+    --------
+    >>> availability = sciv.ul.check_gpu_availability()
     """
     available = torch.cuda.is_available()
 
@@ -867,6 +874,13 @@ def generate_hex_colors(num_colors: int) -> list:
     -------
     list
         List of random hex colors.
+
+    Examples
+    --------
+    >>> colors3 = sciv.ul.generate_hex_colors(3)
+    >>> colors5 = sciv.ul.generate_hex_colors(5)
+    >>> print(f"Generate three colors: {colors3}")
+    >>> print(f"Generate five colors: {colors5}")
     """
     colors = []
 

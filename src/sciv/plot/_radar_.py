@@ -5,10 +5,12 @@ from typing import Optional, Union, Tuple, Any
 
 import numpy as np
 import pandas as pd
+from anndata import AnnData
 
 from matplotlib import pyplot as plt
 from pandas import DataFrame
 
+from ._util_ import complete_ratio
 from .. import util as ul
 from ..util import path, collection, plot_end, type_20_colors, type_50_colors
 
@@ -356,16 +358,6 @@ def radar_trait(
     -------
     None
         The function saves plots to files and/or displays them based on parameters.
-
-    Raises
-    ------
-    ValueError
-        If the specified trait_name is not found in the trait list.
-
-    Examples
-    --------
-    >>> radar_trait(df, trait_name="Trait1", output="/path/to/output")
-    >>> radar_trait(df, trait_name="All", clusters_sort=["C1", "C2", "C3"])
     """
 
     def trait_plot(trait_: str, cell_df_: DataFrame) -> None:
@@ -434,3 +426,128 @@ def radar_trait(
             trait_plot(trait_=trait, cell_df_=trait_df)
     else:
         trait_plot(trait_name, trait_df)
+
+
+def rate_circular_bar_plot(
+    adata: AnnData,
+    layer: str = None,
+    trait_name: str = "All",
+    dir_name: str = "feature",
+    column: str = "value",
+    clusters: str = "clusters",
+    color: Union[collection, str] = None,
+    clusters_sort: Optional[list] = None,
+    width: float = 2,
+    height: float = 2,
+    rotation: float = 25,
+    title: str = None,
+    value_top: float = 0.1,
+    text_top: float = 1.2,
+    is_fixed: bool = False,
+    is_angle: bool = True,
+    y_limit: Tuple = (-0.5, 1),
+    y_axis_scale: Tuple = (0, 1),
+    plot_output: path = None,
+    show: bool = True,
+    close: bool = False
+) -> None:
+    """
+    Generate a circular bar plot (radar chart) showing enrichment ratios for trait-cluster combinations.
+
+    This function calculates the completion ratio using the complete_ratio function
+    and visualizes the results as a circular bar plot (radar chart). It handles
+    directory creation for output files and passes appropriate parameters to the
+    radar_trait plotting function.
+
+    Parameters
+    ----------
+    adata : AnnData
+        Input AnnData object containing the data to be visualized.
+    layer : str, optional
+        Specify the layer of the matrix to be processed. If None, uses the main matrix.
+    trait_name : str, default "All"
+        The name of the trait being analyzed, used for filtering data.
+    dir_name : str, default "feature"
+        Folder name for generating and saving circular bar plot outputs.
+    column : str, default "value"
+        The column name containing the binary enrichment values.
+    clusters : str, default "clusters"
+        The column name in adata.obs that defines the cell clusters.
+    color : Union[collection, str], optional
+        Color specification for the plot. Can be a color collection or a column name
+        to use for coloring bars based on data values.
+    clusters_sort : Optional[list], optional
+        Custom order for clusters. If None, uses default sorting.
+    width : float, default 2
+        The width of the output figure in inches.
+    height : float, default 2
+        The height of the output figure in inches.
+    rotation : float, default 25
+        Rotation angle for the circular plot in degrees.
+    title : str, optional
+        The title of the plot. If None, no title is displayed.
+    value_top : float, default 0.1
+        Vertical offset for value labels in the plot.
+    text_top : float, default 1.2
+        Vertical offset for text labels in the plot.
+    is_fixed : bool, default False
+        If True, use fixed scaling for the plot.
+    is_angle : bool, default True
+        If True, use angular positioning for bars.
+    y_limit : Tuple, default (-0.5, 1)
+        The y-axis limits for the plot.
+    y_axis_scale : Tuple, default (0, 1)
+        The scale range for the y-axis values.
+    plot_output : path, optional
+        Directory path for saving output files. If None, figures are not saved.
+    show : bool, default True
+        If True, display the figure interactively.
+    close : bool, default False
+        If True, close the figure after saving.
+
+    Returns
+    -------
+    None
+        This function does not return any value. Outputs are saved to files or displayed.
+    """
+
+    if dir_name is not None:
+        # create path
+        new_path = os.path.join(plot_output, f"{dir_name}_{layer}") if plot_output is not None else None
+        # create path
+        if plot_output is not None:
+            ul.file_method(__name__).makedirs(new_path)
+    else:
+        plot_output = None
+        new_path = None
+
+    # create data
+    if color is not None and isinstance(color, str):
+        new_value_group = complete_ratio(adata=adata, layer=layer, column=column, extra_columns=[color],
+                                         clusters=clusters)
+    else:
+        new_value_group = complete_ratio(adata=adata, layer=layer, column=column, clusters=clusters)
+
+    new_value_group = new_value_group[new_value_group[column] == 1].copy()
+
+    radar_trait(
+        trait_df=new_value_group,
+        value="rate",
+        clusters=clusters,
+        title=title,
+        clusters_sort=clusters_sort,
+        trait_name=trait_name,
+        color=color,
+        width=width,
+        height=height,
+        rotation=rotation,
+        value_top=value_top,
+        text_top=text_top,
+        is_fixed=is_fixed,
+        is_angle=is_angle,
+        y_limit=y_limit,
+        y_axis_scale=y_axis_scale,
+        output=new_path if plot_output is not None else None,
+        show=show,
+        close=close
+    )

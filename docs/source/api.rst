@@ -5,6 +5,16 @@
    :local:
    :depth: 1
 
+Download (.dl)
+---------------------------
+
+Data download interface, used to download single-cell data and trait files.
+
+.. automodule:: sciv.dl
+   :members: download_sc_atac_file, download_trait_file, download_trs_file, download_trs_score_file, read_sc_atac_file, read_trait_file, read_trs_file, read_trs_score_file
+   :undoc-members:
+   :show-inheritance:
+
 File (.fl)
 ---------------------------
 
@@ -170,7 +180,7 @@ Core drawing function.
    :undoc-members:
    :show-inheritance:
 
-Preprocessing (pp)
+Preprocessing (.pp)
 ---------------------------
 
 Data preprocessing interface, used for single-cell data cleaning, differential analysis, and enrichment analysis.
@@ -236,6 +246,6 @@ Core
 Core auxiliary functions.
 
 .. automodule:: sciv.ul
-   :members: file_method, log, track_with_memory, to_dense, to_sparse, sum_min_max, get_index, list_duplicate_set, split_matrix, merge_matrix, list_index, numerical_bisection_step, get_real_predict_label, strings_map_numbers, set_inf_value, plot_start, plot_end, generate_str, check_adata_get, add_cluster_info, generate_hex_colors, check_gpu_availability
+   :members: file_method, log, track_with_memory, to_dense, to_sparse, sum_min_max, get_index, list_duplicate_set, split_matrix, merge_matrix, list_index, numerical_bisection_step, get_real_predict_label, strings_map_numbers, set_inf_value, generate_str, check_adata_get, generate_hex_colors, check_gpu_availability
    :undoc-members:
    :show-inheritance:

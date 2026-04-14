@@ -25,7 +25,9 @@ from ..util import (
 
 __name__: str = "plot_graph"
 
-_LayoutType = Optional[Literal['spring', 'kamada_kawai', 'circular', 'shell', 'circular_type1', 'circular_type2', 'square_type1', 'square_type2']]
+_LayoutType = Optional[Literal[
+    'spring', 'kamada_kawai', 'circular', 'shell', 'circular_type1', 'circular_type2', 'square_type1', 'square_type2'
+]]
 
 
 def graph(
@@ -44,6 +46,40 @@ def graph(
     show: bool = True,
     close: bool = False
 ) -> None:
+    """
+    Plot a graph from an adjacency matrix.
+
+    Parameters
+    ----------
+    data : matrix_data
+        Adjacency matrix representing the graph connections.
+    labels : collection, optional
+        Labels for each node in the graph.
+    node_size : int, default=50
+        Size of the nodes in the plot.
+    name : str, optional
+        Name of the graph.
+    x_name : str, optional
+        Label for the x-axis.
+    y_name : str, optional
+        Label for the y-axis.
+    title : str, optional
+        Title of the plot.
+    width : float, default=2
+        Width of the figure in inches.
+    height : float, default=2
+        Height of the figure in inches.
+    bottom : float, default=0
+        Bottom margin adjustment.
+    is_font : bool, default=False
+        Whether to display node labels.
+    output : path, optional
+        Path to save the figure.
+    show : bool, default=True
+        Whether to display the figure.
+    close : bool, default=False
+        Whether to close the figure after display.
+    """
     if output is None and not show:
         ul.log(__name__).error(f"At least one of the `output` and `show` parameters is required")
         raise ValueError(f"At least one of the `output` and `show` parameters is required")
@@ -117,6 +153,55 @@ def communities_graph(
     show: bool = True,
     close: bool = False
 ):
+    """
+    Plot a cell-cell network diagram with community detection coloring.
+
+    This function visualizes a network graph where nodes represent cells and edges
+    represent connections between cells. Nodes are colored based on their community
+    assignments.
+
+    Parameters
+    ----------
+    adata : AnnData
+        Annotated data matrix with observations (cells) and variables (genes).
+    labels : collection
+        Community labels for grouping nodes. Each community is a collection of node indices.
+    layer : str, optional
+        Name of the layer in adata to use for adjacency matrix. If None, uses adata.X.
+    clusters : str, default="clusters"
+        Column name in adata.obs containing cluster information for color assignment.
+    x_name : str, optional
+        Label for the x-axis.
+    y_name : str, optional
+        Label for the y-axis.
+    title : str, optional
+        Title of the plot.
+    width : float, default=2
+        Width of the figure in inches.
+    height : float, default=2
+        Height of the figure in inches.
+    bottom : float, default=0
+        Bottom margin adjustment.
+    node_size : float, default=2.0
+        Size of the nodes in the network.
+    line_widths : float, default=0.001
+        Width of the node edges and network edges.
+    start_color_index : int, default=0
+        Starting index for color selection from the color palette.
+    color_step_size : int, default=0
+        Step size for selecting colors from the palette for different communities.
+    output : path, optional
+        Path to save the figure.
+    show : bool, default=True
+        Whether to display the figure.
+    close : bool, default=False
+        Whether to close the figure after display.
+
+    Returns
+    -------
+    None
+        The function displays and/or saves the network plot.
+    """
     if output is None and not show:
         ul.log(__name__).error(f"At least one of the `output` and `show` parameters is required")
         raise ValueError(f"At least one of the `output` and `show` parameters is required")
@@ -204,6 +289,72 @@ def network_two_types(
     show: bool = True,
     close: bool = False
 ):
+    """
+    Plot a bipartite network graph with two types of nodes.
+
+    This function visualizes a network where nodes are divided into two distinct types
+    (e.g., genes and variations), with edges representing connections between them.
+    Each node type can have different sizes, colors, and shapes based on their scores.
+
+    Parameters
+    ----------
+    data_pairs : list
+        List of tuples representing edges between type1 and type2 nodes.
+    type1_scores : dict
+        Dictionary mapping type1 node names to their score values for color mapping.
+    type2_scores : dict
+        Dictionary mapping type2 node names to their score values for color mapping.
+    type1_node_size : Union[dict, list, float], default=50
+        Size of type1 nodes. Can be a single value, list, or dict mapping nodes to sizes.
+    type2_node_size : Union[dict, list, float], default=50
+        Size of type2 nodes. Can be a single value, list, or dict mapping nodes to sizes.
+    label_nodes : list, optional
+        List of node names to display labels for.
+    width : float, default=4
+        Width of the figure in inches.
+    height : float, default=3
+        Height of the figure in inches.
+    k : float, optional
+        Optimal distance between nodes for spring layout. If None, uses default.
+    iterations : int, default=50
+        Number of iterations for spring layout optimization.
+    scale : float, default=1
+        Scale factor for the layout positions.
+    radius : float, default=0.35
+        Radius for positioning connected nodes around their parent nodes in custom layouts.
+    type1_node_shape : str, default='o'
+        Matplotlib marker shape for type1 nodes.
+    type2_node_shape : str, default='s'
+        Matplotlib marker shape for type2 nodes.
+    type1_bar_label : str, default='Score'
+        Label for the color bar of type1 nodes.
+    type2_bar_label : str, default='Score'
+        Label for the color bar of type2 nodes.
+    type1_cmap_str : str, default="winter"
+        Colormap name for type1 node colors.
+    type2_cmap_str : str, default="YlOrRd"
+        Colormap name for type2 node colors.
+    node_alpha : float, default=0.8
+        Transparency level for nodes (0-1).
+    edge_alpha : float, default=0.8
+        Transparency level for edges (0-1).
+    is_fluctuate : bool, default=True
+        Whether to add random fluctuation to node positions in custom layouts.
+    layout_type : str, default='spring'
+        Layout algorithm to use. Options: 'spring', 'kamada_kawai', 'circular',
+        'shell', 'circular_type1', 'circular_type2', 'square_type1', 'square_type2'.
+    output : path, optional
+        Path to save the figure.
+    show : bool, default=True
+        Whether to display the figure.
+    close : bool, default=False
+        Whether to close the figure after display.
+
+    Returns
+    -------
+    None
+        The function displays and/or saves the network plot.
+    """
     if output is None and not show:
         ul.log(__name__).error(f"At least one of the `output` and `show` parameters is required")
         raise ValueError(f"At least one of the `output` and `show` parameters is required")
@@ -271,29 +422,40 @@ def network_two_types(
             elif layout_type == 'square_type2':
                 is_type1 = False
             else:
-                raise ValueError("The `layout_type` parameter must be one of the following string values {'spring','kamada_kawai','circular','shell','circular_type1','circular_type2','square_type1','square_type2'}")
+                raise ValueError(
+                    "The `layout_type` parameter must be one of the following string values \
+                     {'spring','kamada_kawai','circular','shell','circular_type1','circular_type2','square_type1','square_type2'}"
+                )
 
             # Adjust to square coordinates
             pos = {}
             side_length = int(np.sqrt(len(type1_nodes if is_type1 else type2_nodes)))
+
             for i, key in enumerate(type1_nodes if is_type1 else type2_nodes):
                 pos[key] = (i % side_length, i // side_length)
 
         for i, _node_ in enumerate(type1_nodes if is_type1 else type2_nodes):
             type_other = []
+
             for k, v in data_pairs:
+
                 if is_type1:
+
                     if k == _node_:
                         type_other.append(v)
                 else:
+
                     if v == _node_:
                         type_other.append(k)
 
             angle_step = 360 / len(type_other)
+
             for j, _type_node_ in enumerate(type_other):
                 angle = math.radians(j * angle_step) + (random.random() / 2 if is_fluctuate else 0)
-                x = pos[_node_][0] + np.power(-1, int(random.random() * 10) if is_fluctuate else 0) * (radius + (random.random() / 10 if is_fluctuate else 0)) * math.cos(angle)
-                y = pos[_node_][1] + np.power(-1, int(random.random() * 10) if is_fluctuate else 0) * (radius + (random.random() / 10 if is_fluctuate else 0)) * math.sin(angle)
+                x = pos[_node_][0] + np.power(-1, int(random.random() * 10) if is_fluctuate else 0) * (
+                    radius + (random.random() / 10 if is_fluctuate else 0)) * math.cos(angle)
+                y = pos[_node_][1] + np.power(-1, int(random.random() * 10) if is_fluctuate else 0) * (
+                    radius + (random.random() / 10 if is_fluctuate else 0)) * math.sin(angle)
                 pos[_type_node_] = (x, y)
 
     type1_cmap = matplotlib.colormaps[type1_cmap_str]
@@ -304,11 +466,17 @@ def network_two_types(
     type2_norm = plt.Normalize(vmin=min(type2_scores.values()), vmax=max(type2_scores.values()))
 
     type1_node_colors = [type1_cmap(type1_norm(type1_scores[node])) for node in type1_nodes]
+
+    if isinstance(type1_node_size, dict):
+        type1_node_sizes = [type1_node_size[node] for node in type1_nodes]
+    else:
+        type1_node_sizes = type1_node_size
+
     nx.draw_networkx_nodes(
         G,
         pos,
         nodelist=type1_nodes,
-        node_size=[type1_node_size[node] for node in type1_nodes] if isinstance(type1_node_size, dict) else type1_node_size,
+        node_size=type1_node_sizes,
         node_color=type1_node_colors,
         edgecolors='#333333',
         node_shape=type1_node_shape,
@@ -317,11 +485,17 @@ def network_two_types(
     )
 
     type2_node_colors = [type2_cmap(type2_norm(type2_scores[node])) for node in type2_nodes]
+
+    if isinstance(type2_node_size, dict):
+        type2_node_sizes = [type2_node_size[node] for node in type2_nodes]
+    else:
+        type2_node_sizes = type2_node_size
+
     nx.draw_networkx_nodes(
         G,
         pos,
         nodelist=type2_nodes,
-        node_size=[type2_node_size[node] for node in type2_nodes] if isinstance(type2_node_size, dict) else type2_node_size,
+        node_size=type2_node_sizes,
         node_color=type2_node_colors,
         edgecolors='#333333',
         node_shape=type2_node_shape,

@@ -21,10 +21,19 @@ _Field = Optional[Literal['real', 'complex', 'pattern', 'integer']]
 
 def save_h5ad(data: AnnData, file: path) -> AnnData:
     """
-    Save AnnData data
-    :param data: data
-    :param file: save file
-    :return: AnnData file
+    Save AnnData data to h5ad file.
+
+    Parameters
+    ----------
+    data : AnnData
+        Input AnnData object to save.
+    file : path
+        Path to save file.
+
+    Returns
+    -------
+    AnnData
+        The input AnnData object.
     """
     ul.log(__name__).info("Saving data to {}".format(file))
     return data.write_h5ad(Path(file), compression='gzip')
@@ -32,11 +41,21 @@ def save_h5ad(data: AnnData, file: path) -> AnnData:
 
 def save_h5(data: dict, save_file: path, group_name: str = "matrix") -> None:
     """
-    Save H5 data.
-    :param data: data
-    :param save_file: save file
-    :param group_name: group name
-    :return: H5 file
+    Save H5 data to H5 file.
+
+    Parameters
+    ----------
+    data : dict
+        Input H5 data to save.
+    save_file : path
+        Input path to save file.
+    group_name: str, default="matrix"
+        The group name.
+    
+    Returns
+    -------
+    H5 file
+        The input H5 file.
     """
     h5_dict = dict(data)
 
@@ -51,17 +70,26 @@ def save_h5(data: dict, save_file: path, group_name: str = "matrix") -> None:
 
 def save_pkl(data, save_file: path, is_verbose: bool = False) -> None:
     """
-    Save pkl data.
-    :param data: data
-    :param save_file: save file
-    :param is_verbose: Set true to print log;
-    :return: pkl file
+    Save pkl data to pkl file.
+    
+    Parameters
+    ----------
+    data : any
+        Input data to save.
+    save_file : path
+        Input path to save file.
+    is_verbose: Set true to print log;
+    
+    Returns
+    -------
+    pkl file
+        The input pkl file.
     """
     if is_verbose:
         ul.log(__name__).info("Saving data to {}".format(save_file))
 
     with open(str(save_file), 'wb') as f:
-        pickle.dump(data, f) # type: ignore
+        pickle.dump(data, f)  # type: ignore
 
 
 def to_meta(
@@ -73,13 +101,21 @@ def to_meta(
 ) -> None:
     """
     Convert AnnData data into metadata, i.e directory with matrix, bed file, etc.
-    :param adata: input AnnData object;
-    :param dir_path: Path for generating data;
-    :param layer: The layer of data that needs to form meta files;
-    :param feature_name: Feature file name;
-    :param field: None or _Field;
+    
+    Parameters
+    ----------
+    adata : AnnData
+        Input AnnData object.
+    dir_path: Path for generating data.
+    layer: The layer of data that needs to form meta files;
+    feature_name: Feature file name;
+    field: None or _Field;
         Either 'real', 'complex', 'pattern', or 'integer'.
-    :return: Directory with matrix, bed file, etc.
+    
+    Returns
+    -------
+    Directory
+        The input directory.
     """
 
     dir_path = str(dir_path)
@@ -152,15 +188,23 @@ def to_fragments(
 ) -> None:
     """
     Convert AnnData format data into fragments format file.
-    :param adata: input data;
-    :param fragments: output file name;
-    :param layer: The layer of data that needs to form fragments file;
-    :param is_sort: If set to true, the output will be sorting of chromatin;
-    :param is_gz: Whether to compress the formed file to gz;
+    
+    Parameters
+    ----------
+    adata : AnnData
+        Input AnnData object.
+    fragments: Output file name.
+    layer: The layer of data that needs to form fragments file;
+    is_sort: If set to true, the output will be sorting of chromatin;
+    is_gz: Whether to compress the formed file to gz;
         Compress fragments file using method `pysam.tabix_compress`.
-    :param is_keep: Set to true, The `fragments.tsv` file will not be retained after compression;
+    is_keep: Set to true, The `fragments.tsv` file will not be retained after compression;
         When is_gz is true, it takes effect.
-    :return: fragments format file;
+    
+    Returns
+    -------
+    fragments format file
+        The input fragments format file.
     """
 
     output_path = os.path.dirname(fragments)
@@ -214,7 +258,6 @@ def to_fragments(
         f.write(f"# features: {row_size}, barcodes: {col_size}, nonzero: {nonzero_size}\n")
 
         for row, col in tqdm(zip(nonzero[0], nonzero[1])):
-
             # info
             peaks = peaks_dict[row]
             barcodes = barcodes_dict[col]

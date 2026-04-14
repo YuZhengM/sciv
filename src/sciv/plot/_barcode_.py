@@ -31,7 +31,45 @@ def barcode_base(
     output: path = None,
     show: bool = True,
     close: bool = False
-):
+) -> None:
+    """
+    Plot barcode plot.
+    
+    Parameters
+    ----------
+    df : DataFrame
+        Input data.
+    cluster_list : list
+        Cluster list.
+    sort_column : str, optional
+        Sort column.
+    column : str, optional
+        Column name for clusters.
+    width : float, optional
+        Width.
+    height : float, optional
+        Height.
+    trait_column_name : str, optional
+        Trait column name.
+    title : str, optional
+        Title.
+    cmap : str, optional
+        Cmap.
+    bar_label : str, optional
+        Bar label.
+    is_ticks : bool, optional
+        Whether to show ticks.
+    colors : list, optional
+        Colors.
+    ground_true : list, optional
+        Ground true.
+    output : path, optional
+        Output path.
+    show : bool, optional
+        Whether to display the plot.
+    close : bool, optional
+        Whether to close the figure after display.
+    """
     # sort
     df_sort = df.sort_values([trait_column_name, sort_column], ascending=False)
 
@@ -109,7 +147,64 @@ def barcode_trait(
     output: path = None,
     show: bool = True,
     close: bool = False
-):
+) -> None:
+    """
+    Plot barcode plots for traits/diseases.
+    
+    This function generates barcode visualizations for specified traits or all traits
+    in the dataset. It creates individual plots for each trait showing the distribution
+    of trait scores across different clusters.
+    
+    Parameters
+    ----------
+    trait_df : DataFrame
+        Input DataFrame containing trait scores and cluster information.
+    trait_name : str, optional
+        Name of the trait/disease to plot. Use "All" to plot all traits.
+        Default is "All".
+    trait_column_name : str, optional
+        Column name in the DataFrame that contains trait identifiers.
+        Default is "id".
+    sort_column : str, optional
+        Column name used for sorting values in the barcode plot.
+        Default is "value".
+    clusters : str, optional
+        Column name in the DataFrame that contains cluster assignments.
+        Default is "clusters".
+    cmap : str, optional
+        Colormap name for the value heatmap.
+        Default is "viridis".
+    width : float, optional
+        Width of the figure in inches.
+        Default is 1.
+    height : float, optional
+        Height of the figure in inches.
+        Default is 3.
+    is_ticks : bool, optional
+        Whether to display colorbar ticks.
+        Default is True.
+    colors : list, optional
+        Custom color list for cluster visualization. If None, uses default colors.
+        Default is None.
+    ground_true : list, optional
+        Ground truth cluster labels for ordering.
+        Default is None.
+    title : str, optional
+        Base title for the plots. Trait name will be appended.
+        Default is None.
+    suffix : str, optional
+        File extension for output plots (e.g., "pdf", "png").
+        Default is "pdf".
+    output : path, optional
+        Directory path for saving output files.
+        Default is None.
+    show : bool, optional
+        Whether to display the plots interactively.
+        Default is True.
+    close : bool, optional
+        Whether to close the figure after display.
+        Default is False.
+    """
     data: DataFrame = trait_df.copy()
     cluster_list = list(set(trait_df[clusters]))
 

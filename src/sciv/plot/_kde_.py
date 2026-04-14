@@ -31,6 +31,46 @@ def kde(
     close: bool = False,
     **kwargs: Any
 ) -> None:
+    """
+    Plot Kernel Density Estimation (KDE) for single-cell data.
+
+    Parameters
+    ----------
+    adata : AnnData
+        Annotated data matrix with observations (rows) and variables (columns).
+    layer : str, optional
+        Which layer of `adata` to use. If None, uses `adata.X`.
+    x_name : str, optional
+        Label for the x-axis.
+    y_name : str, optional
+        Label for the y-axis.
+    title : str, optional
+        Title of the plot.
+    width : float, default=4
+        Width of the figure in inches.
+    height : float, default=2
+        Height of the figure in inches.
+    bottom : float, default=0.3
+        Bottom margin of the figure.
+    axis : Literal[-1, 0, 1], default=-1
+        Axis along which to compute KDE:
+        - -1: Flatten all data and compute single KDE.
+        - 0: Compute KDE for each column (variable).
+        - 1: Compute KDE for each row (observation).
+    sample_number : int, default=1000000
+        Maximum number of samples to use for KDE computation.
+        If data exceeds this, random downsampling is applied.
+    is_legend : bool, default=True
+        Whether to display legend when axis is 0 or 1.
+    output : path, optional
+        Path to save the figure. If None, figure is not saved.
+    show : bool, default=True
+        Whether to display the figure.
+    close : bool, default=False
+        Whether to close the figure after displaying.
+    **kwargs : Any
+        Additional keyword arguments passed to `seaborn.kdeplot`.
+    """
     ul.log(__name__).info("Start plotting the Kernel density estimation chart")
 
     fig, ax = plot_start(width, height, bottom, output, show)

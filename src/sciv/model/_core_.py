@@ -21,6 +21,27 @@ __name__: str = "model_core"
 
 
 def _run_random_walk_(random_walk: RandomWalk, is_ablation: bool, is_simple: bool) -> AnnData:
+    """
+    Execute random walk algorithm and optional ablation experiments.
+
+    This function runs the core random walk algorithm and enrichment analysis,
+    optionally running various ablation experiments when is_ablation is True
+    and is_simple is False.
+
+    Parameters
+    ----------
+    random_walk : RandomWalk
+        RandomWalk instance containing all necessary data and methods
+    is_ablation : bool
+        Whether to run ablation experiments (only effective when is_simple=False)
+    is_simple : bool
+        Whether to skip intermediate steps and ablation experiments
+
+    Returns
+    -------
+    AnnData
+        AnnData object containing TRS (Trait Relevance Score) results
+    """
     start_time = time.perf_counter()
 
     if not random_walk.is_run_core:
@@ -108,6 +129,7 @@ def core(
     In the entire algorithm, the samples are in the row position, and the traits or diseases are in the column position,
         while ensuring that there is no interaction between the traits or diseases,
         ensuring the stability of the results;
+
     Meaning of main variables:
         1. `overlap_adata`, (obs: peaks, var: traits/diseases) Peaks-traits/diseases data obtained by overlaying variant
          data with peaks.
@@ -117,60 +139,101 @@ def core(
         4. `cc_data`, (obs: cells, var: cells) Cell similarity data.
         5. `random_walk`, RandomWalk class.
         6. `trs`, (obs: cells, var: traits/diseases) This is the final TRS data.
-    :param adata: scATAC-seq data;
-    :param variants: variant data; This data is recommended to be obtained by executing the `fl.read_variants` method.
-    :param trait_info: variant annotation file information;
-    :param cell_rate: Removing the percentage of cell count in total cell count only takes effect when the min_cells
-        parameter is None;
-    :param peak_rate: Removing the percentage of peak count in total peak count only takes effect when the min_peaks
-        parameter is None;
-    :param max_epochs: The maximum number of epochs for PoissonVI training;
-    :param lr: Learning rate for optimization;
-    :param batch_size: Minibatch size to use during training;
-    :param eps: Optimizer eps;
-    :param early_stopping: Whether to perform early stopping with respect to the validation set;
-    :param early_stopping_patience: How many epochs to wait for improvement before early stopping;
-    :param strategy: DDP strategy;
-    :param batch_key: Batch information in scATAC-seq data;
-    :param resolution: Resolution of the Leiden Cluster. The recommended values are any one of 0.4, 0.9, 1.3, 1.5;
-    :param k: When building an mKNN network, the number of nodes connected by each node (and operation);
-    :param or_k: When building an mKNN network, the number of nodes connected by each node (or operation);
-    :param weight: The weight of interactions or operations;
-    :param local_k: Determining the number of neighbors for the adaptive kernel;
-    :param kernel: Determine the kernel function to be used;
-    :param kernel_gamma: When the value of `kernel` is "laplacian", if it is None, then it is the reciprocal of the
+
+    Parameters
+    ----------
+    adata : AnnData
+        scATAC-seq data.
+    variants : dict
+        Variant data. This data is recommended to be obtained by executing the `fl.read_variants` method.
+    trait_info : DataFrame
+        Variant annotation file information.
+    cell_rate : Optional[float], default None
+        Removing the percentage of cell count in total cell count only takes effect when the min_cells
+        parameter is None.
+    peak_rate : Optional[float], default None
+        Removing the percentage of peak count in total peak count only takes effect when the min_peaks
+        parameter is None.
+    max_epochs : int, default 500
+        The maximum number of epochs for PoissonVI training.
+    lr : float, default 1e-5
+        Learning rate for optimization.
+    batch_size : int, default 128
+        Minibatch size to use during training.
+    eps : float, default 1e-08
+        Optimizer eps.
+    early_stopping : bool, default True
+        Whether to perform early stopping with respect to the validation set.
+    early_stopping_patience : int, default 50
+        How many epochs to wait for improvement before early stopping.
+    strategy : str, default "ddp_notebook_find_unused_parameters_true"
+        DDP strategy.
+    batch_key : Optional[str], default None
+        Batch information in scATAC-seq data.
+    resolution : float, default 0.5
+        Resolution of the Leiden Cluster. The recommended values are any one of 0.4, 0.9, 1.3, 1.5.
+    k : int, default 30
+        When building an mKNN network, the number of nodes connected by each node (and operation).
+    or_k : int, default 10
+        When building an mKNN network, the number of nodes connected by each node (or operation).
+    weight : float, default 0.5
+        The weight of interactions or operations.
+    kernel : Literal["laplacian", "gaussian"], default "gaussian"
+        Determine the kernel function to be used.
+    local_k : int, default 10
+        Determining the number of neighbors for the adaptive kernel.
+    kernel_gamma : Optional[Union[float, str, collection]], default None
+        When the value of `kernel` is "laplacian", if it is None, then it is the reciprocal of the
         latent representation dimension of the cell. When the value of `kernel` is "gaussian", if it is None, then it
         defaults to an adaptive value obtained through local information of the parameter `local_k`. Otherwise, it
-        should be strictly positive;
-    :param epsilon: conditions for stopping in random walk;
-    :param max_steps: Maximum number of steps in a random walk with restart;
-    :param gamma: reset weight for random walk;
-    :param enrichment_gamma: reset weight for random walk for enrichment;
-    :param p: Distance used for loss {1: Manhattan distance, 2: Euclidean distance};
-    :param n_jobs: The maximum number of concurrently running jobs;
-    :param min_seed_cell_rate: The minimum percentage of seed cells in all cells;
-    :param max_seed_cell_rate: The maximum percentage of seed cells in all cells;
-    :param credible_threshold: The threshold for determining the credibility of enriched cells in the context of
-        enrichment, i.e. the threshold for judging enriched cells;
-    :param diff_peak_value: Specify the correction value in peak correction of clustering type differences.
+        should be strictly positive.
+    epsilon : float, default 1e-05
+        Conditions for stopping in random walk.
+    max_steps : int, default 300
+        Maximum number of steps in a random walk with restart.
+    gamma : float, default 0.05
+        Reset weight for random walk.
+    enrichment_gamma : float, default 0.05
+        Reset weight for random walk for enrichment.
+    p : int, default 2
+        Distance used for loss {1: Manhattan distance, 2: Euclidean distance}.
+    n_jobs : int, default -1
+        The maximum number of concurrently running jobs.
+    min_seed_cell_rate : float, default 0.01
+        The minimum percentage of seed cells in all cells.
+    max_seed_cell_rate : float, default 0.05
+        The maximum percentage of seed cells in all cells.
+    credible_threshold : float, default 0
+        The threshold for determining the credibility of enriched cells in the context of
+        enrichment, i.e. the threshold for judging enriched cells.
+    diff_peak_value : difference_peak_optional, default 'emp_effect'
+        Specify the correction value in peak correction of clustering type differences.
         {'emp_effect', 'bayes_factor', 'emp_prob1'}
-    :param enrichment_threshold: Only by setting a threshold for the standardized output TRS can a portion of the
+    enrichment_threshold : Union[enrichment_optional, float], default 'golden'
+        Only by setting a threshold for the standardized output TRS can a portion of the
         enrichment results be obtained. Parameters support string types {'golden', 'half', 'e', 'pi', 'none'},
         or valid floating-point types within the range of (0, log1p(1)).
-    :param is_ablation: True represents obtaining the results of the ablation experiment. This parameter is limited by
-        the `is_simple` parameter, and its effectiveness requires setting `is_simple` to `False`;
-    :param model_dir: The folder name saved by the training module;
+    is_ablation : bool, default False
+        True represents obtaining the results of the ablation experiment. This parameter is limited by
+        the `is_simple` parameter, and its effectiveness requires setting `is_simple` to `False`.
+    model_dir : Optional[path], default None
+        The folder name saved by the training module.
         It is worth noting that if the training model file (`model.pt`) exists in this path, it will be automatically
         read and skip the training of `PoissonVI` model.
-    :param save_path: Save path for process files and result files;
-    :param is_simple: True represents not adding unnecessary intermediate variables, only adding the final result.
+    save_path : Optional[path], default None
+        Save path for process files and result files.
+    is_simple : bool, default True
+        True represents not adding unnecessary intermediate variables, only adding the final result.
         It is worth noting that when set to `True`, the `is_ablation` parameter will become invalid, and when set to
-        `False`, `is_ablation` will only take effect;
-    :param is_save_random_walk_model: Default to `False`, do not save random walk model. When setting `True`, please
+        `False`, `is_ablation` will only take effect.
+    is_save_random_walk_model : bool, default False
+        Default to `False`, do not save random walk model. When setting `True`, please
         ensure sufficient storage as the saved `pkl` file is relatively large.
-    :param is_file_exist_loading: By default, the file will be overwritten. When set to `True`, if the file exists, the
-        process will be skipped and the file will be directly read as the result;
-    :param filename_dict: The name of the file that exists.
+    is_file_exist_loading : bool, default False
+        By default, the file will be overwritten. When set to `True`, if the file exists, the
+        process will be skipped and the file will be directly read as the result.
+    filename_dict : Optional[dict], default None
+        The name of the file that exists.
         default: {
             "sc_atac": "sc_atac.h5ad",
             "da_peaks": "da_peaks.h5ad",
@@ -180,12 +243,17 @@ def core(
             "random_walk": "random_walk.h5ad",
             "trs": "trs.h5ad"
         }
-    :param block_size: The size of the segmentation stored in block wise matrix multiplication.
+    block_size : int
+        The size of the segmentation stored in block wise matrix multiplication.
         By sacrificing time and space to reduce memory consumption to a certain extent.
         If the value is less than or equal to zero, no block operation will be performed.
-    :return: `trs`, (obs: cells, var: traits/diseases) This is the final TRS data.
+    
+    Returns
+    -------
+    AnnData
+        AnnData object containing TRS (Trait Relevance Score) results.
+        (obs: cells, var: traits/diseases) This is the final TRS data.
     """
-
     # start time
     start_time = time.perf_counter()
 
@@ -569,7 +637,8 @@ def core(
     5. Random walk with weighted seed cells
     """
 
-    random_walk_is_read: bool = is_file_exist_loading and os.path.exists(random_walk_save_file) and is_save_random_walk_model
+    random_walk_is_read: bool = is_file_exist_loading and os.path.exists(
+        random_walk_save_file) and is_save_random_walk_model
 
     if random_walk_is_read:
         random_walk: RandomWalk = read_pkl(random_walk_save_file)
@@ -635,6 +704,27 @@ def association_score(
     layer: str = "trs_source",
     axis: Literal[0, 1] = 0
 ) -> None:
+    """
+    Calculate association score for traits or diseases.
+    This function calculates the association score for traits or diseases
+    based on the TRS (Trait Relevance Score) data in the input AnnData object.
+
+    Parameters
+    ----------
+    adata : AnnData
+        Input AnnData object containing TRS data.
+    score_name : str, optional
+        Name of the score column in the AnnData object. Default is "association_score".
+    layer : str, optional
+        Layer name in the AnnData object containing TRS data. Default is "trs_source".
+    axis : Literal[0, 1], optional
+        Axis to calculate the score (0 for traits, 1 for diseases). Default is 0.
+    :return: None
+    """
+    if layer not in adata.layers:
+        ul.log(__name__).error(f"Layer `{layer}` is not in the input AnnData object.")
+        raise ValueError(f"Layer `{layer}` is not in the input AnnData object.")
+
     trs_source = to_dense(adata.layers[layer], is_array=True)
 
     trs_source_copy = trs_source.copy()
@@ -654,7 +744,7 @@ def association_score(
         ul.log(__name__).error("The `axis` parameter supports only 0 and 1.")
         raise ValueError("The `axis` parameter supports only 0 and 1.")
 
-    sorted_indices = np.argsort(relevance_value)[::,]
+    sorted_indices = np.argsort(relevance_value)[::, ]
     ranks = np.zeros_like(relevance_value).tolist()
 
     for rank, index in enumerate(sorted_indices, start=1):
@@ -678,25 +768,68 @@ def knock(
     knock_value: float = 0,
     is_add_control: bool = False
 ) -> AnnData:
+    """
+    Perform gene knockdown or knockout analysis on a specific trait.
 
+    This function simulates the effect of knocking down or knocking out specific variants
+    associated with a trait, and re-runs the random walk algorithm to compute the
+    resulting TRS (Trait Relevance Score) changes.
+
+    Parameters
+    ----------
+    trs : AnnData
+        TRS result data from `ml.core`, containing parameters, variants, trait_info and trs_source.
+    sc_atac : AnnData
+        scATAC-seq data used in the original analysis.
+    da_peaks : AnnData
+        Differential accessibility peaks data from the original analysis.
+    cc_data : AnnData
+        Cell-cell similarity network data from the original analysis.
+    knock_trait : str
+        The trait ID to perform knockdown/knockout on.
+    knock_info : dict[str, Union[str, collection]]
+        Dictionary mapping knock group names to variant IDs (rsId) to be knocked down.
+        Each key is a group name, and each value is either a single variant ID (str)
+        or a collection of variant IDs to knock down together.
+    knock_value : float, default 0
+        The value to set for knocked-down variants. Default is 0 (complete knockout).
+        Values >= 1e-3 are not recommended as they may not achieve the desired effect.
+    is_add_control : bool, default False
+        Whether to add control experiments (knocking out background variants).
+
+    Returns
+    -------
+    AnnData
+        AnnData object containing TRS results after knockdown/knockout.
+        Includes knock parameters in .uns["params"] and knock-specific metadata.
+    """
     if "params" not in trs.uns:
-        ul.log(__name__).error("`params` is not in `trs.uns`, please execute function `ml.core` first to obtain the result as input for the `trs` parameter.")
-        raise ValueError("`params` is not in `trs.uns`, please execute function `ml.core` first to obtain the result as input for the `trs` parameter.")
+        ul.log(__name__).error(
+            "`params` is not in `trs.uns`, please execute function `ml.core` first to obtain the result as input for the `trs` parameter.")
+        raise ValueError(
+            "`params` is not in `trs.uns`, please execute function `ml.core` first to obtain the result as input for the `trs` parameter.")
 
     if "variants" not in trs.uns:
-        ul.log(__name__).error("`variants` is not in `trs.uns`, please execute function `ml.core` first to obtain the result as input for the `trs` parameter.")
-        raise ValueError("`variants` is not in `trs.uns`, please execute function `ml.core` first to obtain the result as input for the `trs` parameter.")
+        ul.log(__name__).error(
+            "`variants` is not in `trs.uns`, please execute function `ml.core` first to obtain the result as input for the `trs` parameter.")
+        raise ValueError(
+            "`variants` is not in `trs.uns`, please execute function `ml.core` first to obtain the result as input for the `trs` parameter.")
 
     if "trait_info" not in trs.uns:
-        ul.log(__name__).error("`trait_info` is not in `trs.uns`, please execute function `ml.core` first to obtain the result as input for the `trs` parameter.")
-        raise ValueError("`trait_info` is not in `trs.uns`, please execute function `ml.core` first to obtain the result as input for the `trs` parameter.")
+        ul.log(__name__).error(
+            "`trait_info` is not in `trs.uns`, please execute function `ml.core` first to obtain the result as input for the `trs` parameter.")
+        raise ValueError(
+            "`trait_info` is not in `trs.uns`, please execute function `ml.core` first to obtain the result as input for the `trs` parameter.")
 
     if "trs_source" not in trs.layers:
-        ul.log(__name__).error("`trs_source` is not in `trs.layers`, please execute function `ml.core` first to obtain the result as input for the `trs` parameter.")
-        raise ValueError("`trs_source` is not in `trs.layers`, please execute function `ml.core` first to obtain the result as input for the `trs` parameter.")
+        ul.log(__name__).error(
+            "`trs_source` is not in `trs.layers`, please execute function `ml.core` first to obtain the result as input for the `trs` parameter.")
+        raise ValueError(
+            "`trs_source` is not in `trs.layers`, please execute function `ml.core` first to obtain the result as input for the `trs` parameter.")
 
     if knock_value >= 1E-3:
-        ul.log(__name__).warning("The value set for `knock_value` here is greater than 1e-3, which can easily fail to achieve the desired effect.")
+        ul.log(__name__).warning(
+            "The value set for `knock_value` here is greater than 1e-3, which can easily fail to achieve the desired effect.")
 
     # param information
     params = trs.uns["params"]

@@ -28,7 +28,42 @@ def bubble(
     close: bool = False,
     **kwargs: Any
 ):
+    """
+    Create a bubble plot using seaborn's relplot.
 
+    Parameters
+    ----------
+    df : DataFrame
+        Input data structure.
+    x : str
+        Column name for x-axis values.
+    y : str
+        Column name for y-axis values.
+    hue : str, optional
+        Column name for color encoding.
+    size : str, optional
+        Column name for size encoding.
+    x_name : str, optional
+        Custom label for x-axis.
+    y_name : str, optional
+        Custom label for y-axis.
+    title : str, optional
+        Plot title.
+    width : float, default=2
+        Figure width in inches.
+    height : float, default=2
+        Figure height in inches.
+    bottom : float, default=0
+        Bottom margin adjustment.
+    output : path, optional
+        File path to save the figure.
+    show : bool, default=True
+        Whether to display the plot.
+    close : bool, default=False
+        Whether to close the figure after display.
+    **kwargs : Any
+        Additional arguments passed to seaborn.relplot.
+    """
     fig, ax = plot_start(width, height, bottom, output, show)
 
     if size is not None:

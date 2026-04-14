@@ -5,12 +5,14 @@ from typing import Tuple, Union, Optional, Any, Literal
 
 import numpy as np
 import pandas as pd
+from anndata import AnnData
 from pandas import DataFrame
 
 import seaborn as sns
 from matplotlib import pyplot as plt
 from statannotations.Annotator import Annotator
 
+from ._util_ import complete_ratio
 from .. import util as ul
 from ..util import path, collection, plot_color_types, plot_start, plot_end
 
@@ -35,7 +37,52 @@ def bar(
     close: bool = False,
     **kwargs: Any
 ) -> None:
+    """
+    Create a simple bar chart with optional value labels.
 
+    This function generates a bar plot (vertical or horizontal) with customizable
+    appearance and automatically adds numerical value labels on each bar.
+
+    Parameters
+    ----------
+    ax_x : collection
+        Categories or labels for the x-axis (or y-axis if horizontal).
+    ax_y : collection
+        Numerical values for the bar heights (or widths if horizontal).
+    x_name : str, optional
+        Label for the x-axis. Default is None.
+    y_name : str, optional
+        Label for the y-axis. Default is None.
+    title : str, optional
+        Title of the plot. Default is None.
+    color : str, default "#70b5de"
+        Color of the bars.
+    text_color : str, default "#000205"
+        Color of the value labels on bars.
+    width : float, default 2
+        Width of the figure in inches.
+    height : float, default 2
+        Height of the figure in inches.
+    bottom : float, default 0
+        Bottom margin adjustment.
+    text_left_move : float, default 0.1
+        Horizontal adjustment for text position on bars.
+    direction : Literal['vertical', 'horizontal'], default "vertical"
+        Orientation of the bars.
+    output : path, optional
+        File path to save the figure. Default is None.
+    show : bool, default True
+        Whether to display the plot.
+    close : bool, default False
+        Whether to close the figure after saving.
+    **kwargs : Any
+        Additional keyword arguments passed to matplotlib's bar/barh function.
+
+    Returns
+    -------
+    None
+        The function displays and/or saves the plot but does not return any value.
+    """
     fig, ax = plot_start(width, height, bottom, output, show)
 
     ax_x = np.array(ax_x).astype(str)
@@ -83,7 +130,58 @@ def two_bar(
     close: bool = False,
     **kwargs: Any
 ):
+    """
+    Create a stacked bar chart with two categories.
 
+    This function generates a stacked bar plot where two sets of values are displayed
+    as stacked bars. It automatically adds numerical value labels on the first bar segment
+    and includes a legend for the two categories.
+
+    Parameters
+    ----------
+    ax_x : collection
+        Categories or labels for the x-axis.
+    ax_y : Tuple
+        A tuple containing two collections of numerical values for the two bar segments.
+        The second segment will be stacked on top of the first.
+    x_name : str, optional
+        Label for the x-axis. Default is None.
+    y_name : str, optional
+        Label for the y-axis. Default is None.
+    legend : Tuple, default ("1", "2")
+        Labels for the legend corresponding to the two bar segments.
+    color : Tuple, default ("#2e6fb7", "#f7f7f7")
+        Colors for the two bar segments (first segment, second segment).
+    text_color : str, default "#000205"
+        Color of the value labels on bars.
+    width : float, default 2
+        Width of the figure in inches.
+    height : float, default 2
+        Height of the figure in inches.
+    bottom : float, default 0
+        Bottom margin adjustment.
+    rotation : float, default 65
+        Rotation angle for x-axis tick labels in degrees.
+    text_left_move : float, default 0.15
+        Horizontal adjustment for text position on bars.
+    y_limit : Tuple[float, float], default (0, 1)
+        The y-axis limits for the plot.
+    title : str, optional
+        Title of the plot. Default is None.
+    output : path, optional
+        File path to save the figure. Default is None.
+    show : bool, default True
+        Whether to display the plot.
+    close : bool, default False
+        Whether to close the figure after saving.
+    **kwargs : Any
+        Additional keyword arguments passed to matplotlib's bar function.
+
+    Returns
+    -------
+    None
+        The function displays and/or saves the plot but does not return any value.
+    """
     fig, ax = plot_start(width, height, bottom, output, show)
 
     ax_x = np.array(ax_x).astype(str)
@@ -140,7 +238,65 @@ def class_bar(
     close: bool = False,
     **kwargs: Any
 ):
+    """
+    Create a stacked bar chart for enrichment analysis with two categories.
 
+    This function filters a DataFrame by a binary column, sorts the data by clusters,
+    and generates a stacked bar plot using the two_bar function. It is typically used
+    to visualize enrichment ratios where one category represents enriched values and
+    the other represents conservative values.
+
+    Parameters
+    ----------
+    df : DataFrame
+        Input DataFrame containing the data to plot.
+    value : str, default "rate"
+        Column name containing the numerical values to plot.
+    by : str, default "value"
+        Column name used to filter the DataFrame into two categories (typically binary: 0 and 1).
+    clusters : str, default "clusters"
+        Column name containing the cluster labels or categories.
+    color : Tuple, default ("#2e6fb7", "#f7f7f7")
+        Colors for the two bar segments (enrichment color, conservative color).
+    x_name : str, default "Cell type"
+        Label for the x-axis.
+    y_name : str, default "Enrichment ratio"
+        Label for the y-axis.
+    legend : Tuple, default ("Enrichment", "Conservative")
+        Labels for the legend corresponding to the two bar segments.
+    text_color : str, default "#000205"
+        Color of the value labels on bars.
+    clusters_sort : Optional[list], default None
+        Custom order for clusters. If provided, clusters will be sorted according to this list.
+        If None, clusters will be sorted by value in descending order.
+    width : float, default 2
+        Width of the figure in inches.
+    height : float, default 2
+        Height of the figure in inches.
+    bottom : float, default 0
+        Bottom margin adjustment.
+    rotation : float, default 65
+        Rotation angle for x-axis tick labels in degrees.
+    title : str, optional
+        Title of the plot. Default is None.
+    text_left_move : float, default 0.15
+        Horizontal adjustment for text position on bars.
+    y_limit : Tuple[float, float], default (0, 1)
+        The y-axis limits for the plot.
+    output : path, optional
+        File path to save the figure. Default is None.
+    show : bool, default True
+        Whether to display the plot.
+    close : bool, default False
+        Whether to close the figure after saving.
+    **kwargs : Any
+        Additional keyword arguments passed to the two_bar function.
+
+    Returns
+    -------
+    None
+        The function displays and/or saves the plot but does not return any value.
+    """
     df1 = df[df[by] == 1]
     df2 = df[df[by] == 0]
 
@@ -204,6 +360,72 @@ def bar_trait(
     close: bool = False,
     **kwargs: Any
 ):
+    """
+    Create stacked bar charts for multiple traits or a specific trait.
+
+    This function generates enrichment bar plots for traits (e.g., diseases, gene sets)
+    in the input DataFrame. It can plot all traits or a specific trait based on the
+    trait_name parameter. Each trait's enrichment data is visualized using the class_bar
+    function, with results saved to individual files.
+
+    Parameters
+    ----------
+    trait_df : DataFrame
+        Input DataFrame containing trait enrichment data. Must include columns for
+        trait identifiers, cluster labels, and enrichment values.
+    trait_name : str, default "All"
+        The specific trait to plot. If "All", plots bar charts for all unique traits
+        in the trait_column_name column.
+    trait_column_name : str, default "id"
+        Column name in trait_df that contains trait identifiers.
+    value : str, default "rate"
+        Column name containing the numerical enrichment values to plot.
+    clusters : str, default "clusters"
+        Column name containing cluster or cell type labels.
+    x_name : str, default "Cell type"
+        Label for the x-axis.
+    y_name : str, default "Enrichment ratio"
+        Label for the y-axis.
+    color : Tuple, default ("#2e6fb7", "#f7f7f7")
+        Colors for the two bar segments (enrichment color, conservative color).
+    legend : Tuple, default ("Enrichment", "Conservative")
+        Labels for the legend corresponding to the two bar segments.
+    text_color : str, default "#000205"
+        Color of the value labels on bars.
+    clusters_sort : Optional[list], default None
+        Custom order for clusters. If provided, clusters will be sorted according
+        to this list. If None, clusters are sorted by enrichment value.
+    width : float, default 2
+        Width of the figure in inches.
+    height : float, default 2
+        Height of the figure in inches.
+    bottom : float, default 0
+        Bottom margin adjustment.
+    rotation : float, default 65
+        Rotation angle for x-axis tick labels in degrees.
+    title : str, optional
+        Base title of the plot. The trait name will be appended to this title.
+        Default is None.
+    text_left_move : float, default 0.15
+        Horizontal adjustment for text position on bars.
+    y_limit : Tuple[float, float], default (0, 1)
+        The y-axis limits for the plot.
+    output : path, optional
+        Directory path to save the figures. If provided, each trait's plot will be
+        saved as a PDF file in this directory. Default is None.
+    show : bool, default True
+        Whether to display the plot.
+    close : bool, default False
+        Whether to close the figure after saving.
+    **kwargs : Any
+        Additional keyword arguments passed to the class_bar function.
+
+    Returns
+    -------
+    None
+        The function displays and/or saves the plots but does not return any value.
+    """
+
     def trait_plot(trait_: str, cell_df_: DataFrame) -> None:
         """
         show plot
@@ -300,47 +522,99 @@ def bar_significance(
     **kwargs: Any
 ) -> None:
     """
-    A bar chart with specified anchor significance.
-    :param df: Input DataFrame containing the data to plot
-    :param x: Column name for x-axis categories
-    :param y: Column name for y-axis values
-    :param hue: Column name for grouping bars by color
-    :param x_name: Label for x-axis (optional)
-    :param y_name: Label for y-axis (optional)
-    :param anchor: Reference group for pairwise significance testing
-    :param hue_order: Order of hue categories
-    :param legend: Legend title (default: "category")
-    :param legend_list: Subset of hue values to include in plot
-    :param width: Figure width in inches
-    :param height: Figure height in inches
-    :param bottom: Figure bottom in inches
-    :param legend_gap: Vertical gap between plot and legend
-    :param line_width: Width of error bars and significance lines
-    :param start_color_index: Starting index in color palette
-    :param color_step_size: Step size when cycling through palette
-    :param color_type: Name of seaborn palette to use
-    :param test: Statistical test for pairwise comparisons
-        {"t-test_ind", "t-test_welch", "t-test_paired", "Mann-Whitney", "Mann-Whitney-gt", "Mann-Whitney-ls",
-         "Levene", "Wilcoxon", "Kruskal", "Brunner-Munzel"}
-    :param ci: Confidence interval type or value
-    :param capsize: Width of the error-bar caps
-    :param errcolor: Color of the error bars
-    :param line_offset: Vertical offset for significance lines
-    :param line_height: Height of significance lines
-    :param x_rotation: Rotation angle for x-axis tick labels
-    :param x_deviation: Horizontal offset for bar annotations
-    :param y_deviation: Vertical offset for bar annotations
-    :param y_limit: Tuple setting y-axis limits
-    :param anno: Whether to annotate bars with their values
-    :param anno_fontsize: Font size for bar annotations
-    :param colors: Custom color list (overrides palette)
-    :param title: Plot title
-    :param output: Path to save figure (optional)
-    :param show: Whether to display the plot
-    :param close:
-    :return: None
-    """
+    Create a bar chart with statistical significance annotations relative to an anchor group.
 
+    This function generates a grouped bar plot with error bars and performs pairwise
+    statistical significance testing between an anchor group and other groups within
+    each category. It supports custom color palettes, legend positioning, and various
+    statistical tests.
+
+    Parameters
+    ----------
+    df : DataFrame
+        Input DataFrame containing the data to plot.
+    x : str
+        Column name for x-axis categories.
+    y : str
+        Column name for y-axis values.
+    hue : str
+        Column name for grouping bars by color.
+    x_name : str, optional
+        Label for x-axis. Default is None.
+    y_name : str, optional
+        Label for y-axis. Default is None.
+    anchor : str, optional
+        Reference group name for pairwise significance testing. If provided, statistical
+        comparisons will be made between this group and all other groups within each x category.
+    legend : str, optional
+        Legend title. Default is "category".
+    legend_list : list, optional
+        Subset of hue values to include in the plot. If provided, only these values
+        will be plotted. Default is None.
+    hue_order : list, optional
+        Order of hue categories for plotting and legend. Default is None.
+    width : float, default 2
+        Width of the figure in inches.
+    height : float, default 2
+        Height of the figure in inches.
+    bottom : float, default 0
+        Bottom margin adjustment.
+    legend_gap : float, default 1.15
+        Vertical gap between plot and legend, specified as a ratio of the y-axis height.
+    line_width : float, default 0.5
+        Width of error bars and significance annotation lines.
+    capsize : float, default 0.1
+        Width of the error bar caps.
+    errcolor : str, default "k"
+        Color of the error bars.
+    start_color_index : int, default 0
+        Starting index in the color palette for the first hue category.
+    color_step_size : int, default 0
+        Step size when cycling through the color palette for subsequent hue categories.
+    color_type : str, default "set"
+        Name of the seaborn color palette to use. Must be a key in plot_color_types.
+    test : str, default "t-test_ind"
+        Statistical test for pairwise comparisons. Options include:
+        {"t-test_ind", "t-test_welch", "t-test_paired", "Mann-Whitney", "Mann-Whitney-gt",
+         "Mann-Whitney-ls", "Levene", "Wilcoxon", "Kruskal", "Brunner-Munzel"}.
+    ci : Union[str, float], default "sd"
+        Confidence interval type or value for error bars. Can be "sd" for standard deviation
+        or a float for confidence interval percentage.
+    x_rotation : float, default 0
+        Rotation angle for x-axis tick labels in degrees.
+    x_deviation : float, default 0.02
+        Horizontal offset for bar value annotations.
+    y_deviation : float, default 0.02
+        Vertical offset adjustment for bar value annotations.
+    y_limit : Tuple[float, float], default (0, 1)
+        Y-axis limits for the plot.
+    anno : bool, default False
+        Whether to annotate bars with their numerical values.
+    anno_fontsize : float, default 7
+        Font size for bar value annotations.
+    line_height : float, default 0.01
+        Height of significance annotation lines as a fraction of y-axis range.
+    line_offset : float, default 0.01
+        Vertical offset for significance annotation lines from the bar tops.
+    colors : Union[list, dict], optional
+        Custom color list or dictionary mapping hue values to colors. If provided,
+        overrides the default color palette. Default is None.
+    title : str, optional
+        Title of the plot. Default is None.
+    output : path, optional
+        File path to save the figure. Default is None.
+    show : bool, default True
+        Whether to display the plot.
+    close : bool, default False
+        Whether to close the figure after saving.
+    **kwargs : Any
+        Additional keyword arguments passed to seaborn's barplot function.
+
+    Returns
+    -------
+    None
+        The function displays and/or saves the plot but does not return any value.
+    """
     fig, ax = plot_start(width, height, bottom, output, show)
 
     if legend_list is not None:
@@ -459,3 +733,128 @@ def bar_significance(
     plt.legend(loc='upper left', bbox_to_anchor=(0.0, legend_gap), ncol=2)
 
     plot_end(fig, title, x_name, y_name, output, show, close)
+
+
+def rate_bar_plot(
+    adata: AnnData,
+    layer: str = None,
+    trait_name: str = "All",
+    dir_name: str = "feature",
+    column: str = "value",
+    clusters: str = "clusters",
+    color: Tuple = ("#2e6fb7", "#f7f7f7"),
+    legend: Tuple = ("Enrichment", "Conservative"),
+    x_name: str = "Cell type",
+    y_name: str = "Enrichment ratio",
+    clusters_sort: Optional[list] = None,
+    text_color: str = "#000205",
+    width: float = 2,
+    height: float = 2,
+    bottom: float = 0,
+    rotation: float = 65,
+    title: str = None,
+    text_left_move: float = 0.15,
+    y_limit: Tuple[float, float] = (0, 1),
+    plot_output: path = None,
+    show: bool = True,
+    close: bool = False,
+    **kwargs: Any
+) -> None:
+    """
+    Generate a bar plot showing enrichment ratios for trait-cluster combinations.
+
+    This function calculates the completion ratio using the complete_ratio function
+    and visualizes the results as a bar plot. It handles directory creation for
+    output files and passes appropriate parameters to the bar_trait plotting function.
+
+    Parameters
+    ----------
+    adata : AnnData
+        Input AnnData object containing the data to be visualized.
+    layer : str, optional
+        Specify the layer of the matrix to be processed. If None, uses the main matrix.
+    trait_name : str, default "All"
+        The name of the trait being analyzed, used for filtering data.
+    dir_name : str, default "feature"
+        Folder name for generating and saving bar plot outputs.
+    column : str, default "value"
+        The column name containing the binary enrichment values.
+    clusters : str, default "clusters"
+        The column name in adata.obs that defines the cell clusters.
+    color : Tuple, default ("#2e6fb7", "#f7f7f7")
+        Color tuple for the bar plot (enrichment color, conservative color).
+    legend : Tuple, default ("Enrichment", "Conservative")
+        Legend labels for the two categories in the plot.
+    x_name : str, default "Cell type"
+        The label for the x-axis.
+    y_name : str, default "Enrichment ratio"
+        The label for the y-axis.
+    clusters_sort : Optional[list], optional
+        Custom order for clusters. If None, uses default sorting.
+    text_color : str, default "#000205"
+        Color for text annotations in the plot.
+    width : float, default 2
+        The width of the output figure in inches.
+    height : float, default 2
+        The height of the output figure in inches.
+    bottom : float, default 0
+        Bottom margin adjustment for the plot.
+    rotation : float, default 65
+        Rotation angle for x-axis labels in degrees.
+    title : str, optional
+        The title of the plot. If None, no title is displayed.
+    text_left_move : float, default 0.15
+        Horizontal adjustment for text position.
+    y_limit : Tuple[float, float], default (0, 1)
+        The y-axis limits for the plot.
+    plot_output : path, optional
+        Directory path for saving output files. If None, figures are not saved.
+    show : bool, default True
+        If True, display the figure interactively.
+    close : bool, default False
+        If True, close the figure after saving.
+    **kwargs : Any
+        Additional keyword arguments passed to bar_trait function.
+
+    Returns
+    -------
+    None
+        This function does not return any value. Outputs are saved to files or displayed.
+    """
+
+    if dir_name is not None:
+        # create path
+        new_path = os.path.join(plot_output, f"{dir_name}_{layer}") if plot_output is not None else None
+        # create path
+        if plot_output is not None:
+            ul.file_method(__name__).makedirs(new_path)
+    else:
+        plot_output = None
+        new_path = None
+
+    # create data
+    new_value_group = complete_ratio(adata=adata, layer=layer, column=column, clusters=clusters)
+
+    bar_trait(
+        trait_df=new_value_group,
+        value="rate",
+        clusters=clusters,
+        title=title,
+        x_name=x_name,
+        y_name=y_name,
+        clusters_sort=clusters_sort,
+        trait_name=trait_name,
+        color=color,
+        legend=legend,
+        text_color=text_color,
+        width=width,
+        height=height,
+        bottom=bottom,
+        rotation=rotation,
+        text_left_move=text_left_move,
+        y_limit=y_limit,
+        output=new_path if plot_output is not None else None,
+        show=show,
+        close=close,
+        **kwargs
+    )
