@@ -116,7 +116,7 @@ Bar
 Bar chart visualization function.
 
 .. automodule:: sciv.pl
-   :members: bar, bar_trait, class_bar, two_bar, bar_significance
+   :members: bar, bar_trait, class_bar, two_bar, bar_significance, rate_bar_plot
    :undoc-members:
    :show-inheritance:
 
@@ -156,7 +156,7 @@ Radar
 Radar visualization function.
 
 .. automodule:: sciv.pl
-   :members: radar, base_radar, radar_trait
+   :members: radar, base_radar, radar_trait, rate_circular_bar_plot
    :undoc-members:
    :show-inheritance:
 
@@ -167,16 +167,6 @@ Wayne diagram visualization function.
 
 .. automodule:: sciv.pl
    :members: two_venn, three_venn
-   :undoc-members:
-   :show-inheritance:
-
-Core
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Core drawing function.
-
-.. automodule:: sciv.pl
-   :members: trs_plot, group_heatmap, map_df_plot, rate_bar_plot, init_score_plot, cell_cell_plot, data_plot, complete_ratio, rate_circular_bar_plot
    :undoc-members:
    :show-inheritance:
 
