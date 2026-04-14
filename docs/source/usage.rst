@@ -15,31 +15,24 @@
 1.2 SCIV execution process
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-1.2.1 Download scATAC seq sample data
+1.2.1 Download scATAC-seq sample data
 ****************************
 
-Download PBMC case file： `GSM6793454_sc_atac_snapATAC2.h5ad <https://bio.liclab.net/scvmap_static/download/scatac/GSM6793454_sc_atac_snapATAC2.h5ad>`_
+Download PBMC case file： `GSE139369_ELM_sim_snapATAC2.h5ad <https://bio.liclab.net/scvmap_static/sciv/GSE139369_ELM_sim_snapATAC2.h5ad>`_
 
-.. code-block:: shell
+.. code-block:: python
 
-    mkdir -p /project/sciv/input/scATAC/GSM6793454
-    cd /project/sciv/input/scATAC/GSM6793454
-    wget https://bio.liclab.net/scvmap_static/download/scatac/GSM6793454_sc_atac_snapATAC2.h5ad
+    import sciv
+    adata = sciv.dl.read_sc_atac_file()
 
 1.2.2 Download trait example data
 ****************************
 
-Download the fine mapping results for monocytes, B cells, CD4+ and CD8+ T cells
+Download the fine mapping results for monocytes, red blood cells, CD4+ and CD8+ T cells
 
-.. code-block:: shell
+.. code-block:: python
 
-    mkdir -p /project/sciv/input/trait/GSM6793454
-    cd /project/sciv/input/trait/GSM6793454
-    wget https://bio.liclab.net/scvmap_static/sciv/download_example_traits.sh
-    chmod +x download_example_traits.sh
-    sh download_example_traits.sh
-    rm -rf download_example_traits.sh
-
+    variants, trait_info = sciv.dl.read_trait_file()
 
 1.2.3 Run SCIV
 ****************************
@@ -48,8 +41,8 @@ Create Python file
 
 .. code-block:: shell
 
-    mkdir -p /project/sciv/code/GSM6793454/
-    cd /project/sciv/code/GSM6793454/
+    mkdir -p /project/sciv/code/GSE139369_ELM/
+    cd /project/sciv/code/GSE139369_ELM/
     touch sciv_pbmc.py
 
 The file content is as follows
@@ -63,27 +56,18 @@ The file content is as follows
 
     if __name__ == '__main__':
 
-        # base path
-        base_path: str = "/project/sciv"
-
-        # path
-        save_path: str = f"{base_path}/result/GSM6793454/data"
-
         # scATAC-seq data
-        sc_atac_file = f"{base_path}/input/scATAC/GSM6793454/GSM6793454_sc_atac_snapATAC2.h5ad"
-        sc_atac = sciv.fl.read_h5ad(file=sc_atac_file)
+        adata = sciv.dl.read_sc_atac_file()
 
         # read variant information
-        variant_base_path: str = f"{base_path}/input/trait/GSM6793454/hg19"
-        variant_column_map: dict = {0: "chr", 1: "position", 3: "rsId", 4: "pp"}
-        variants, trait_info = sciv.fl.read_variants(variant_base_path, column_map=variant_column_map)
+        variants, trait_info = sciv.dl.read_trait_file()
 
         # run
         trs = sciv.ml.core(
-            adata=sc_atac,
+            adata=adata,
             variants=variants,
             trait_info=trait_info,
-            save_path=save_path,
+            save_path="./result",
             model_dir=os.path.join(save_path, "poisson_vi"),
             is_file_exist_loading=True
         )

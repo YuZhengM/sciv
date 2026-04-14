@@ -230,21 +230,6 @@ Util (.ul)
 
 A universal tool interface that includes constant definitions, logging, and auxiliary functions.
 
-Constant
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Constant definition.
-
-.. automodule:: sciv.ul
-   :members: project_version, project_name, project_cache_path, is_form_log_file, log_file_path, path, sparse_array, sparse_matrix, sparse_data, dense_data, matrix_data, chrtype, number, collection, enrichment_optional, difference_peak_optional, plot_color_types, type_50_colors, plot_cmap_50, type_20_colors, plot_cmap_20, type_set_colors, plot_cmap_set
-   :undoc-members:
-   :show-inheritance:
-
-Core
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Core auxiliary functions.
-
 .. automodule:: sciv.ul
    :members: file_method, log, track_with_memory, to_dense, to_sparse, sum_min_max, get_index, list_duplicate_set, split_matrix, merge_matrix, list_index, numerical_bisection_step, get_real_predict_label, strings_map_numbers, set_inf_value, generate_str, check_adata_get, generate_hex_colors, check_gpu_availability
    :undoc-members:

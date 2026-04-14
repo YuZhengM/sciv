@@ -127,14 +127,11 @@ def core(
     """
     The core algorithm of sciv includes the flow of all algorithms, as well as drawing and saving data.
     In the entire algorithm, the samples are in the row position, and the traits or diseases are in the column position,
-        while ensuring that there is no interaction between the traits or diseases,
-        ensuring the stability of the results;
+    while ensuring that there is no interaction between the traits or diseases, ensuring the stability of the results;
 
     Meaning of main variables:
-        1. `overlap_adata`, (obs: peaks, var: traits/diseases) Peaks-traits/diseases data obtained by overlaying variant
-         data with peaks.
-        2. `da_peaks`, (obs: clusters (Leiden), var: peaks) Differential peak data of cell clustering, used for weight
-         correction of cells.
+        1. `overlap_adata`, (obs: peaks, var: traits/diseases) Peaks-traits/diseases data obtained by overlaying variant data with peaks.
+        2. `da_peaks`, (obs: clusters (Leiden), var: peaks) Differential peak data of cell clustering, used for weight correction of cells.
         3. `init_score`, (obs: cells, var: traits/diseases) This is the initial TRS data.
         4. `cc_data`, (obs: cells, var: cells) Cell similarity data.
         5. `random_walk`, RandomWalk class.
