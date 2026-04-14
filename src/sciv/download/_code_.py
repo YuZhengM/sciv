@@ -114,7 +114,7 @@ def read_sc_atac_file() -> AnnData:
 
     Examples
     --------
-    >>> sciv.dl.read_sc_atac_file()
+    >>> adata = sciv.dl.read_sc_atac_file()
     """
     cache_path = ul.project_cache_path
     file_path: str = os.path.join(cache_path, "GSE139369_ELM_sim_snapATAC2.h5ad")
@@ -136,7 +136,7 @@ def read_trait_file() -> Tuple[dict, DataFrame]:
 
     Examples
     --------
-    >>> sciv.dl.read_trait_file()
+    >>> variants, trait_info = sciv.dl.read_trait_file()
     """
     cache_path = ul.project_cache_path
     file_path: str = os.path.join(cache_path, "example_traits")
@@ -159,7 +159,7 @@ def read_trs_file() -> AnnData:
 
     Examples
     --------
-    >>> sciv.dl.read_trs_file()
+    >>> trs = sciv.dl.read_trs_file()
     """
     cache_path = ul.project_cache_path
     file_path: str = os.path.join(cache_path, "trs.h5ad")
@@ -181,7 +181,7 @@ def read_trs_score_file() -> AnnData:
 
     Examples
     --------
-    >>> sciv.dl.read_trs_score_file()
+    >>> trs_score = sciv.dl.read_trs_score_file()
     """
     cache_path = ul.project_cache_path
     file_path: str = os.path.join(cache_path, "trs_method_score.h5ad")
