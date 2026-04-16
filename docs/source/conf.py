@@ -13,8 +13,8 @@ copyright = '2025, Zheng-Min Yu'
 author = 'Zheng-Min Yu'
 repository_url = "https://github.com/YuZhengM/sciv"
 
-release = '1.0.0'
-version = '1.0.0'
+release = '0.0.111b1'
+version = '0.0.111b1'
 
 autosummary_generate = True
 

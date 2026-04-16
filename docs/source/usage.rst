@@ -8,7 +8,7 @@
 
     conda create --name sciv python=3.10
     conda activate sciv
-    pip install sciv
+    pip install sciv==0.0.111b1
 
 
 1.2 SCIV execution process
