@@ -213,12 +213,26 @@ def to_fragments(
     -------
     None
         Writes fragments file to the specified path.
+
+    Examples
+    --------
+    >>> adata = sciv.dl.read_sc_atac_file()
+    >>> sciv.fl.to_fragments(adata, "/path/pbmc_fragments.tsv")
     """
 
     output_path = os.path.dirname(fragments)
 
     if output_path != '':
         ul.file_method(__name__).makedirs(output_path)
+
+    if is_gz:
+        try:
+            import pysam
+        except ImportError:
+            raise ImportError(
+                "The 'pysam' package is required for gzip compression. "
+                "Please install it using: pip install pysam."
+            )
 
     data = check_adata_get(adata=adata, layer=layer, is_dense=False, is_matrix=False).T
 
