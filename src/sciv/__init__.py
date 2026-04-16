@@ -3,6 +3,7 @@
 import os
 import sys
 
+from . import download as dl
 from . import file as fl
 from . import model as ml
 from . import plot as pl

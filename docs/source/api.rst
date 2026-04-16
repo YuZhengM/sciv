@@ -5,6 +5,16 @@
    :local:
    :depth: 1
 
+Download (.dl)
+---------------------------
+
+Data download interface, used to download single-cell data and trait files.
+
+.. automodule:: sciv.dl
+   :members: download_sc_atac_file, download_trait_file, download_trs_file, download_trs_score_file, read_sc_atac_file, read_trait_file, read_trs_file, read_trs_score_file
+   :undoc-members:
+   :show-inheritance:
+
 File (.fl)
 ---------------------------
 
