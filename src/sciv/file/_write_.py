@@ -192,23 +192,33 @@ def to_fragments(
     Parameters
     ----------
     adata : AnnData
-        Input AnnData object.
-    fragments: Output file name.
-    layer: The layer of data that needs to form fragments file;
-    is_sort: If set to true, the output will be sorting of chromatin;
-    is_gz: Whether to compress the formed file to gz;
-        Compress fragments file using method `pysam.tabix_compress`.
-    is_keep: Set to true, The `fragments.tsv` file will not be retained after compression;
-        When is_gz is true, it takes effect.
+        Input AnnData object containing single-cell data.
+    fragments : str
+        Output file path for the fragments file.
+    layer : str, optional
+        The layer of data to use for generating fragments file.
+        If None, uses the main data matrix (adata.X).
+    is_sort : bool, default=True
+        Whether to sort the output by chromosome and start position.
+        Sorts chromosomes in natural order (chr1, chr2, ..., chrX, chrY, chrM).
+    is_gz : bool, default=True
+        Whether to compress the output file using gzip.
+        Uses pysam.tabix_compress for compression.
+    is_keep : bool, default=False
+        Whether to keep the uncompressed fragments file after compression.
+        Only effective when is_gz is True. If False, the uncompressed
+        file is deleted after successful compression.
     
     Returns
     -------
-    fragments format file
-        The input fragments format file.
+    None
+        Writes fragments file to the specified path.
     """
 
     output_path = os.path.dirname(fragments)
-    ul.file_method(__name__).makedirs(output_path)
+
+    if output_path != '':
+        ul.file_method(__name__).makedirs(output_path)
 
     data = check_adata_get(adata=adata, layer=layer, is_dense=False, is_matrix=False).T
 
