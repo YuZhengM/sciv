@@ -515,8 +515,8 @@ def numerical_bisection_step(min_value: float, max_value: float, step_length: fl
 
 def get_real_predict_label(
     df: DataFrame,
-    map_cluster: Union[str, collection],
-    clusters: str = "clusters",
+    map_groupby: Union[str, collection],
+    groupby: str = "clusters",
     value: str = "value"
 ) -> Tuple[DataFrame, int, list]:
     """
@@ -526,9 +526,9 @@ def get_real_predict_label(
     ----------
     df : DataFrame
         Input data.
-    map_cluster : Union[str, collection]
+    map_groupby : Union[str, collection]
         Map of the cluster.
-    clusters : str, optional
+    groupby : str, optional
         Name of the column of the cluster. Default is "clusters".
     value : str, optional
         Name of the column of the value. Default is "value".
@@ -544,20 +544,21 @@ def get_real_predict_label(
 
     # Obtain the type of positive set clustering corresponding to the trait
     cluster_list: list = []
-    if isinstance(map_cluster, str):
-        cluster_list.append(map_cluster)
+
+    if isinstance(map_groupby, str):
+        cluster_list.append(map_groupby)
     else:
-        cluster_list = list(map_cluster)
+        cluster_list = list(map_groupby)
 
     # total label size
     total_size = df.shape[0]
 
     # true label size
     df_sort.insert(0, "true_label", 0)
-    df_sort.loc[df_sort[df_sort[clusters].isin(cluster_list)].index, "true_label"] = 1
+    df_sort.loc[df_sort[df_sort[groupby].isin(cluster_list)].index, "true_label"] = 1
 
     # predict label size
-    df_cluster = df[df[clusters].isin(cluster_list)].copy()
+    df_cluster = df[df[groupby].isin(cluster_list)].copy()
     df_cluster_size = df_cluster.shape[0]
     predict_label = list(np.ones(df_cluster_size))
     predict_label.extend(np.zeros(total_size - df_cluster_size))

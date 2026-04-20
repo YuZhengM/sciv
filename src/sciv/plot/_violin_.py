@@ -20,7 +20,7 @@ def violin_base(
     x_name: str = None,
     y_name: str = "value",
     kind: _Kind = "violin",
-    clusters: str = "clusters",
+    groupby: str = "clusters",
     palette: Union[Tuple, list] = None,
     hue: str = None,
     width: float = 2,
@@ -52,7 +52,7 @@ def violin_base(
         Y name.
     kind : _Kind, optional
         Kind of plot.
-    clusters : str, optional
+    groupby : str, optional
         Clusters column.
     palette : Union[Tuple, list], optional
         Palette.
@@ -105,26 +105,26 @@ def violin_base(
 
     fig, ax = plot_start(width, height, bottom, output, show)
 
-    group_columns = [clusters]
+    group_columns = [groupby]
 
     new_df: DataFrame = df.groupby(group_columns, as_index=False)[value].median()
 
     if "color" in df_columns:
         new_df_color: DataFrame = df.groupby(group_columns, as_index=False)["color"].first()
-        new_df = new_df.merge(new_df_color, how="left", on=clusters)
+        new_df = new_df.merge(new_df_color, how="left", on=groupby)
 
     colors: list = []
 
     # sort
     if is_sort:
         new_df.sort_values([value], ascending=False, inplace=True)
-        y_names: Union[list, None] = list(new_df[clusters])
+        y_names: Union[list, None] = list(new_df[groupby])
 
         if "color" in df_columns:
             colors = list(new_df["color"])
 
     else:
-        new_df.index = new_df[clusters]
+        new_df.index = new_df[groupby]
 
         if order_names is not None:
             y_names: list = order_names
@@ -133,14 +133,14 @@ def violin_base(
 
                 for i in order_names:
 
-                    for j, c in zip(new_df[clusters], new_df["color"]):
+                    for j, c in zip(new_df[groupby], new_df["color"]):
 
                         if i == j:
                             colors.append(c)
                             break
 
         else:
-            y_names = list(new_df[clusters])
+            y_names = list(new_df[groupby])
 
             if "color" in df_columns:
                 colors = list(new_df["color"])
@@ -148,7 +148,7 @@ def violin_base(
     # scatter
     g = sns.catplot(
         data=df,
-        x=clusters,
+        x=groupby,
         y=value,
         kind=kind,
         hue=hue,
@@ -176,7 +176,7 @@ def violin_trait(
     trait_name: Union[str, list] = "All",
     trait_column_name: str = "id",
     value: str = "value",
-    clusters: str = "clusters",
+    groupby: str = "clusters",
     kind: _Kind = "violin",
     x_name: str = None,
     y_name: str = "value",
@@ -211,7 +211,7 @@ def violin_trait(
         Column name in trait_df that contains trait identifiers.
     value : str, optional
         Column name containing the values to plot.
-    clusters : str, optional
+    groupby : str, optional
         Column name containing cluster assignments.
     kind : _Kind, optional
         Type of categorical plot to create (e.g., "violin", "box", "strip").
@@ -290,7 +290,7 @@ def violin_trait(
             kind=kind,
             hue=trait_column_name,
             line_width=line_width,
-            clusters=clusters,
+            groupby=groupby,
             title=f"{title} {_filename_}" if title is not None else title,
             output=os.path.join(output, f"cell_{_filename_}_score_cat_{kind}.pdf") if output is not None else None,
             show=show,

@@ -180,7 +180,7 @@ def box_trait(
     trait_name: str = "All",
     trait_column_name: str = "id",
     value: str = "value",
-    clusters: str = "clusters",
+    groupby: str = "clusters",
     x_name: str = None,
     y_name: str = "value",
     palette: Union[Tuple, list] = None,
@@ -217,7 +217,7 @@ def box_trait(
         Column name in trait_df that contains trait/disease identifiers.
     value : str, default "value"
         Column name for the numerical values to be plotted on y-axis.
-    clusters : str, default "clusters"
+    groupby : str, default "clusters"
         Column name for the cluster categories to be plotted on x-axis.
     x_name : str, optional
         Custom label for the x-axis. If None, uses the clusters column name.
@@ -278,7 +278,7 @@ def box_trait(
         # Sort gene scores from small to large
         box_base(
             df=trait_score,
-            x=clusters,
+            x=groupby,
             y=value,
             x_name=x_name,
             y_name=y_name,

@@ -434,9 +434,9 @@ def rate_circular_bar_plot(
     trait_name: str = "All",
     dir_name: str = "feature",
     column: str = "value",
-    clusters: str = "clusters",
+    groupby: str = "clusters",
     color: Union[collection, str] = None,
-    clusters_sort: Optional[list] = None,
+    groupby_sort: Optional[list] = None,
     width: float = 2,
     height: float = 2,
     rotation: float = 25,
@@ -471,12 +471,12 @@ def rate_circular_bar_plot(
         Folder name for generating and saving circular bar plot outputs.
     column : str, default "value"
         The column name containing the binary enrichment values.
-    clusters : str, default "clusters"
+    groupby : str, default "clusters"
         The column name in adata.obs that defines the cell clusters.
     color : Union[collection, str], optional
         Color specification for the plot. Can be a color collection or a column name
         to use for coloring bars based on data values.
-    clusters_sort : Optional[list], optional
+    groupby_sort : Optional[list], optional
         Custom order for clusters. If None, uses default sorting.
     width : float, default 2
         The width of the output figure in inches.
@@ -523,19 +523,18 @@ def rate_circular_bar_plot(
 
     # create data
     if color is not None and isinstance(color, str):
-        new_value_group = complete_ratio(adata=adata, layer=layer, column=column, extra_columns=[color],
-                                         clusters=clusters)
+        new_value_group = complete_ratio(adata, layer=layer, column=column, extra_columns=[color], groupby=groupby)
     else:
-        new_value_group = complete_ratio(adata=adata, layer=layer, column=column, clusters=clusters)
+        new_value_group = complete_ratio(adata, layer=layer, column=column, groupby=groupby)
 
     new_value_group = new_value_group[new_value_group[column] == 1].copy()
 
     radar_trait(
         trait_df=new_value_group,
         value="rate",
-        clusters=clusters,
+        groupby=groupby,
         title=title,
-        clusters_sort=clusters_sort,
+        groupby_sort=groupby_sort,
         trait_name=trait_name,
         color=color,
         width=width,

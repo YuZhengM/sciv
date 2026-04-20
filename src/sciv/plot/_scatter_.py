@@ -381,7 +381,7 @@ def scatter_3d(
 def scatter_atac(
     adata: AnnData,
     columns: Tuple[str, str] = ("UMAP1", "UMAP2"),
-    clusters: str = "clusters",
+    groupby: str = "clusters",
     hue_order: list = None,
     width: float = 2,
     height: float = 2,
@@ -409,7 +409,7 @@ def scatter_atac(
         AnnData object containing observations and coordinates
     columns : Tuple[str, str], default ("UMAP1", "UMAP2")
         Column names for x and y coordinates in adata.obs
-    clusters : str, default "clusters"
+    groupby : str, default "clusters"
         Column name for cluster labels in adata.obs
     hue_order : list, optional
         Order of clusters for legend
@@ -449,13 +449,13 @@ def scatter_atac(
 
     # DataFrame
     df: DataFrame = adata.obs.copy()
-    df[clusters] = df[clusters].astype(str)
+    df[groupby] = df[groupby].astype(str)
     # scatter
     scatter_base(
         df,
         x=columns[0],
         y=columns[1],
-        hue=clusters,
+        hue=groupby,
         width=width,
         height=height,
         size=size,

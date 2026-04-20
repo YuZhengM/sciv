@@ -19,7 +19,7 @@ from ..util import path, collection, set_inf_value, chrtype, add_cluster_info, g
 __name__: str = "preprocessing_snapatac2"
 
 
-def get_feature_count(raw_count: int, need_features: Optional[Union[int | float]]) -> int:
+def _get_feature_count_(raw_count: int, need_features: Optional[Union[int | float]]) -> int:
     """
     Get feature count.
     
@@ -118,7 +118,7 @@ def _process_sc_atac_(
     features: Optional[str] = None
 
     if need_features is not None:
-        feature_count: int = get_feature_count(
+        feature_count: int = _get_feature_count_(
             data.shape[1] if isinstance(fragment_file, path) else data[0].shape[1], need_features
         )
         ul.log(__name__).info("Select {} features".format(feature_count))
@@ -389,7 +389,7 @@ def merge_sc_atac(
     selected_list: collection = np.array([])
 
     if need_features is not None:
-        snap.pp.select_features(data, n_features=get_feature_count(data.shape[1], need_features))
+        snap.pp.select_features(data, n_features=_get_feature_count_(data.shape[1], need_features))
         selected_list = np.array(list(data.var["selected"]))
 
     # spectral
@@ -555,7 +555,7 @@ def get_gene_expression(
 def get_peak_matrix(
     fragment_file: path,
     genome_anno,
-    cluster: str,
+    groupby: str,
     cell_anno: Optional[DataFrame] = None,
     h5ad_file: Optional[path] = None,
     min_num_fragments: int = 200,
@@ -580,7 +580,7 @@ def get_peak_matrix(
         Path to the fragment file or h5ad file containing scATAC-seq data.
     genome_anno : DataFrame
         Genome annotation information.
-    cluster : str
+    groupby : str
         Column name in cell annotation indicating cluster labels for peak calling.
     cell_anno : Optional[DataFrame], optional
         Cell annotation DataFrame containing cluster information.
@@ -635,21 +635,21 @@ def get_peak_matrix(
     )
 
     # Add cell annotation information
-    adata.obs = add_cluster_info(adata.obs, cell_anno, cluster)
+    adata.obs = add_cluster_info(adata.obs, cell_anno, groupby)
 
-    if cluster not in adata.obs.columns:
-        ul.log(__name__).error(f"`{cluster}` is not in `adata.obs.columns`.")
-        raise ValueError(f"`{cluster}` is not in `adata.obs.columns` ({adata.obs.columns}).")
+    if groupby not in adata.obs.columns:
+        ul.log(__name__).error(f"`{groupby}` is not in `adata.obs.columns`.")
+        raise ValueError(f"`{groupby}` is not in `adata.obs.columns` ({adata.obs.columns}).")
 
     selected_adata = adata[:, selected_list] if selected_list is not None else adata
     filter_data(selected_adata)
 
-    ul.log(__name__).info(f"Peak calling at the `{cluster}`-level.")
+    ul.log(__name__).info(f"Peak calling at the `{groupby}`-level.")
     try:
-        snap.tl.macs3(selected_adata, groupby=cluster)
+        snap.tl.macs3(selected_adata, groupby=groupby)
     except Exception as e:
-        ul.log(__name__).error(f"The `cluster`({cluster}) is likely to have `NaN` values, please check.")
-        raise RuntimeError(f"The `cluster`({cluster}) is likely to have `NaN` values, please check.\n {e}")
+        ul.log(__name__).error(f"The `cluster`({groupby}) is likely to have `NaN` values, please check.")
+        raise RuntimeError(f"The `cluster`({groupby}) is likely to have `NaN` values, please check.\n {e}")
 
     ul.log(__name__).info("Obtain a unified, non-overlapping, and fixed-width peak list.")
     peaks = snap.tl.merge_peaks(selected_adata.uns['macs3'], genome_anno)
@@ -659,7 +659,7 @@ def get_peak_matrix(
 
     peak_mat.uns["params"] = {
         "fragment_file": fragment_file,
-        "cluster": cluster,
+        "groupby": groupby,
         "h5ad_file": h5ad_file,
         "min_num_fragments": min_num_fragments,
         "sorted_by_barcode": sorted_by_barcode,
@@ -679,7 +679,7 @@ def get_peak_matrix(
 def _process_info_to_adata_(
     adata: AnnData,
     selected_adata: AnnData,
-    cluster: str,
+    groupby: str,
     info_data: DataFrame,
     obs_info: DataFrame,
     h5ad_file: str
@@ -693,7 +693,7 @@ def _process_info_to_adata_(
         Full processed scATAC-seq data.
     selected_adata : AnnData
         Subset of adata with selected features.
-    cluster : str
+    groupby : str
         Cluster name.
     info_data : DataFrame
         Info data.
@@ -701,19 +701,20 @@ def _process_info_to_adata_(
         Obs info.
     h5ad_file : str
         H5ad file path.
+
     Returns
     -------
     AnnData
         Processed cell type-TF/peak matrix.
     """
-    
+
     obs_unique = list(obs_info.index)
     obs_unique_dict: dict = dict(zip(obs_unique, range(len(obs_unique))))
     # var
-    cluster_info: DataFrame = selected_adata.obs.groupby(cluster, as_index=False).size()
-    cluster_info.index = cluster_info[cluster].astype(str)
+    cluster_info: DataFrame = selected_adata.obs.groupby(groupby, as_index=False).size()
+    cluster_info.index = cluster_info[groupby].astype(str)
     cluster_info.rename_axis("index", inplace=True)
-    cluster_info.sort_values([cluster], inplace=True)
+    cluster_info.sort_values([groupby], inplace=True)
     cluster_list: list = list(cluster_info.index)
 
     shape = (len(obs_unique), len(cluster_list))
@@ -728,7 +729,7 @@ def _process_info_to_adata_(
         info_data["log2_fold_change"],
         info_data["p_value"],
         info_data["adjusted_p_value"],
-        info_data[cluster]
+        info_data[groupby]
     ):
         log2_fold_change_matrix[obs_unique_dict[_id_], cluster_list.index(_cluster_)] = log2_fold_change
         p_value_matrix[obs_unique_dict[_id_], cluster_list.index(_cluster_)] = p_value
@@ -754,7 +755,7 @@ def _process_info_to_adata_(
 def get_tf_data(
     fragment_file: path,
     genome_anno,
-    cluster: str,
+    groupby: str,
     cell_anno: Optional[DataFrame] = None,
     h5ad_file: Optional[path] = None,
     min_num_fragments: int = 200,
@@ -776,7 +777,7 @@ def get_tf_data(
         Fragment file path.
     genome_anno : DataFrame
         Genome annotation.
-    cluster : str
+    groupby : str
         Cluster name.
     cell_anno : Optional[DataFrame], optional
         Cell annotation.
@@ -812,7 +813,7 @@ def get_tf_data(
     adata, selected_adata, h5ad_file, peaks, peak_mat = get_peak_matrix(
         fragment_file=fragment_file,
         genome_anno=genome_anno,
-        cluster=cluster,
+        groupby=groupby,
         cell_anno=cell_anno,
         h5ad_file=h5ad_file,
         min_num_fragments=min_num_fragments,
@@ -825,12 +826,12 @@ def get_tf_data(
     )
 
     ul.log(__name__).info("Finding marker regions.")
-    marker_peaks = snap.tl.marker_regions(peak_mat, groupby=cluster, pvalue=p_value)
+    marker_peaks = snap.tl.marker_regions(peak_mat, groupby=groupby, pvalue=p_value)
 
     if len(marker_peaks.keys()) == 0 and p_value < 0.05:
         p_value = 0.05
         ul.log(__name__).warning(f"Due to the absence of marker regions, the `p_value` value is automatically changed to `0.05`.")
-        marker_peaks = snap.tl.marker_regions(peak_mat, groupby=cluster, pvalue=p_value)
+        marker_peaks = snap.tl.marker_regions(peak_mat, groupby=groupby, pvalue=p_value)
 
     if len(marker_peaks.keys()) == 0:
         ul.log(__name__).error(f"No marker regions for `p_value` = {p_value}, you can try to increase the `p_value`.")
@@ -855,7 +856,7 @@ def get_tf_data(
     # Add motif
     for cell_type in have_cluster_list:
         motif_data: DataFrame = pd.DataFrame(motifs[cell_type], columns=columns)
-        motif_data[cluster] = cell_type
+        motif_data[groupby] = cell_type
         motif_list.append(motif_data)
 
     # obtain all motif data
@@ -871,7 +872,7 @@ def get_tf_data(
     tf_adata = _process_info_to_adata_(
         adata=adata,
         selected_adata=selected_adata,
-        cluster=cluster,
+        groupby=groupby,
         info_data=tf_data,
         obs_info=tf_info,
         h5ad_file=h5ad_file
@@ -879,7 +880,7 @@ def get_tf_data(
 
     tf_adata.uns["params"] = {
         "fragment_file": fragment_file,
-        "cluster": cluster,
+        "groupby": groupby,
         "h5ad_file": h5ad_file,
         "min_num_fragments": min_num_fragments,
         "sorted_by_barcode": sorted_by_barcode,
@@ -901,7 +902,7 @@ def get_tf_data(
 def get_difference_peaks(
     fragment_file: path,
     genome_anno,
-    cluster: str,
+    groupby: str,
     cell_anno: Optional[DataFrame] = None,
     h5ad_file: Optional[path] = None,
     min_num_fragments: int = 200,
@@ -924,7 +925,7 @@ def get_difference_peaks(
         Fragment file path.
     genome_anno : DataFrame
         Genome annotation.
-    cluster : str
+    groupby : str
         Cluster name.
     cell_anno : Optional[DataFrame], optional
         Cell annotation.
@@ -962,7 +963,7 @@ def get_difference_peaks(
     adata, selected_adata, h5ad_file, peaks, peak_mat = get_peak_matrix(
         fragment_file=fragment_file,
         genome_anno=genome_anno,
-        cluster=cluster,
+        groupby=groupby,
         cell_anno=cell_anno,
         h5ad_file=h5ad_file,
         min_num_fragments=min_num_fragments,
@@ -974,7 +975,7 @@ def get_difference_peaks(
         peak_matrix_save_file=peak_matrix_save_file
     )
     adata_cell_anno: DataFrame = selected_adata.obs.copy()
-    cluster_list: list = list(set(adata_cell_anno[cluster]))
+    cluster_list: list = list(set(adata_cell_anno[groupby]))
     cluster_list.sort()
     cluster_str: str = ", ".join(cluster_list)
 
@@ -985,15 +986,15 @@ def get_difference_peaks(
     columns: list = ["id", "log2_fold_change", "p_value", "adjusted_p_value"]
 
     for _cluster_ in cluster_list:
-        ul.log(__name__).info(f"Processing {cluster}: {_cluster_}/({cluster_str}).")
+        ul.log(__name__).info(f"Processing {groupby}: {_cluster_}/({cluster_str}).")
         _cluster_list_ = cluster_list.copy()
         _cluster_list_.remove(_cluster_)
 
         # cell barcodes
-        cell_group1 = adata_cell_anno[adata_cell_anno[cluster] == _cluster_].index
-        cell_group2 = adata_cell_anno[adata_cell_anno[cluster].isin(_cluster_list_)].index
+        cell_group1 = adata_cell_anno[adata_cell_anno[groupby] == _cluster_].index
+        cell_group2 = adata_cell_anno[adata_cell_anno[groupby].isin(_cluster_list_)].index
 
-        ul.log(__name__).info(f"Processing {cluster}: {_cluster_} difference peaks.")
+        ul.log(__name__).info(f"Processing {groupby}: {_cluster_} difference peaks.")
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -1010,8 +1011,8 @@ def get_difference_peaks(
         _diff_peaks_data_["log2_fold_change"] = _diff_peaks_data_["log2_fold_change"].astype(np.float64)
         _diff_peaks_data_["p_value"] = _diff_peaks_data_["p_value"].astype(np.float64)
         _diff_peaks_data_["adjusted_p_value"] = _diff_peaks_data_["adjusted_p_value"].astype(np.float64)
-        _diff_peaks_data_.insert(0, cluster, _cluster_)
-        _diff_peaks_data_.index = _diff_peaks_data_[cluster].astype(str) + "_" + _diff_peaks_data_["id"].astype(str)
+        _diff_peaks_data_.insert(0, groupby, _cluster_)
+        _diff_peaks_data_.index = _diff_peaks_data_[groupby].astype(str) + "_" + _diff_peaks_data_["id"].astype(str)
 
         # Add result
         diff_peaks_list.append(_diff_peaks_data_)
@@ -1034,7 +1035,7 @@ def get_difference_peaks(
     diff_peaks_adata = _process_info_to_adata_(
         adata=adata,
         selected_adata=selected_adata,
-        cluster=cluster,
+        groupby=groupby,
         info_data=diff_peaks_data,
         obs_info=peaks_info,
         h5ad_file=h5ad_file
@@ -1042,7 +1043,7 @@ def get_difference_peaks(
 
     diff_peaks_adata.uns["params"] = {
         "fragment_file": fragment_file,
-        "cluster": cluster,
+        "groupby": groupby,
         "h5ad_file": h5ad_file,
         "min_num_fragments": min_num_fragments,
         "sorted_by_barcode": sorted_by_barcode,

@@ -138,7 +138,7 @@ def communities_graph(
     adata: AnnData,
     labels: collection,
     layer: str = None,
-    clusters: str = "clusters",
+    groupby: str = "clusters",
     x_name: str = None,
     y_name: str = None,
     title: str = None,
@@ -168,7 +168,7 @@ def communities_graph(
         Community labels for grouping nodes. Each community is a collection of node indices.
     layer : str, optional
         Name of the layer in adata to use for adjacency matrix. If None, uses adata.X.
-    clusters : str, default="clusters"
+    groupby : str, default="clusters"
         Column name in adata.obs containing cluster information for color assignment.
     x_name : str, optional
         Label for the x-axis.
@@ -216,7 +216,7 @@ def communities_graph(
 
     df = new_data.obs.copy()
 
-    __hue_order__ = list(np.sort(list(set(df[clusters]))))
+    __hue_order__ = list(np.sort(list(set(df[groupby]))))
 
     type_colors = type_20_colors if len(__hue_order__) <= 20 else type_50_colors
 

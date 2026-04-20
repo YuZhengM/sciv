@@ -104,9 +104,9 @@ def base_pie(
 
 def pie_label(
     df: DataFrame,
-    map_cluster: Union[str, collection],
+    map_groupby: Union[str, collection],
     value: str = "value",
-    clusters: str = "clusters",
+    groupby: str = "clusters",
     x_name: str = None,
     y_name: str = None,
     title: str = None,
@@ -134,11 +134,11 @@ def pie_label(
     ----------
     df : DataFrame
         The input data containing cluster and value information.
-    map_cluster : Union[str, collection]
+    map_groupby : Union[str, collection]
         The mapping of clusters, can be a column name or a collection of cluster labels.
     value : str, optional
         The column name for values in the DataFrame. Default is "value".
-    clusters : str, optional
+    groupby : str, optional
         The column name for cluster labels in the DataFrame. Default is "clusters".
     x_name : str, optional
         The label for the x-axis. Default is None.
@@ -188,8 +188,8 @@ def pie_label(
 
     df_sort, cluster_size, cluster_list = get_real_predict_label(
         df=df,
-        map_cluster=map_cluster,
-        clusters=clusters,
+        map_groupby=map_groupby,
+        groupby=groupby,
         value=value
     )
 
@@ -231,9 +231,9 @@ def pie_label(
 
 def pie_trait(
     trait_df: DataFrame,
-    trait_cluster_map: dict,
+    trait_groupby_map: dict,
     trait_name: str = "All",
-    clusters: str = "clusters",
+    groupby: str = "clusters",
     trait_column_name: str = "id",
     value: str = "value",
     x_name: str = None,
@@ -262,13 +262,13 @@ def pie_trait(
     ----------
     trait_df : DataFrame
         The input data containing trait information, cluster labels, and values.
-    trait_cluster_map : dict
+    trait_groupby_map : dict
         A dictionary mapping trait names to their corresponding cluster mappings.
         Keys are trait names, values are cluster label mappings.
     trait_name : str, optional
         The specific trait to plot. Use "All" to plot all traits in the data.
         Default is "All".
-    clusters : str, optional
+    groupby : str, optional
         The column name for cluster labels in the DataFrame. Default is "clusters".
     trait_column_name : str, optional
         The column name for trait identifiers in the DataFrame. Default is "id".
@@ -307,7 +307,7 @@ def pie_trait(
     **kwargs : Any
         Additional keyword arguments passed to the pie_label function.
     """
-    trait_cluster_map_key_list = list(trait_cluster_map.keys())
+    trait_groupby_map_key_list = list(trait_groupby_map.keys())
 
     data: DataFrame = trait_df.copy()
 
@@ -325,11 +325,11 @@ def pie_trait(
         atac_cell_df_ : DataFrame
             The DataFrame containing trait data for plotting.
         """
-        if trait_ not in trait_cluster_map_key_list:
+        if trait_ not in trait_groupby_map_key_list:
             ul.log(__name__).error(
-                f"The key in `trait_cluster_map` does not contain the `{trait_}` trait and needs to be added")
+                f"The key in `trait_groupby_map` does not contain the `{trait_}` trait and needs to be added")
             raise ValueError(
-                f"The key in `trait_cluster_map` does not contain the `{trait_}` trait and needs to be added"
+                f"The key in `trait_groupby_map` does not contain the `{trait_}` trait and needs to be added"
             )
 
         ul.log(__name__).info("Plotting pie {}".format(trait_))
@@ -337,10 +337,10 @@ def pie_trait(
         trait_score = atac_cell_df_[atac_cell_df_[trait_column_name] == trait_]
         # Sort gene scores from small to large
         pie_label(
-            df=trait_score[[trait_column_name, clusters, value]],
-            map_cluster=trait_cluster_map[trait_],
+            df=trait_score[[trait_column_name, groupby, value]],
+            map_groupby=trait_groupby_map[trait_],
             value=value,
-            clusters=clusters,
+            groupby=groupby,
             x_name=x_name,
             y_name=y_name,
             width=width,

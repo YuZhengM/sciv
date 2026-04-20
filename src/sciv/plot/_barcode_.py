@@ -16,7 +16,7 @@ __name__: str = "plot_barcode"
 
 def barcode_base(
     df: DataFrame,
-    cluster_list: list,
+    groupby_list: list,
     sort_column: str = "value",
     column: str = "clusters",
     width: float = 1,
@@ -39,7 +39,7 @@ def barcode_base(
     ----------
     df : DataFrame
         Input data.
-    cluster_list : list
+    groupby_list : list
         Cluster list.
     sort_column : str, optional
         Sort column.
@@ -87,7 +87,7 @@ def barcode_base(
             ground_true: list
             df_sort.loc[df_sort[df_sort[column] == i].index, ["class_index"]] = ground_true.count(i)
         else:
-            df_sort.loc[df_sort[df_sort[column] == i].index, ["class_index"]] = cluster_list.index(i)
+            df_sort.loc[df_sort[df_sort[column] == i].index, ["class_index"]] = groupby_list.index(i)
 
     class_index = np.array(df_sort["class_index"])
 
@@ -135,7 +135,7 @@ def barcode_trait(
     trait_name: str = "All",
     trait_column_name: str = "id",
     sort_column: str = "value",
-    clusters: str = "clusters",
+    groupby: str = "clusters",
     cmap: str = "viridis",
     width: float = 1,
     height: float = 3,
@@ -168,7 +168,7 @@ def barcode_trait(
     sort_column : str, optional
         Column name used for sorting values in the barcode plot.
         Default is "value".
-    clusters : str, optional
+    groupby : str, optional
         Column name in the DataFrame that contains cluster assignments.
         Default is "clusters".
     cmap : str, optional
@@ -206,7 +206,7 @@ def barcode_trait(
         Default is False.
     """
     data: DataFrame = trait_df.copy()
-    cluster_list = list(set(trait_df[clusters]))
+    groupby_list = list(set(trait_df[groupby]))
 
     def trait_plot(trait_: str, atac_cell_df_: DataFrame) -> None:
         """
@@ -221,10 +221,10 @@ def barcode_trait(
         # Sort gene scores from small to large
         barcode_base(
             df=trait_score,
-            cluster_list=cluster_list,
+            groupby_list=groupby_list,
             sort_column=sort_column,
             trait_column_name=trait_column_name,
-            column=clusters,
+            column=groupby,
             width=width,
             height=height,
             is_ticks=is_ticks,

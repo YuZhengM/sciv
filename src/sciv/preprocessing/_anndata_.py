@@ -15,7 +15,7 @@ __name__: str = "preprocessing_anndata"
 
 def adata_group(
     adata: AnnData,
-    column: str,
+    groupby: str,
     extra_column: Optional[str] = None,
     axis: Literal[0, 1] = 1,
     layer: str = None,
@@ -28,7 +28,7 @@ def adata_group(
     ----------
     adata : AnnData
         input data;
-    column : str
+    groupby : str
         grouping `column`;
     extra_column : Optional[str], optional
         Extra columns reserved based on grouped `column`;
@@ -69,9 +69,9 @@ def adata_group(
     # get group information
     data_obs: DataFrame = data.obs
 
-    if column not in data_obs.columns:
-        ul.log(__name__).error(f"The grouped column {column} are not in the corresponding columns {data_obs.columns}")
-        raise ValueError(f"The grouped column {column} are not in the corresponding columns {data_obs.columns}")
+    if groupby not in data_obs.columns:
+        ul.log(__name__).error(f"The grouped column {groupby} are not in the corresponding columns {data_obs.columns}")
+        raise ValueError(f"The grouped column {groupby} are not in the corresponding columns {data_obs.columns}")
 
     if extra_column is not None and extra_column not in data_obs.columns:
         ul.log(__name__).error(
@@ -82,16 +82,16 @@ def adata_group(
 
     # handle group information
     if extra_column is not None:
-        obs: DataFrame = pd.DataFrame(data_obs[[extra_column, column]]).drop_duplicates()
-        obs.index = obs[column].astype(str)
+        obs: DataFrame = pd.DataFrame(data_obs[[extra_column, groupby]]).drop_duplicates()
+        obs.index = obs[groupby].astype(str)
     else:
-        obs: DataFrame = pd.DataFrame(data_obs[[column]]).drop_duplicates()
-        obs.index = obs[column].astype(str)
+        obs: DataFrame = pd.DataFrame(data_obs[[groupby]]).drop_duplicates()
+        obs.index = obs[groupby].astype(str)
 
     obs.sort_index(inplace=True)
     obs.rename_axis("group_column_index", inplace=True)
     column_size = obs.shape[0]
-    column_group = list(obs[column])
+    column_group = list(obs[groupby])
     # create container
     matrix_mean: matrix_data = np.zeros((column_size, data.shape[1]))
     matrix_sum: matrix_data = np.zeros((column_size, data.shape[1]))
@@ -102,7 +102,7 @@ def adata_group(
     # add data
     for i in range(column_size):
         # Retrieve index information under data_obs
-        data_obs_column: DataFrame = data_obs[data_obs[column] == column_group[i]]
+        data_obs_column: DataFrame = data_obs[data_obs[groupby] == column_group[i]]
         # sum value
         overlap_variant = data[list(data_obs_column.index), :]
 

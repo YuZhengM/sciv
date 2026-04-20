@@ -219,13 +219,13 @@ def class_bar(
     df: DataFrame,
     value: str = "rate",
     by: str = "value",
-    clusters: str = "clusters",
+    groupby: str = "clusters",
     color: Tuple = ("#2e6fb7", "#f7f7f7"),
     x_name: str = "Cell type",
     y_name: str = "Enrichment ratio",
     legend: Tuple = ("Enrichment", "Conservative"),
     text_color: str = "#000205",
-    clusters_sort: Optional[list] = None,
+    groupby_sort: Optional[list] = None,
     width: float = 2,
     height: float = 2,
     bottom: float = 0,
@@ -254,7 +254,7 @@ def class_bar(
         Column name containing the numerical values to plot.
     by : str, default "value"
         Column name used to filter the DataFrame into two categories (typically binary: 0 and 1).
-    clusters : str, default "clusters"
+    groupby : str, default "clusters"
         Column name containing the cluster labels or categories.
     color : Tuple, default ("#2e6fb7", "#f7f7f7")
         Colors for the two bar segments (enrichment color, conservative color).
@@ -266,7 +266,7 @@ def class_bar(
         Labels for the legend corresponding to the two bar segments.
     text_color : str, default "#000205"
         Color of the value labels on bars.
-    clusters_sort : Optional[list], default None
+    groupby_sort : Optional[list], default None
         Custom order for clusters. If provided, clusters will be sorted according to this list.
         If None, clusters will be sorted by value in descending order.
     width : float, default 2
@@ -301,16 +301,16 @@ def class_bar(
     df2 = df[df[by] == 0]
 
     # Sort
-    if clusters_sort is not None:
-        df1[clusters] = pd.Categorical(df1[clusters], categories=clusters_sort, ordered=True)
-        df1 = df1.sort_values(by=clusters)
-        df2[clusters] = pd.Categorical(df2[clusters], categories=clusters_sort, ordered=True)
-        df2 = df2.sort_values(by=clusters)
-        ax_x = clusters_sort
+    if groupby_sort is not None:
+        df1[groupby] = pd.Categorical(df1[groupby], categories=groupby_sort, ordered=True)
+        df1 = df1.sort_values(by=groupby)
+        df2[groupby] = pd.Categorical(df2[groupby], categories=groupby_sort, ordered=True)
+        df2 = df2.sort_values(by=groupby)
+        ax_x = groupby_sort
     else:
         df1 = df1.sort_values([value], ascending=False)
         df2 = df2.sort_values([value])
-        ax_x = df1[clusters]
+        ax_x = df1[groupby]
 
     ax_y = (df1[value], df2[value])
 
@@ -341,13 +341,13 @@ def bar_trait(
     trait_name: str = "All",
     trait_column_name: str = "id",
     value: str = "rate",
-    clusters: str = "clusters",
+    groupby: str = "clusters",
     x_name: str = "Cell type",
     y_name: str = "Enrichment ratio",
     color: Tuple = ("#2e6fb7", "#f7f7f7"),
     legend: Tuple = ("Enrichment", "Conservative"),
     text_color: str = "#000205",
-    clusters_sort: Optional[list] = None,
+    groupby_sort: Optional[list] = None,
     width: float = 2,
     height: float = 2,
     bottom: float = 0,
@@ -380,7 +380,7 @@ def bar_trait(
         Column name in trait_df that contains trait identifiers.
     value : str, default "rate"
         Column name containing the numerical enrichment values to plot.
-    clusters : str, default "clusters"
+    groupby : str, default "clusters"
         Column name containing cluster or cell type labels.
     x_name : str, default "Cell type"
         Label for the x-axis.
@@ -392,7 +392,7 @@ def bar_trait(
         Labels for the legend corresponding to the two bar segments.
     text_color : str, default "#000205"
         Color of the value labels on bars.
-    clusters_sort : Optional[list], default None
+    groupby_sort : Optional[list], default None
         Custom order for clusters. If provided, clusters will be sorted according
         to this list. If None, clusters are sorted by enrichment value.
     width : float, default 2
@@ -440,14 +440,14 @@ def bar_trait(
         class_bar(
             df=trait_score,
             value=value,
-            clusters=clusters,
+            groupby=groupby,
             title=f"{title} {trait_}" if title is not None else title,
             color=color,
             legend=legend,
             width=width,
             x_name=x_name,
             y_name=y_name,
-            clusters_sort=clusters_sort,
+            groupby_sort=groupby_sort,
             height=height,
             bottom=bottom,
             rotation=rotation,
@@ -741,12 +741,12 @@ def rate_bar_plot(
     trait_name: str = "All",
     dir_name: str = "feature",
     column: str = "value",
-    clusters: str = "clusters",
+    groupby: str = "clusters",
     color: Tuple = ("#2e6fb7", "#f7f7f7"),
     legend: Tuple = ("Enrichment", "Conservative"),
     x_name: str = "Cell type",
     y_name: str = "Enrichment ratio",
-    clusters_sort: Optional[list] = None,
+    groupby_sort: Optional[list] = None,
     text_color: str = "#000205",
     width: float = 2,
     height: float = 2,
@@ -779,7 +779,7 @@ def rate_bar_plot(
         Folder name for generating and saving bar plot outputs.
     column : str, default "value"
         The column name containing the binary enrichment values.
-    clusters : str, default "clusters"
+    groupby : str, default "clusters"
         The column name in adata.obs that defines the cell clusters.
     color : Tuple, default ("#2e6fb7", "#f7f7f7")
         Color tuple for the bar plot (enrichment color, conservative color).
@@ -789,7 +789,7 @@ def rate_bar_plot(
         The label for the x-axis.
     y_name : str, default "Enrichment ratio"
         The label for the y-axis.
-    clusters_sort : Optional[list], optional
+    groupby_sort : Optional[list], optional
         Custom order for clusters. If None, uses default sorting.
     text_color : str, default "#000205"
         Color for text annotations in the plot.
@@ -833,16 +833,16 @@ def rate_bar_plot(
         new_path = None
 
     # create data
-    new_value_group = complete_ratio(adata=adata, layer=layer, column=column, clusters=clusters)
+    new_value_group = complete_ratio(adata=adata, layer=layer, column=column, groupby=groupby)
 
     bar_trait(
         trait_df=new_value_group,
         value="rate",
-        clusters=clusters,
+        groupby=groupby,
         title=title,
         x_name=x_name,
         y_name=y_name,
-        clusters_sort=clusters_sort,
+        groupby_sort=groupby_sort,
         trait_name=trait_name,
         color=color,
         legend=legend,

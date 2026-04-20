@@ -133,20 +133,20 @@ def filter_data(
 
 def get_difference_genes(
     adata: AnnData,
-    cluster: str,
+    groupby: str,
     method: _Method = "wilcoxon",
     cell_anno: Optional[DataFrame] = None,
     diff_genes_file: Optional[str] = None
 ) -> AnnData:
     """
-    Get differentially expressed genes.
+    Get differentially expressed/active genes.
 
     Parameters
     ----------
     adata : AnnData
         scATAC-seq data
-    cluster : str
-        Cluster name
+    groupby : str
+        groupby name
     method : _Method, optional
         Method to use for differentially expressed gene analysis.
     cell_anno : Optional[DataFrame], optional
@@ -162,7 +162,7 @@ def get_difference_genes(
     import scanpy as sc
 
     # add cell annotation information
-    adata.obs = add_cluster_info(adata.obs, cell_anno, cluster)
+    adata.obs = add_cluster_info(adata.obs, cell_anno, groupby)
 
     if "log1p" not in adata.uns_keys():
         adata.uns["log1p"] = {}
@@ -174,9 +174,9 @@ def get_difference_genes(
     ul.log(__name__).info("Rank genes for characterizing groups.")
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        sc.tl.rank_genes_groups(adata=adata, groupby=cluster, method=method, use_raw=False)
+        sc.tl.rank_genes_groups(adata=adata, groupby=groupby, method=method, use_raw=False)
 
-    # get difference genes for each `cluster`
+    # get difference genes for each `groupby`
     diff_genes = adata.uns['rank_genes_groups']['names']
 
     # gene names
@@ -185,8 +185,8 @@ def get_difference_genes(
     gene_dict: dict = dict(zip(gene_list, range(len(gene_list))))
 
     # obs
-    cluster_info: DataFrame = adata.obs.copy().groupby([cluster], as_index=False).size()
-    cluster_info.index = cluster_info[cluster].astype(str)
+    cluster_info: DataFrame = adata.obs.copy().groupby([groupby], as_index=False).size()
+    cluster_info.index = cluster_info[groupby].astype(str)
 
     cluster_list: list = cluster_info.index.tolist()
     cluster_list.sort()
