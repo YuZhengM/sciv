@@ -801,32 +801,32 @@ def knock(
         Includes knock parameters in .uns["params"] and knock-specific metadata.
     """
     if "params" not in trs.uns:
-        ul.log(__name__).error(
-            "`params` is not in `trs.uns`, please execute function `ml.core` first to obtain the result as input for the `trs` parameter.")
-        raise ValueError(
-            "`params` is not in `trs.uns`, please execute function `ml.core` first to obtain the result as input for the `trs` parameter.")
+        ul.log(__name__).error("`params` is not in `trs.uns`, please execute function `ml.core` first to obtain the "
+                               "result as input for the `trs` parameter.")
+        raise ValueError("`params` is not in `trs.uns`, please execute function `ml.core` first to obtain the result "
+                         "as input for the `trs` parameter.")
 
     if "variants" not in trs.uns:
-        ul.log(__name__).error(
-            "`variants` is not in `trs.uns`, please execute function `ml.core` first to obtain the result as input for the `trs` parameter.")
-        raise ValueError(
-            "`variants` is not in `trs.uns`, please execute function `ml.core` first to obtain the result as input for the `trs` parameter.")
+        ul.log(__name__).error("`variants` is not in `trs.uns`, please execute function `ml.core` first to obtain the "
+                               "result as input for the `trs` parameter.")
+        raise ValueError("`variants` is not in `trs.uns`, please execute function `ml.core` first to obtain the result "
+                         "as input for the `trs` parameter.")
 
     if "trait_info" not in trs.uns:
-        ul.log(__name__).error(
-            "`trait_info` is not in `trs.uns`, please execute function `ml.core` first to obtain the result as input for the `trs` parameter.")
-        raise ValueError(
-            "`trait_info` is not in `trs.uns`, please execute function `ml.core` first to obtain the result as input for the `trs` parameter.")
+        ul.log(__name__).error("`trait_info` is not in `trs.uns`, please execute function `ml.core` first to obtain "
+                               "the result as input for the `trs` parameter.")
+        raise ValueError("`trait_info` is not in `trs.uns`, please execute function `ml.core` first to obtain the "
+                         "result as input for the `trs` parameter.")
 
     if "trs_source" not in trs.layers:
-        ul.log(__name__).error(
-            "`trs_source` is not in `trs.layers`, please execute function `ml.core` first to obtain the result as input for the `trs` parameter.")
-        raise ValueError(
-            "`trs_source` is not in `trs.layers`, please execute function `ml.core` first to obtain the result as input for the `trs` parameter.")
+        ul.log(__name__).error("`trs_source` is not in `trs.layers`, please execute function `ml.core` first to obtain "
+                               "the result as input for the `trs` parameter.")
+        raise ValueError("`trs_source` is not in `trs.layers`, please execute function `ml.core` first to obtain the "
+                         "result as input for the `trs` parameter.")
 
     if knock_value >= 1E-3:
-        ul.log(__name__).warning(
-            "The value set for `knock_value` here is greater than 1e-3, which can easily fail to achieve the desired effect.")
+        ul.log(__name__).warning("The value set for `knock_value` here is greater than 1e-3, which can easily fail to "
+                                 "achieve the desired effect.")
 
     # param information
     params = trs.uns["params"]

@@ -95,34 +95,87 @@ def save_pkl(data, save_file: path, is_verbose: bool = False) -> None:
 def to_meta(
     adata: AnnData,
     dir_path: path,
-    layer: str = None,
+    layer_obsm: str = None,
+    layer_priority: bool = True,
     feature_name: str = "peaks.bed",
     field: _Field = None
 ) -> None:
     """
-    Convert AnnData data into metadata, i.e directory with matrix, bed file, etc.
-    
+    Convert AnnData object into metadata directory containing matrix, feature files, etc.
+
+    This function exports single-cell data into standard 10x Genomics format, including:
+    - matrix.mtx: Sparse matrix file in Matrix Market format
+    - annotation.txt: Cell annotation information
+    - barcodes.tsv: Cell barcodes list
+    - peaks.bed or specified feature file: Genomic feature information
+
     Parameters
     ----------
     adata : AnnData
-        Input AnnData object.
-    dir_path: Path for generating data.
-    layer: The layer of data that needs to form meta files;
-    feature_name: Feature file name;
-    field: None or _Field;
-        Either 'real', 'complex', 'pattern', or 'integer'.
-    
+        Input AnnData object containing single-cell data.
+    dir_path : path
+        Output directory path for storing generated metadata files.
+    layer_obsm : str, optional
+        Name of the data layer to use. Can be a key in adata.layers or adata.obsm.
+        If None, uses adata.X as the main data matrix.
+    layer_priority : bool, default=True
+        When layer_obsm exists in both adata.layers and adata.obsm:
+        - If True, prioritize adata.layers
+        - If False, prioritize adata.obsm
+    feature_name : str, default="peaks.bed"
+        Output name for the feature file. If starts with "peaks", 
+        feature indices will be parsed by chromosome position into BED format.
+    field : _Field, optional
+        Matrix data type field, available values:
+        - 'real': Real numbers
+        - 'complex': Complex numbers
+        - 'pattern': Pattern matrix (no values)
+        - 'integer': Integer values
+        If None, automatically determined from data type.
+
     Returns
     -------
-    Directory
-        The input directory.
+    None
+        Writes metadata files to the specified directory.
+
+    Raises
+    ------
+    ValueError
+        If the specified layer_obsm is not found in adata.layers or adata.obsm.
+
+    Examples
+    --------
+    >>> import sciv as sc
+    >>> adata = sc.read_h5ad("data.h5ad")
+    >>> sc.fl.to_meta(adata, "./output", layer_obsm="raw", feature_name="peaks.bed")
     """
 
     dir_path = str(dir_path)
     ul.file_method(__name__).makedirs(dir_path)
 
-    # Convert dense matrices to sparse matrices
-    sparse_matrix = to_sparse(adata.layers[layer] if layer is not None else adata.X)
+    sparse_matrix = adata.X
+
+    if layer_obsm is not None:
+
+        if layer_obsm in adata.layers and layer_obsm in adata.obsm:
+
+            if layer_priority:
+                ul.log(__name__).info(f"Using layer '{layer_obsm}' from adata.layers")
+                sparse_matrix = to_sparse(adata.layers[layer_obsm])
+            else:
+                ul.log(__name__).info(f"Using layer '{layer_obsm}' from adata.obsm")
+                sparse_matrix = to_sparse(adata.obsm[layer_obsm])
+
+        elif layer_obsm in adata.layers:
+            ul.log(__name__).info(f"Using layer '{layer_obsm}' from adata.layers")
+            sparse_matrix = to_sparse(adata.layers[layer_obsm])
+        elif layer_obsm in adata.obsm:
+            ul.log(__name__).info(f"Using layer '{layer_obsm}' from adata.obsm")
+            sparse_matrix = to_sparse(adata.obsm[layer_obsm])
+        else:
+            ul.log(__name__).error(f"Layer '{layer_obsm}' not found in adata.layers or adata.obsm")
+            raise ValueError(f"Layer '{layer_obsm}' not found in adata.layers or adata.obsm")
+
     # write mtx file
     ul.log(__name__).info(f"Write mtx file")
     import scipy.io as scio
@@ -218,6 +271,11 @@ def to_fragments(
     --------
     >>> adata = sciv.dl.read_sc_atac_file()
     >>> sciv.fl.to_fragments(adata, "/path/pbmc_fragments.tsv")
+
+    Note
+    --------
+    When exporting results processed with SnapATAC2, using the snapatac2.ex.export_fragments function is not
+    recommended.
     """
 
     output_path = os.path.dirname(fragments)
