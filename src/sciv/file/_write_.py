@@ -198,13 +198,14 @@ def to_fragments(
     adata: AnnData,
     fragments: str,
     layer: str = None,
+    batch_size: int = 50000,
     is_sort: bool = True,
     is_gz: bool = True,
     is_keep: bool = False
 ) -> None:
     """
     Convert AnnData format data into fragments format file.
-    
+
     Parameters
     ----------
     adata : AnnData
@@ -214,6 +215,8 @@ def to_fragments(
     layer : str, optional
         The layer of data to use for generating fragments file.
         If None, uses the main data matrix (adata.X).
+    batch_size : int, default=50000
+        Batch size for processing data. Larger values reduce memory consumption.
     is_sort : bool, default=True
         Whether to sort the output by chromosome and start position.
         Sorts chromosomes in natural order (chr1, chr2, ..., chrX, chrY, chrM).
@@ -224,21 +227,16 @@ def to_fragments(
         Whether to keep the uncompressed fragments file after compression.
         Only effective when is_gz is True. If False, the uncompressed
         file is deleted after successful compression.
-    
+
     Returns
     -------
     None
         Writes fragments file to the specified path.
 
-    Examples
-    --------
-    >>> adata = sciv.dl.read_sc_atac_file()
-    >>> sciv.fl.to_fragments(adata, "/path/pbmc_fragments.tsv")
-
     Note
     --------
-    When exporting results processed with SnapATAC2, using the snapatac2.ex.export_fragments function is not
-    recommended.
+    To export results processed by SnapATAC2, please use snapatac2.ex.export_fragments directly. Using this function
+    is not recommended.
     """
 
     output_path = os.path.dirname(fragments)
@@ -294,19 +292,46 @@ def to_fragments(
     nonzero = matrix.nonzero()
     nonzero_size = nonzero[0].size
     ul.log(__name__).info(f"Get size {row_size, col_size} ===> nonzero size: {nonzero_size}")
-
     ul.log(__name__).info(f"Generate the `fragments` file {fragments}.")
+
+    # Pre-allocate string list to avoid frequent I/O operations
+    lines = [
+        f"# output_file = {fragments}\n",
+        f"# layer = {layer}\n",
+        f"# features: {row_size}, barcodes: {col_size}, nonzero: {nonzero_size}\n"
+    ]
+
+    # Use vectorized approach to generate data rows in batches
+    rows = nonzero[0]
+    cols = nonzero[1]
+
+    # Stream write to file to avoid storing all strings in memory
     with open(fragments, mode="w", encoding="utf-8", newline="\n") as f:
+        # Write header information first
+        f.writelines(lines)
 
-        f.write(f"# output_file = {fragments}\n")
-        f.write(f"# layer = {layer}\n")
-        f.write(f"# features: {row_size}, barcodes: {col_size}, nonzero: {nonzero_size}\n")
+        # Process in batches to reduce memory consumption
+        total_batches = (nonzero_size + batch_size - 1) // batch_size
 
-        for row, col in tqdm(zip(nonzero[0], nonzero[1])):
-            # info
-            peaks = peaks_dict[row]
-            barcodes = barcodes_dict[col]
-            f.write(f"{peaks[0]}\t{peaks[1]}\t{peaks[2]}\t{barcodes}\t{matrix[row, col]}\n")
+        for batch_idx in tqdm(range(total_batches), desc="Writing fragments"):
+            start_idx = batch_idx * batch_size
+            end_idx = min((batch_idx + 1) * batch_size, nonzero_size)
+
+            # Get data for current batch
+            batch_rows = rows[start_idx:end_idx]
+            batch_cols = cols[start_idx:end_idx]
+
+            # Batch get peaks and barcodes
+            batch_peaks = [peaks_dict[r] for r in batch_rows]
+            batch_barcodes = [barcodes_dict[c] for c in batch_cols]
+            batch_values = matrix[batch_rows, batch_cols]
+            
+            # Batch build output lines and write directly
+            batch_lines = [
+                f"{p[0]}\t{p[1]}\t{p[2]}\t{b}\t{v}\n"
+                for p, b, v in zip(batch_peaks, batch_barcodes, batch_values)
+            ]
+            f.writelines(batch_lines)
 
     if is_gz:
         is_success: bool = True
