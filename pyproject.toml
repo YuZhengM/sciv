@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 [project]
 name = "sciv"
-version = "0.0.116"
+version = "0.0.117"
 authors = [
     { name = "Zheng-Min Yu", email = "yuzmbio@163.com" },
 ]
@@ -20,12 +20,13 @@ readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.10"
 dependencies = [
-    "numpy==1.26.4",
-    "pandas==1.5.3",
+    "numpy==2.0.0",
+    "pandas==2.0.3",
     "matplotlib==3.7.5",
     "matplotlib-venn==1.1.2",
     "seaborn==0.13.2",
-    "scipy==1.11.4",
+    "scprep==1.2.3",
+    "scipy==1.15.3",
     "scanpy==1.11.5",
     "scikit-learn==1.5.2",
     "networkx==3.3",
@@ -43,9 +44,11 @@ dependencies = [
     "yzm_log==0.0.2",
     "harmonypy==0.0.10",
     "gseapy==1.1.9",
+    "pysam==0.22.1",
     "anndata==0.11.0",
     "forceatlas2-python==1.1",
     "louvain==0.8.2",
+    "snapatac2==2.9.0",
     "numba==0.60.0",
     "pynndescent==0.5.13",
     "fa2-modified==0.4",

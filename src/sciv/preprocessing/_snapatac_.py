@@ -83,7 +83,7 @@ def _process_sc_atac_(
     """
     import snapatac2 as snap
 
-    data = snap.pp.import_data(
+    data = snap.pp.import_fragments(
         fragment_file,
         chrom_sizes=genome_anno,
         file=h5ad_file,
