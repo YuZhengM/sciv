@@ -12,7 +12,7 @@ from pandas import DataFrame
 from anndata import AnnData
 
 from .. import util as ul
-from ..util import path, to_sparse, chrtype, check_adata_get
+from ..util import path, to_sparse, to_dense, chrtype, check_adata_get
 
 __name__: str = "file_write"
 
@@ -198,7 +198,7 @@ def to_fragments(
     adata: AnnData,
     fragments: str,
     layer: str = None,
-    batch_size: int = 50000,
+    batch_size: int = 100000,
     is_sort: bool = True,
     is_gz: bool = True,
     is_keep: bool = False
@@ -272,7 +272,7 @@ def to_fragments(
         data_obs["chr"] = data_obs["chr"].astype(chrtype)
         data_obs.sort_values(["chr", "start"], inplace=True)
         source_row_size = data_obs.shape[0]
-        data_obs.dropna(subset=['chr'])
+        data_obs.dropna(subset=['chr'], inplace=True)
 
         if source_row_size > data_obs.shape[0]:
             chrs_str = ",".join(list(chrtype.categories))
@@ -324,12 +324,11 @@ def to_fragments(
             # Batch get peaks and barcodes
             batch_peaks = [peaks_dict[r] for r in batch_rows]
             batch_barcodes = [barcodes_dict[c] for c in batch_cols]
-            batch_values = matrix[batch_rows, batch_cols]
-            
+            batch_values = to_dense(matrix[batch_rows, batch_cols], is_array=True).ravel()
+
             # Batch build output lines and write directly
             batch_lines = [
-                f"{p[0]}\t{p[1]}\t{p[2]}\t{b}\t{v}\n"
-                for p, b, v in zip(batch_peaks, batch_barcodes, batch_values)
+                f"{p[0]}\t{p[1]}\t{p[2]}\t{b}\t{v}\n" for p, b, v in zip(batch_peaks, batch_barcodes, batch_values)
             ]
             f.writelines(batch_lines)
 
