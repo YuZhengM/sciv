@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 [project]
 name = "sciv"
-version = "0.0.124"
+version = "0.0.125"
 authors = [
     { name = "Zheng-Min Yu", email = "yuzmbio@163.com" },
 ]
@@ -35,7 +35,7 @@ dependencies = [
     "h5py==3.16.0",
     "hdf5plugin==6.0.0",
     "mudata==0.3.2",
-    "PyComplexHeatmap==1.6.1",
+    "PyComplexHeatmap==1.8.5",
     "statannotations==0.7.2",
     "magic-impute==3.0.0",
     "leidenalg==0.10.2",
