@@ -44,7 +44,7 @@ dependencies = [
     "yzm_log==0.0.2",
     "harmonypy==0.0.10",
     "gseapy==1.1.9",
-    "pysam==0.22.1",
+    "pysam>=0.22.1",
     "anndata==0.11.0",
     "forceatlas2-python==1.1",
     "louvain==0.8.2",
