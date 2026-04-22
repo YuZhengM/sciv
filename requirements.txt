@@ -10,7 +10,7 @@ networkx==3.3
 palettable==3.3.3
 colormap==1.0.4
 easydev==0.13.2
-h5py==3.16.0
+h5py>=3.11.0,<3.16.0
 hdf5plugin==6.0.0
 mudata==0.3.2
 PyComplexHeatmap==1.8.5

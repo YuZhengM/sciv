@@ -2,6 +2,13 @@
 
 import os
 import sys
+import hdf5plugin
+
+os.environ['OPENBLAS_NUM_THREADS'] = '1'
+sys.setrecursionlimit(1000)
+
+if hdf5plugin.version > '6.0.0':
+    pass
 
 from . import download as dl
 from . import file as fl
@@ -10,9 +17,6 @@ from . import plot as pl
 from . import preprocessing as pp
 from . import tool as tl
 from . import util as ul
-
-os.environ['OPENBLAS_NUM_THREADS'] = '1'
-sys.setrecursionlimit(1000)
 
 __version__ = f"{ul.project_name}: v{ul.project_version}"
 __cache__ = ul.project_cache_path

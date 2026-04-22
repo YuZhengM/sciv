@@ -1,48 +1,59 @@
 1.	SCIV usage
 =========================
 
-1.1 Install
+1.1 Standard pipeline
 ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+1.1.1 Import library and environment setup
+********************************************
+
+Create environment and download SCIV package.
 
 .. code-block:: shell
 
-    conda create --name sciv python=3.10
+    conda create --name sciv python=3.12
     conda activate sciv
     pip install sciv
 
 
-1.2 SCIV execution process
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Import package and view version information.
 
-1.2.1 Download scATAC-seq sample data
+.. code-block:: python
+
+    import sciv
+
+    sciv.__version__
+
+
+1.1.2 Download example files
 ***************************************
+
+We need to download the scATAC-seq and fine-mapping result files. These two files can be implemented by calling the following functions.
 
 Download PBMC case file： `GSE139369_ELM_sim_snapATAC2.h5ad <https://bio.liclab.net/scvmap_static/sciv/GSE139369_ELM_sim_snapATAC2.h5ad>`_
 
 .. code-block:: python
 
-    import sciv
     adata = sciv.dl.read_sc_atac_file()
 
-1.2.2 Download trait example data
-**********************************
-
-Download the fine-mapping results for monocytes, red blood cells, CD4+ and CD8+ T cells
+Download the fine-mapping results for monocytes, red blood cells, CD4+ and CD8+ T cells.
 
 .. code-block:: python
 
     variants, trait_info = sciv.dl.read_trait_file()
 
-1.2.3 Run SCIV
-****************************
+1.1.3 Run SCIV
+*****************
 
-Create Python file:
+Obtain TRS results by executing the SCIV process using the sciv.ml.core function.
+
+(1) Create Python file:
 
 .. code-block:: shell
 
     touch sciv_pbmc.py
 
-The file content is as follows:
+(2) The file content is as follows:
 
 .. code-block:: python
 
@@ -70,14 +81,15 @@ The file content is as follows:
 
         print(trs)
 
-Executable the file:
+(3) Executable the file:
 
 .. code-block:: shell
 
     python3 sciv_pbmc.py
 
-The output log information is as follows:
 
-.. code-block:: shell
+1.2 SCIV execution process for each step
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    python3 sciv_pbmc.py
+
+
