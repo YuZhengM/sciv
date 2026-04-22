@@ -248,10 +248,10 @@ def to_fragments(
         try:
             import pysam
         except ImportError:
-            raise ImportError(
-                "The 'pysam' package is required for gzip compression. "
-                "Please install it using: pip install pysam."
-            )
+            ul.log(__name__).error("The 'pysam' package is required for gzip compression. "
+                                   "Please install it using: pip install pysam.")
+            raise ImportError("The 'pysam' package is required for gzip compression. "
+                              "Please install it using: pip install pysam.")
 
     data = check_adata_get(adata=adata, layer=layer, is_dense=False, is_matrix=False).T
 

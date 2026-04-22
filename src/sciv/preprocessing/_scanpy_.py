@@ -192,21 +192,21 @@ def get_difference_genes(
     cluster_list.sort()
 
     _shape_ = (adata.shape[1], cluster_info.shape[0])
-    diff_genes_score_matrix: matrix_data = np.zeros(_shape_)
-    diff_genes_p_value_matrix: matrix_data = np.zeros(_shape_)
-    diff_genes_adjusted_p_value_matrix: matrix_data = np.zeros(_shape_)
-    diff_genes_log2_fold_change_matrix: matrix_data = np.zeros(_shape_)
+    diff_score_matrix: matrix_data = np.zeros(_shape_)
+    diff_p_value_matrix: matrix_data = np.zeros(_shape_)
+    diff_ad_p_value_matrix: matrix_data = np.zeros(_shape_)
+    diff_log2_fc_matrix: matrix_data = np.zeros(_shape_)
     del _shape_
 
     # cluster
     for _cluster_ in cluster_list:
-        ul.log(__name__).info(f"Obtaining differentially expressed genes for `cluster` ({_cluster_}).")
+        ul.log(__name__).info(f"Obtaining differentially expressed genes for ({_cluster_}).")
         # obtain cluster difference gene data
         _cluster_data_: DataFrame = sc.get.rank_genes_groups_df(adata, group=_cluster_)
         _cluster_index_: int = cluster_list.index(_cluster_)
 
         # Add data value
-        for _gene_name_, _score_, _p_value_, _adjusted_p_value_, _log2_fold_change_ in zip(
+        for _gene_name_, _score_, _p_value_, _ad_p_value_, _log2_fc_ in zip(
             _cluster_data_["names"],
             _cluster_data_["scores"],
             _cluster_data_["pvals"],
@@ -214,33 +214,31 @@ def get_difference_genes(
             _cluster_data_["logfoldchanges"]
         ):
             _gene_index_: int = gene_dict[_gene_name_]
-            diff_genes_score_matrix[_gene_index_, _cluster_index_] = 0 if np.isnan(_score_) else _score_
-            diff_genes_p_value_matrix[_gene_index_, _cluster_index_] = 1 if np.isnan(_p_value_) else _p_value_
-            diff_genes_adjusted_p_value_matrix[_gene_index_, _cluster_index_] = 1 if np.isnan(
-                _adjusted_p_value_) else _adjusted_p_value_
-            diff_genes_log2_fold_change_matrix[_gene_index_, _cluster_index_] = 0 if np.isnan(
-                _log2_fold_change_) else _log2_fold_change_
+            diff_score_matrix[_gene_index_, _cluster_index_] = 0 if np.isnan(_score_) else _score_
+            diff_p_value_matrix[_gene_index_, _cluster_index_] = 1 if np.isnan(_p_value_) else _p_value_
+            diff_ad_p_value_matrix[_gene_index_, _cluster_index_] = 1 if np.isnan(_ad_p_value_) else _ad_p_value_
+            diff_log2_fc_matrix[_gene_index_, _cluster_index_] = 0 if np.isnan(_log2_fc_) else _log2_fc_
 
         del _cluster_data_, _cluster_index_
 
-    set_inf_value(diff_genes_score_matrix)
-    set_inf_value(diff_genes_p_value_matrix)
-    set_inf_value(diff_genes_adjusted_p_value_matrix)
-    set_inf_value(diff_genes_log2_fold_change_matrix)
+    set_inf_value(diff_score_matrix)
+    set_inf_value(diff_p_value_matrix)
+    set_inf_value(diff_ad_p_value_matrix)
+    set_inf_value(diff_log2_fc_matrix)
 
-    diff_genes_p_value_matrix[diff_genes_p_value_matrix == 0] = np.min(
-        diff_genes_p_value_matrix[diff_genes_p_value_matrix != 0])
-    diff_genes_adjusted_p_value_matrix[diff_genes_adjusted_p_value_matrix == 0] = np.min(
-        diff_genes_adjusted_p_value_matrix[diff_genes_adjusted_p_value_matrix != 0])
+    diff_p_value_matrix[diff_p_value_matrix == 0] = np.min(diff_p_value_matrix[diff_p_value_matrix != 0])
+    diff_ad_p_value_matrix[diff_ad_p_value_matrix == 0] = np.min(diff_ad_p_value_matrix[diff_ad_p_value_matrix != 0])
 
     # create
-    diff_genes_adata: AnnData = AnnData(diff_genes_score_matrix, obs=adata.var, var=cluster_info)
-    diff_genes_adata.layers["p_value"] = diff_genes_p_value_matrix
-    diff_genes_adata.layers["adjusted_p_value"] = diff_genes_adjusted_p_value_matrix
-    diff_genes_adata.layers["log2_fold_change"] = diff_genes_log2_fold_change_matrix
+    diff_genes_adata: AnnData = AnnData(diff_score_matrix, obs=adata.var, var=cluster_info)
+    diff_genes_adata.layers["p_value"] = diff_p_value_matrix
+    diff_genes_adata.layers["adjusted_p_value"] = diff_ad_p_value_matrix
+    diff_genes_adata.layers["log2_fold_change"] = diff_log2_fc_matrix
 
     # Add diff_genes
     diff_genes_adata.uns["diff_genes"] = diff_genes
+
+    diff_genes_adata.var.index.name = None
 
     if diff_genes_file is not None:
         save_h5ad(diff_genes_adata, diff_genes_file)
