@@ -155,6 +155,7 @@ def _process_sc_atac_(
 
     return data, features
 
+
 def get_sc_atac(
     fragment_file: path,
     genome_anno,
@@ -166,7 +167,7 @@ def get_sc_atac(
     counting_strategy: Literal['fragment', 'insertion', 'paired-insertion'] = 'paired-insertion',
     need_features: Optional[Union[int | float]] = None,
     is_filter_doublets: bool = True
-):
+) -> AnnData:
     """
     Get scATAC-seq data from fragment file or h5ad file.
     
@@ -199,13 +200,8 @@ def get_sc_atac(
     
     Returns
     -------
-    tuple
-        - adata : AnnData
-            Processed scATAC-seq data.
-        - selected_list : Optional[np.ndarray]
-            Boolean array indicating selected features.
-        - h5ad_file : path
-            Path to the h5ad file.
+    AnnData
+        Processed scATAC-seq data.
     """
     # Initialize features variable to track feature selection status
     features: Optional[str] = None
@@ -254,17 +250,33 @@ def get_sc_atac(
         # Clean up temporary cache directory if used
         if _is_cache_ and os.path.exists(_cache_file_path_):
             shutil.rmtree(_cache_file_path_)
+            h5ad_file = None
 
         # Clean up temporary variables
         del _cache_file_path_, _is_cache_
 
-    # Extract selected features list if feature selection was performed
-    selected_list = None
-
     if features is not None:
-        selected_list = np.array(list(adata.var["selected"]))
+        adata = adata[:, adata.var["selected"]]
 
-    return adata, selected_list, h5ad_file
+    filter_data(adata)
+    ul.log(__name__).info(f"Shape: {adata.shape}")
+
+    adata.uns["params"] = {
+        "fragment_file": fragment_file,
+        "h5ad_file": h5ad_file,
+        "min_num_fragments": min_num_fragments,
+        "sorted_by_barcode": sorted_by_barcode,
+        "bin_size": bin_size,
+        "min_tsse": min_tsse,
+        "counting_strategy": counting_strategy,
+        "is_filter_doublets": is_filter_doublets,
+        "need_features": need_features
+    }
+
+    if h5ad_file is not None:
+        save_h5ad(adata, h5ad_file)
+
+    return adata
 
 
 def merge_sc_atac(
@@ -453,16 +465,9 @@ def merge_sc_atac(
 
 
 def get_gene_expression(
-    fragment_file: path,
+    adata: AnnData,
     genome_anno,
-    h5ad_file: Optional[path] = None,
-    min_num_fragments: int = 200,
-    sorted_by_barcode: bool = False,
-    bin_size: int = 500,
-    min_tsse: float = 5.0,
-    need_features: Optional[Union[int | float]] = None,
     min_cells: int = 5,
-    is_filter_doublets: bool = True,
     gene_save_file: Optional[path] = None
 ) -> AnnData:
     """
@@ -470,26 +475,12 @@ def get_gene_expression(
 
     Parameters
     ----------
-    fragment_file : path
-        Fragment file path.
+    adata : AnnData
+        scATAC-seq data
     genome_anno : DataFrame
         Genome annotation.
-    h5ad_file : Optional[path], optional
-        H5ad file path.
-    min_num_fragments : int, optional
-        Minimum number of fragments.
-    sorted_by_barcode : bool, optional
-        Whether to sort by barcode.
-    bin_size : int, optional
-        Bin size.
-    min_tsse : float, optional
-        Minimum tSNE distance.
-    need_features : Optional[Union[int | float]], optional
-        Need features to use.
     min_cells : int, optional
         Minimum cells.
-    is_filter_doublets : bool, optional
-        Whether to filter doublets.
     gene_save_file : Optional[path], optional
         Gene save file path.
     Returns
@@ -497,28 +488,12 @@ def get_gene_expression(
     AnnData
         Gene expression matrix.
     """
-    
-    import snapatac2 as snap
 
-    # import the fragment files and process them
-    adata, selected_list, h5ad_file = get_sc_atac(
-        fragment_file=fragment_file,
-        genome_anno=genome_anno,
-        h5ad_file=h5ad_file,
-        min_num_fragments=min_num_fragments,
-        sorted_by_barcode=sorted_by_barcode,
-        bin_size=bin_size,
-        min_tsse=min_tsse,
-        is_filter_doublets=is_filter_doublets,
-        need_features=need_features
-    )
+    import snapatac2 as snap
 
     # Create the cell by gene activity matrix
     ul.log(__name__).info("Obtain gene expression matrix.")
-    selected_adata = adata[:, selected_list] if selected_list is not None else adata
-    filter_data(selected_adata)
-    gene_matrix = snap.pp.make_gene_matrix(selected_adata, genome_anno)
-    ul.log(__name__).info(f"Shape: {selected_adata.shape}")
+    gene_matrix = snap.pp.make_gene_matrix(adata, genome_anno)
 
     import scanpy as sc
 
@@ -532,18 +507,10 @@ def get_gene_expression(
     sc.pp.log1p(gene_matrix)
     sc.external.pp.magic(gene_matrix, solver="approximate")
 
-    save_h5ad(adata, h5ad_file)
-
     gene_matrix.uns["params"] = {
-        "fragment_file": fragment_file,
-        "h5ad_file": h5ad_file,
-        "min_num_fragments": min_num_fragments,
-        "sorted_by_barcode": sorted_by_barcode,
-        "bin_size": bin_size,
-        "min_tsse": min_tsse,
-        "need_features": need_features,
-        "is_filter_doublets": is_filter_doublets,
-        "gene_save_file": gene_save_file
+        "min_cells": min_cells,
+        "gene_save_file": gene_save_file,
+        "sc_atac_params": adata.uns["params"] if "params" in adata.uns["params"] else None
     }
 
     if gene_save_file is not None:
@@ -553,19 +520,12 @@ def get_gene_expression(
 
 
 def get_peak_matrix(
-    fragment_file: path,
+    adata: AnnData,
     genome_anno,
     groupby: str,
     cell_anno: Optional[DataFrame] = None,
-    h5ad_file: Optional[path] = None,
-    min_num_fragments: int = 200,
-    sorted_by_barcode: bool = False,
-    bin_size: int = 500,
-    min_tsse: float = 5.0,
-    need_features: Optional[Union[int | float]] = None,
-    is_filter_doublets: bool = True,
     peak_matrix_save_file: Optional[path] = None
-):
+) -> AnnData:
     """
     Generate peak matrix from scATAC-seq data.
 
@@ -576,63 +536,24 @@ def get_peak_matrix(
 
     Parameters
     ----------
-    fragment_file : path
-        Path to the fragment file or h5ad file containing scATAC-seq data.
+    adata : AnnData
+        scATAC-seq data
     genome_anno : DataFrame
         Genome annotation information.
     groupby : str
         Column name in cell annotation indicating cluster labels for peak calling.
     cell_anno : Optional[DataFrame], optional
         Cell annotation DataFrame containing cluster information.
-    h5ad_file : Optional[path], optional
-        Path to save the intermediate h5ad file.
-    min_num_fragments : int, optional
-        Minimum number of fragments required for a cell to pass filtering.
-        Default is 200.
-    sorted_by_barcode : bool, optional
-        Whether the input fragment file is sorted by barcode. Default is False.
-    bin_size : int, optional
-        Size of consecutive genomic regions used to record counts. Default is 500.
-    min_tsse : float, optional
-        Minimum TSS enrichment score required for a cell to pass filtering.
-        Default is 5.0.
-    need_features : Optional[Union[int, float]], optional
-        Number or proportion of features to select. If <= 1, interpreted as
-        a proportion of total features. If > 1, interpreted as absolute number.
-    is_filter_doublets : bool, optional
-        Whether to filter doublets. Default is True.
     peak_matrix_save_file : Optional[path], optional
         Path to save the output peak matrix h5ad file.
 
     Returns
     -------
-    tuple
-        - adata : AnnData
-            Full processed scATAC-seq data.
-        - selected_adata : AnnData
-            Subset of adata with selected features.
-        - h5ad_file : path
-            Path to the h5ad file.
-        - peaks : DataFrame
-            Merged peaks information.
-        - peak_mat : AnnData
-            Cell-by-peak matrix.
+    AnnData
+        Cell-by-peak matrix.
     """
 
     import snapatac2 as snap
-
-    # Import the fragment files and process them
-    adata, selected_list, h5ad_file = get_sc_atac(
-        fragment_file=fragment_file,
-        genome_anno=genome_anno,
-        h5ad_file=h5ad_file,
-        min_num_fragments=min_num_fragments,
-        sorted_by_barcode=sorted_by_barcode,
-        bin_size=bin_size,
-        min_tsse=min_tsse,
-        is_filter_doublets=is_filter_doublets,
-        need_features=need_features
-    )
 
     # Add cell annotation information
     adata.obs = add_cluster_info(adata.obs, cell_anno, groupby)
@@ -641,48 +562,37 @@ def get_peak_matrix(
         ul.log(__name__).error(f"`{groupby}` is not in `adata.obs.columns`.")
         raise ValueError(f"`{groupby}` is not in `adata.obs.columns` ({adata.obs.columns}).")
 
-    selected_adata = adata[:, selected_list] if selected_list is not None else adata
-    filter_data(selected_adata)
-
     ul.log(__name__).info(f"Peak calling at the `{groupby}`-level.")
     try:
-        snap.tl.macs3(selected_adata, groupby=groupby)
+        snap.tl.macs3(adata, groupby=groupby)
     except Exception as e:
         ul.log(__name__).error(f"The `cluster`({groupby}) is likely to have `NaN` values, please check.")
         raise RuntimeError(f"The `cluster`({groupby}) is likely to have `NaN` values, please check.\n {e}")
 
     ul.log(__name__).info("Obtain a unified, non-overlapping, and fixed-width peak list.")
-    peaks = snap.tl.merge_peaks(selected_adata.uns['macs3'], genome_anno)
+    peaks = snap.tl.merge_peaks(adata.uns['macs3'], genome_anno)
 
     ul.log(__name__).info("Create a cell by peak matrix.")
-    peak_mat = snap.pp.make_peak_matrix(selected_adata, use_rep=peaks['Peaks'])
+    peak_mat = snap.pp.make_peak_matrix(adata, use_rep=peaks['Peaks'])
 
+    peak_mat.uns["peaks"] = peaks
     peak_mat.uns["params"] = {
-        "fragment_file": fragment_file,
         "groupby": groupby,
-        "h5ad_file": h5ad_file,
-        "min_num_fragments": min_num_fragments,
-        "sorted_by_barcode": sorted_by_barcode,
-        "bin_size": bin_size,
-        "min_tsse": min_tsse,
-        "need_features": need_features,
-        "is_filter_doublets": is_filter_doublets,
-        "peak_matrix_save_file": peak_matrix_save_file
+        "peak_matrix_save_file": peak_matrix_save_file,
+        "sc_atac_params": adata.uns["params"] if "params" in adata.uns["params"] else None
     }
 
     if peak_matrix_save_file is not None:
         save_h5ad(peak_mat, peak_matrix_save_file)
 
-    return adata, selected_adata, h5ad_file, peaks, peak_mat
+    return peak_mat
 
 
 def _process_info_to_adata_(
     adata: AnnData,
-    selected_adata: AnnData,
     groupby: str,
     info_data: DataFrame,
-    obs_info: DataFrame,
-    h5ad_file: str
+    obs_info: DataFrame
 ) -> AnnData:
     """
     Process info to AnnData.
@@ -691,16 +601,12 @@ def _process_info_to_adata_(
     ----------
     adata : AnnData
         Full processed scATAC-seq data.
-    selected_adata : AnnData
-        Subset of adata with selected features.
     groupby : str
         Cluster name.
     info_data : DataFrame
         Info data.
     obs_info : DataFrame
         Obs info.
-    h5ad_file : str
-        H5ad file path.
 
     Returns
     -------
@@ -711,7 +617,7 @@ def _process_info_to_adata_(
     obs_unique = list(obs_info.index)
     obs_unique_dict: dict = dict(zip(obs_unique, range(len(obs_unique))))
     # var
-    cluster_info: DataFrame = selected_adata.obs.groupby(groupby, as_index=False).size()
+    cluster_info: DataFrame = adata.obs.groupby(groupby, as_index=False).size()
     cluster_info.index = cluster_info[groupby].astype(str)
     cluster_info.rename_axis("index", inplace=True)
     cluster_info.sort_values([groupby], inplace=True)
@@ -721,7 +627,7 @@ def _process_info_to_adata_(
     ul.log(__name__).info(f"Create data, shape {shape}")
     log2_fold_change_matrix = np.zeros(shape)
     p_value_matrix = np.zeros(shape)
-    adjusted_p_value_matrix = np.zeros(shape)
+    ad_p_value_matrix = np.zeros(shape)
 
     # Add value
     for _id_, log2_fold_change, p_value, adjusted_p_value, _cluster_ in zip(
@@ -733,38 +639,29 @@ def _process_info_to_adata_(
     ):
         log2_fold_change_matrix[obs_unique_dict[_id_], cluster_list.index(_cluster_)] = log2_fold_change
         p_value_matrix[obs_unique_dict[_id_], cluster_list.index(_cluster_)] = p_value
-        adjusted_p_value_matrix[obs_unique_dict[_id_], cluster_list.index(_cluster_)] = adjusted_p_value
+        ad_p_value_matrix[obs_unique_dict[_id_], cluster_list.index(_cluster_)] = adjusted_p_value
 
     # solve -Inf/Inf value
     set_inf_value(log2_fold_change_matrix)
     set_inf_value(p_value_matrix)
-    set_inf_value(adjusted_p_value_matrix)
+    set_inf_value(ad_p_value_matrix)
 
-    adjusted_p_value_matrix[adjusted_p_value_matrix == 0] = np.min(adjusted_p_value_matrix[adjusted_p_value_matrix != 0])
+    ad_p_value_matrix[ad_p_value_matrix == 0] = np.min(ad_p_value_matrix[ad_p_value_matrix != 0])
 
     # create
     info_adata: AnnData = AnnData(p_value_matrix, obs=obs_info, var=cluster_info)
     info_adata.layers["log2_fold_change"] = log2_fold_change_matrix
-    info_adata.layers["adjusted_p_value"] = adjusted_p_value_matrix
-
-    save_h5ad(adata, h5ad_file)
+    info_adata.layers["adjusted_p_value"] = ad_p_value_matrix
 
     return info_adata
 
 
 def get_tf_data(
-    fragment_file: path,
+    adata: AnnData,
     genome_anno,
     groupby: str,
     cell_anno: Optional[DataFrame] = None,
-    h5ad_file: Optional[path] = None,
-    min_num_fragments: int = 200,
-    sorted_by_barcode: bool = False,
-    bin_size: int = 500,
-    min_tsse: float = 5.0,
-    need_features: Optional[Union[int | float]] = None,
     p_value: float = 0.01,
-    is_filter_doublets: bool = True,
     peak_matrix_save_file: Optional[path] = None,
     tf_save_file: Optional[path] = None
 ) -> AnnData:
@@ -773,30 +670,16 @@ def get_tf_data(
 
     Parameters
     ----------
-    fragment_file : path
-        Fragment file path.
+    adata : AnnData
+        scATAC-seq data
     genome_anno : DataFrame
         Genome annotation.
     groupby : str
         Cluster name.
     cell_anno : Optional[DataFrame], optional
         Cell annotation.
-    h5ad_file : Optional[path], optional
-        H5ad file path.
-    min_num_fragments : int, optional
-        Minimum number of fragments.
-    sorted_by_barcode : bool, optional
-        Whether to sort by barcode.
-    bin_size : int, optional
-        Bin size.
-    min_tsse : float, optional
-        Minimum tSNE distance.
-    need_features : Optional[Union[int | float]], optional
-        Need features to use.
     p_value : float, optional
         P-value threshold.
-    is_filter_doublets : bool, optional
-        Whether to filter doublets.
     peak_matrix_save_file : Optional[path], optional
         Peak matrix save file.
     tf_save_file : Optional[path], optional
@@ -806,22 +689,14 @@ def get_tf_data(
     AnnData
         TF data.
     """
-    
+
     import snapatac2 as snap
 
-    # import the fragment files and process them
-    adata, selected_adata, h5ad_file, peaks, peak_mat = get_peak_matrix(
-        fragment_file=fragment_file,
+    peak_mat = get_peak_matrix(
+        adata=adata,
         genome_anno=genome_anno,
         groupby=groupby,
         cell_anno=cell_anno,
-        h5ad_file=h5ad_file,
-        min_num_fragments=min_num_fragments,
-        sorted_by_barcode=sorted_by_barcode,
-        bin_size=bin_size,
-        min_tsse=min_tsse,
-        is_filter_doublets=is_filter_doublets,
-        need_features=need_features,
         peak_matrix_save_file=peak_matrix_save_file
     )
 
@@ -830,7 +705,9 @@ def get_tf_data(
 
     if len(marker_peaks.keys()) == 0 and p_value < 0.05:
         p_value = 0.05
-        ul.log(__name__).warning(f"Due to the absence of marker regions, the `p_value` value is automatically changed to `0.05`.")
+        ul.log(__name__).warning(
+            f"Due to the absence of marker regions, the `p_value` value is automatically changed to `0.05`."
+        )
         marker_peaks = snap.tl.marker_regions(peak_mat, groupby=groupby, pvalue=p_value)
 
     if len(marker_peaks.keys()) == 0:
@@ -871,26 +748,17 @@ def get_tf_data(
 
     tf_adata = _process_info_to_adata_(
         adata=adata,
-        selected_adata=selected_adata,
         groupby=groupby,
         info_data=tf_data,
-        obs_info=tf_info,
-        h5ad_file=h5ad_file
+        obs_info=tf_info
     )
 
     tf_adata.uns["params"] = {
-        "fragment_file": fragment_file,
         "groupby": groupby,
-        "h5ad_file": h5ad_file,
-        "min_num_fragments": min_num_fragments,
-        "sorted_by_barcode": sorted_by_barcode,
-        "bin_size": bin_size,
-        "min_tsse": min_tsse,
-        "need_features": need_features,
         "p_value": p_value,
-        "is_filter_doublets": is_filter_doublets,
         "peak_matrix_save_file": peak_matrix_save_file,
-        "tf_save_file": tf_save_file
+        "tf_save_file": tf_save_file,
+        "sc_atac_params": adata.uns["params"] if "params" in adata.uns["params"] else None
     }
 
     if tf_save_file is not None:
@@ -900,17 +768,10 @@ def get_tf_data(
 
 
 def get_difference_peaks(
-    fragment_file: path,
+    adata: AnnData,
     genome_anno,
     groupby: str,
     cell_anno: Optional[DataFrame] = None,
-    h5ad_file: Optional[path] = None,
-    min_num_fragments: int = 200,
-    sorted_by_barcode: bool = False,
-    bin_size: int = 500,
-    min_tsse: float = 5.0,
-    need_features: Optional[Union[int | float]] = None,
-    is_filter_doublets: bool = True,
     min_log_fc: float = 0.25,
     min_pct: float = 0.05,
     peak_matrix_save_file: Optional[path] = None,
@@ -921,7 +782,7 @@ def get_difference_peaks(
 
     Parameters
     ----------
-    fragment_file : path
+    adata : AnnData
         Fragment file path.
     genome_anno : DataFrame
         Genome annotation.
@@ -929,20 +790,6 @@ def get_difference_peaks(
         Cluster name.
     cell_anno : Optional[DataFrame], optional
         Cell annotation.
-    h5ad_file : Optional[path], optional
-        H5ad file path.
-    min_num_fragments : int, optional
-        Minimum number of fragments.
-    sorted_by_barcode : bool, optional
-        Whether to sort by barcode.
-    bin_size : int, optional
-        Bin size.
-    min_tsse : float, optional
-        Minimum tSNE distance.
-    need_features : Optional[Union[int | float]], optional
-        Need features to use.
-    is_filter_doublets : bool, optional
-        Whether to filter doublets.
     min_log_fc : float, optional
         Minimum log2 fold change.
     min_pct : float, optional
@@ -951,6 +798,7 @@ def get_difference_peaks(
         Peak matrix save file.
     diff_peaks_save_file : Optional[path], optional
         Difference peaks save file.
+
     Returns
     -------
     AnnData
@@ -959,22 +807,15 @@ def get_difference_peaks(
 
     import snapatac2 as snap
 
-    # import the fragment files and process them
-    adata, selected_adata, h5ad_file, peaks, peak_mat = get_peak_matrix(
-        fragment_file=fragment_file,
+    peak_mat = get_peak_matrix(
+        adata=adata,
         genome_anno=genome_anno,
         groupby=groupby,
         cell_anno=cell_anno,
-        h5ad_file=h5ad_file,
-        min_num_fragments=min_num_fragments,
-        sorted_by_barcode=sorted_by_barcode,
-        bin_size=bin_size,
-        min_tsse=min_tsse,
-        is_filter_doublets=is_filter_doublets,
-        need_features=need_features,
         peak_matrix_save_file=peak_matrix_save_file
     )
-    adata_cell_anno: DataFrame = selected_adata.obs.copy()
+
+    adata_cell_anno: DataFrame = adata.obs.copy()
     cluster_list: list = list(set(adata_cell_anno[groupby]))
     cluster_list.sort()
     cluster_str: str = ", ".join(cluster_list)
@@ -1034,27 +875,18 @@ def get_difference_peaks(
 
     diff_peaks_adata = _process_info_to_adata_(
         adata=adata,
-        selected_adata=selected_adata,
         groupby=groupby,
         info_data=diff_peaks_data,
-        obs_info=peaks_info,
-        h5ad_file=h5ad_file
+        obs_info=peaks_info
     )
 
     diff_peaks_adata.uns["params"] = {
-        "fragment_file": fragment_file,
         "groupby": groupby,
-        "h5ad_file": h5ad_file,
-        "min_num_fragments": min_num_fragments,
-        "sorted_by_barcode": sorted_by_barcode,
-        "bin_size": bin_size,
-        "min_tsse": min_tsse,
-        "need_features": need_features,
-        "is_filter_doublets": is_filter_doublets,
         "min_log_fc": min_log_fc,
         "min_pct": min_pct,
         "peak_matrix_save_file": min_pct,
-        "diff_peaks_save_file": diff_peaks_save_file
+        "diff_peaks_save_file": diff_peaks_save_file,
+        "sc_atac_params": adata.uns["params"] if "params" in adata.uns["params"] else None
     }
 
     if diff_peaks_save_file is not None:
