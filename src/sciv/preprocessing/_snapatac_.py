@@ -617,7 +617,7 @@ def _process_info_to_adata_(
     obs_unique = list(obs_info.index)
     obs_unique_dict: dict = dict(zip(obs_unique, range(len(obs_unique))))
     # var
-    cluster_info: DataFrame = adata.obs.groupby(groupby, as_index=False).size()
+    cluster_info: DataFrame = adata.obs.groupby(groupby, as_index=False, observed=True).size()
     cluster_info.index = cluster_info[groupby].astype(str)
     cluster_info.rename_axis("index", inplace=True)
     cluster_info.sort_values([groupby], inplace=True)

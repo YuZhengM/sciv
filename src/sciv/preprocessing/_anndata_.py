@@ -54,17 +54,24 @@ def adata_group(
         ul.log(__name__).error("The `axis` parameter must be either 0 or 1")
         raise ValueError("The `axis` parameter must be either 0 or 1")
 
-    # get data
-    data: AnnData = adata.copy() if axis == 1 else adata.copy().T
-
     # judge layers
     if layer is not None:
 
-        if layer not in list(data.layers):
+        if layer not in list(adata.layers):
             ul.log(__name__).error("The value of the `layer` parameter must be one of the keys in `adata.layers`.")
             raise ValueError("The value of the `layer` parameter must be one of the keys in `adata.layers`.")
 
-        data.X = data.layers[layer]
+        if axis == 1:
+            data: AnnData = AnnData(adata.layers[layer], obs=adata.obs, var=adata.var)
+        else:
+            data: AnnData = AnnData(adata.layers[layer].T, obs=adata.var, var=adata.obs)
+
+    else:
+
+        if axis == 1:
+            data: AnnData = AnnData(adata.X, obs=adata.obs, var=adata.var)
+        else:
+            data: AnnData = AnnData(adata.X.T, obs=adata.var, var=adata.obs)
 
     # get group information
     data_obs: DataFrame = data.obs
@@ -94,10 +101,18 @@ def adata_group(
     column_group = list(obs[groupby])
     # create container
     matrix_mean: matrix_data = np.zeros((column_size, data.shape[1]))
-    matrix_sum: matrix_data = np.zeros((column_size, data.shape[1]))
-    matrix_max: matrix_data = np.zeros((column_size, data.shape[1]))
-    matrix_min: matrix_data = np.zeros((column_size, data.shape[1]))
-    matrix_median: matrix_data = np.zeros((column_size, data.shape[1]))
+
+    if "sum" in method:
+        matrix_sum: matrix_data = np.zeros((column_size, data.shape[1]))
+
+    if "max" in method:
+        matrix_max: matrix_data = np.zeros((column_size, data.shape[1]))
+
+    if "min" in method:
+        matrix_min: matrix_data = np.zeros((column_size, data.shape[1]))
+
+    if "median" in method:
+        matrix_median: matrix_data = np.zeros((column_size, data.shape[1]))
 
     # add data
     for i in range(column_size):
