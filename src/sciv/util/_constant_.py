@@ -83,7 +83,7 @@ rcParams.update(plot_rc_config)
 # Define cmap
 colors.define_cmap()
 # 50 colors cmap
-type_50_colors = colormaps["tab20"].resampled(50).colors.copy()
+type_50_colors = colormaps["random50"].colors.copy()
 plot_cmap_50 = ListedColormap(type_50_colors)
 # 20 colors cmap
 type_20_colors = list(colormaps["tab20"].colors).copy()
