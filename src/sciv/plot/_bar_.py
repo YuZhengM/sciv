@@ -465,7 +465,7 @@ def bar_significance(
     errcolor: str = "k",
     start_color_index: int = 0,
     color_step_size: int = 0,
-    color_type: str = "set",
+    cmap: str = "set",
     test: str = "t-test_ind",
     ci: Union[str, float] = "sd",
     x_rotation: float = 0,
@@ -527,7 +527,7 @@ def bar_significance(
         Starting index in the color palette for the first hue category.
     color_step_size : int, default 0
         Step size when cycling through the color palette for subsequent hue categories.
-    color_type : str, default "set"
+    cmap : str, default "set"
         Name of the seaborn color palette to use. Must be a key in plot_color_types.
     test : str, default "t-test_ind"
         Statistical test for pairwise comparisons. Options include:
@@ -614,7 +614,7 @@ def bar_significance(
 
             for i in range(len(new_data[legend])):
                 _index_ = hue_types.index(i)
-                palette.append(plot_color_types[color_type][start_color_index + _index_ * color_step_size + _index_])
+                palette.append(plot_color_types[cmap][start_color_index + _index_ * color_step_size + _index_])
 
     palette_dict = dict(zip(new_data[legend], palette))
 
