@@ -6,6 +6,7 @@ from typing import Tuple, Union, Optional, Any, Literal
 import numpy as np
 import pandas as pd
 from anndata import AnnData
+from matplotlib.figure import Figure
 from pandas import DataFrame
 
 import seaborn as sns
@@ -19,6 +20,7 @@ from ..util import path, collection, plot_color_types, plot_start, plot_end
 __name__: str = "plot_bar"
 
 log = ul.log(__name__, "ERROR")
+
 
 def bar(
     ax_x: collection,
@@ -34,7 +36,7 @@ def bar(
     show: bool = True,
     close: bool = False,
     **kwargs: Any
-) -> None:
+) -> tuple[Figure, Any]:
     """
     Create a simple bar chart with optional value labels.
 
@@ -75,7 +77,7 @@ def bar(
     None
         The function displays and/or saves the plot but does not return any value.
     """
-    fig, ax = plot_start(output, show)
+    fig, ax = plot_start()
 
     ax_x = np.array(ax_x).astype(str)
 
@@ -101,6 +103,8 @@ def bar(
 
     plot_end(fig, title, x_name, y_name, output, show, close)
 
+    return fig, ax
+
 
 def two_bar(
     ax_x: collection,
@@ -118,7 +122,7 @@ def two_bar(
     show: bool = True,
     close: bool = False,
     **kwargs: Any
-):
+) -> tuple[Figure, Any]:
     """
     Create a stacked bar chart with two categories.
 
@@ -165,7 +169,7 @@ def two_bar(
     None
         The function displays and/or saves the plot but does not return any value.
     """
-    fig, ax = plot_start(output, show)
+    fig, ax = plot_start()
 
     ax_x = np.array(ax_x).astype(str)
     ax.bar(ax_x, ax_y[0], label=legend[0], color=color[0], **kwargs)
@@ -197,6 +201,8 @@ def two_bar(
 
     plot_end(fig, title, x_name, y_name, output, show, close)
 
+    return fig, ax
+
 
 def class_bar(
     df: DataFrame,
@@ -217,7 +223,7 @@ def class_bar(
     show: bool = True,
     close: bool = False,
     **kwargs: Any
-):
+) -> tuple[Figure, Any]:
     """
     Create a stacked bar chart for enrichment analysis with two categories.
 
@@ -288,7 +294,7 @@ def class_bar(
 
     ax_y = (df1[value], df2[value])
 
-    two_bar(
+    return two_bar(
         ax_x=ax_x,
         ax_y=ax_y,
         x_name=x_name,
@@ -476,7 +482,7 @@ def bar_significance(
     show: bool = True,
     close: bool = False,
     **kwargs: Any
-) -> None:
+) -> tuple[Figure, Any]:
     """
     Create a bar chart with statistical significance annotations relative to an anchor group.
 
@@ -565,7 +571,7 @@ def bar_significance(
     None
         The function displays and/or saves the plot but does not return any value.
     """
-    fig, ax = plot_start(output, show)
+    fig, ax = plot_start()
 
     if legend_list is not None:
         new_data: DataFrame = df[df[hue].isin(legend_list)].copy()
@@ -686,6 +692,8 @@ def bar_significance(
     plt.legend(loc='upper left', bbox_to_anchor=(0.0, legend_gap), ncol=2)
 
     plot_end(fig, title, x_name, y_name, output, show, close)
+
+    return fig, ax
 
 
 def rate_bar_plot(

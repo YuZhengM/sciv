@@ -8,6 +8,7 @@ import pandas as pd
 from anndata import AnnData
 
 from matplotlib import pyplot as plt
+from matplotlib.figure import Figure
 from pandas import DataFrame
 
 from ._util_ import complete_ratio
@@ -17,6 +18,7 @@ from ..util import path, collection, plot_end, type_20_colors, type_50_colors, p
 __name__: str = "plot_radar"
 
 log = ul.log(__name__, "ERROR")
+
 
 def radar(
     ax_x: collection,
@@ -37,7 +39,7 @@ def radar(
     show: bool = True,
     close: bool = False,
     **kwargs: Any
-) -> None:
+) -> tuple[Figure, Any]:
     """
     Plot a radar chart.
 
@@ -84,11 +86,7 @@ def radar(
     None
     """
 
-    if output is None and not show:
-        log.error(f"At least one of the `output` and `show` parameters is required")
-        raise ValueError(f"At least one of the `output` and `show` parameters is required")
-
-    fig, ax = plot_start(output=output, show=show)
+    fig, ax = plot_start()
 
     ax_x = list(ax_x)
     ax_y = list(ax_y)
@@ -154,6 +152,8 @@ def radar(
 
     plot_end(fig, title, x_name, y_name, output, show, close)
 
+    return fig, ax
+
 
 def base_radar(
     df: DataFrame,
@@ -173,7 +173,7 @@ def base_radar(
     show: bool = True,
     close: bool = False,
     **kwargs: Any
-) -> None:
+) -> tuple[Figure, Any]:
     """
     Plot a radar chart with multiple groups.
 
@@ -218,11 +218,8 @@ def base_radar(
     -------
     None
     """
-    if output is None and not show:
-        log.error(f"At least one of the `output` and `show` parameters is required")
-        raise ValueError(f"At least one of the `output` and `show` parameters is required")
 
-    fig, ax = plot_start(output=output, show=show)
+    fig, ax = plot_start()
 
     ax_x_values = sorted(df[ax_x].unique())
     hue_values = sorted(df[hue].unique())
@@ -259,6 +256,8 @@ def base_radar(
     plt.tight_layout()
 
     plot_end(fig, title, x_name, y_name, output, show, close)
+
+    return fig, ax
 
 
 def radar_trait(

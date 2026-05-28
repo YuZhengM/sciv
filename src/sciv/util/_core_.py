@@ -7,7 +7,7 @@ import string
 import threading
 import time
 from functools import wraps
-from typing import Tuple, Union, Literal, Callable
+from typing import Tuple, Union, Literal, Callable, Any
 import psutil
 
 import numpy as np
@@ -15,6 +15,7 @@ import pandas as pd
 import torch
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
+from matplotlib.figure import Figure
 from numpy import asarray
 from anndata import AnnData
 from pandas import DataFrame
@@ -758,20 +759,10 @@ def check_gpu_availability(verbose: bool = False) -> bool:
     return available
 
 
-def plot_start(
-    output: str = None,
-    show: bool = True
-):
+def plot_start() -> tuple[Figure, Any]:
     """
     Start a plot.
-    
-    Parameters
-    ----------
-    output : str, optional
-        Output file path. Default is None.
-    show : bool, optional
-        Whether to show the plot. Default is True.
-    
+
     Returns
     -------
     fig : Figure
@@ -779,9 +770,6 @@ def plot_start(
     ax : Axes
         Axes object.
     """
-    if output is None and not show:
-        ul.log(__name__, "ERROR").error(f"At least one of the `output` and `show` parameters is required")
-        raise ValueError(f"At least one of the `output` and `show` parameters is required")
 
     fig, ax = ul.fig, ul.ax
 

@@ -4,6 +4,7 @@ import os
 from typing import Union, Any
 
 import numpy as np
+from matplotlib.figure import Figure
 from pandas import DataFrame
 
 from .. import util as ul
@@ -12,6 +13,7 @@ from ..util import path, collection, get_real_predict_label, type_20_colors, typ
 __name__: str = "plot_pie"
 
 log = ul.log(__name__, "ERROR")
+
 
 def base_pie(
     values: list,
@@ -27,7 +29,7 @@ def base_pie(
     show: bool = True,
     close: bool = False,
     **kwargs: Any
-) -> None:
+) -> tuple[Figure, Any]:
     """
     Create a basic pie chart with customizable parameters.
 
@@ -66,7 +68,7 @@ def base_pie(
     **kwargs : Any
         Additional keyword arguments passed to matplotlib's pie function.
     """
-    fig, ax = plot_start(output, show)
+    fig, ax = plot_start()
 
     size = len(values)
 
@@ -93,6 +95,8 @@ def base_pie(
 
     plot_end(fig, title, x_name, y_name, output, show, close)
 
+    return fig, ax
+
 
 def pie_label(
     df: DataFrame,
@@ -111,7 +115,7 @@ def pie_label(
     show: bool = True,
     close: bool = False,
     **kwargs: Any
-) -> None:
+) -> tuple[Figure, Any]:
     """
     Create a donut-style pie chart showing cluster label distribution.
 
@@ -157,7 +161,7 @@ def pie_label(
     **kwargs : Any
         Additional keyword arguments passed to matplotlib's pie function.
     """
-    fig, ax = plot_start(output, show)
+    fig, ax = plot_start()
 
     # judge
     df_columns = list(df.columns)
@@ -210,6 +214,8 @@ def pie_label(
     ax.axis('off')
 
     plot_end(fig, title, x_name, y_name, output, show, close)
+
+    return fig, ax
 
 
 def pie_trait(

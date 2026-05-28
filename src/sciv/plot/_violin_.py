@@ -3,6 +3,7 @@
 import os
 from typing import Tuple, Union, Literal, Any
 
+from matplotlib.figure import Figure
 from pandas import DataFrame
 import seaborn as sns
 
@@ -14,6 +15,7 @@ __name__: str = "plot_violin"
 _Kind = Literal["strip", "swarm", "box", "violin", "boxen", "point", "bar", "count"]
 
 log = ul.log(__name__, "ERROR")
+
 
 def violin_base(
     df: DataFrame,
@@ -34,7 +36,7 @@ def violin_base(
     show: bool = True,
     close: bool = False,
     **kwargs: Any
-) -> None:
+) -> tuple[Figure, Any]:
     """
     Plot violin plot.
 
@@ -93,7 +95,7 @@ def violin_base(
         log.error(f"The `hue` ({hue}) parameter must be in the `df` parameter data column name ({df_columns})")
         raise ValueError(f"The `hue` ({hue}) parameter must be in the `df` parameter data column name ({df_columns})")
 
-    fig, ax = plot_start(output, show)
+    fig, ax = plot_start()
 
     group_columns = [groupby]
 
@@ -160,6 +162,8 @@ def violin_base(
 
     plot_end(fig, title, x_name, y_name, output, show, close)
 
+    return fig, g
+
 
 def violin_trait(
     trait_df: DataFrame,
@@ -181,7 +185,7 @@ def violin_trait(
     show: bool = True,
     close: bool = False,
     **kwargs: Any
-) -> None:
+):
     """
     Plot violin plot for trait data.
 

@@ -1,10 +1,12 @@
 # -*- coding: UTF-8 -*-
 
 import os
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.colors import ListedColormap
+from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec
 from pandas import DataFrame
 
@@ -14,6 +16,7 @@ from ..util import path, type_50_colors, type_20_colors, plot_end
 __name__: str = "plot_barcode"
 
 log = ul.log(__name__, "ERROR")
+
 
 def barcode_base(
     df: DataFrame,
@@ -32,7 +35,7 @@ def barcode_base(
     output: path = None,
     show: bool = True,
     close: bool = False
-) -> None:
+) -> tuple[Figure, Any, Any]:
     """
     Plot barcode plot.
     
@@ -129,6 +132,8 @@ def barcode_base(
     color_bar.set_ticks(ticks if is_ticks else [])
 
     plot_end(fig, title, output=output, show=show, close=close)
+
+    return fig, ax1, ax2
 
 
 def barcode_trait(

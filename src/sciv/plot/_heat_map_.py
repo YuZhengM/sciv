@@ -8,6 +8,7 @@ from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from PyComplexHeatmap import HeatmapAnnotation, anno_simple, ClusterMapPlotter, anno_label, anno_barplot
 from matplotlib.colors import ListedColormap
+from matplotlib.figure import Figure
 from pandas import DataFrame
 import seaborn as sns
 
@@ -17,6 +18,7 @@ from ..util import path, type_20_colors, type_50_colors, plot_end, plot_start
 __name__: str = "plot_heat_map"
 
 log = ul.log(__name__, "ERROR")
+
 
 def heatmap_annotation(
     adata: AnnData,
@@ -69,7 +71,7 @@ def heatmap_annotation(
     close: bool = False,
     output: path = None,
     **kwargs
-) -> None:
+) -> tuple[Figure, Any]:
     """
     Generate a heatmap with row and column annotations.
 
@@ -182,7 +184,7 @@ def heatmap_annotation(
         Displays or saves the heatmap figure.
     """
     log.info("Start plotting the heatmap")
-    fig, ax = plot_start(output, show)
+    fig, ax = plot_start()
 
     data = adata.copy()
 
@@ -336,6 +338,8 @@ def heatmap_annotation(
 
     plot_end(fig, title, x_name, y_name, output, show, close)
 
+    return fig, ax
+
 
 def heatmap(
     adata: AnnData,
@@ -354,7 +358,7 @@ def heatmap(
     show: bool = True,
     close: bool = False,
     **kwargs: Any
-) -> None:
+) -> tuple[Figure, Any]:
     """
     Generate a simple heatmap using seaborn.
 
@@ -398,7 +402,7 @@ def heatmap(
     None
         Displays or saves the heatmap figure.
     """
-    fig, ax = plot_start(output, show)
+    fig, ax = plot_start()
 
     data = adata.copy()
 
@@ -426,3 +430,5 @@ def heatmap(
         plt.setp(heat_map.ax_heatmap.get_xticklabels(), rotation=rotation)
 
     plot_end(fig, title, x_name, y_name, output, show, close)
+
+    return fig, ax

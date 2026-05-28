@@ -3,6 +3,7 @@
 import os
 from typing import Tuple, Union, Any
 
+from matplotlib.figure import Figure
 from pandas import DataFrame
 import seaborn as sns
 
@@ -12,6 +13,7 @@ from ..util import path, plot_end, plot_start
 __name__: str = "plot_box"
 
 log = ul.log(__name__, "ERROR")
+
 
 def box_base(
     df: DataFrame,
@@ -33,7 +35,7 @@ def box_base(
     show: bool = True,
     close: bool = False,
     **kwargs: Any
-) -> None:
+) -> tuple[Figure, Any]:
     """
     Create a box plot with customizable styling options.
 
@@ -86,7 +88,7 @@ def box_base(
         log.error(f"The `y` ({y}) parameter must be in the `df` parameter data column name ({df_columns})")
         raise ValueError(f"The `y` ({y}) parameter must be in the `df` parameter data column name ({df_columns})")
 
-    fig, ax = plot_start(output, show)
+    fig, ax = plot_start()
 
     group_columns = [x]
 
@@ -165,6 +167,8 @@ def box_base(
     ax.yaxis.grid(True, linestyle='-', linewidth=line_width)
 
     plot_end(fig, title, x_name, y_name, output, show, close)
+
+    return fig, ax
 
 
 def box_trait(

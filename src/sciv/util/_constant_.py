@@ -83,12 +83,6 @@ fig, ax = plt.subplots(figsize=(2, 2))
 
 # Define cmap
 colors.define_cmap()
-# 50 colors cmap
-type_50_colors = colormaps["random50"].colors.copy()
-plot_cmap_50 = ListedColormap(type_50_colors)
-# 20 colors cmap
-type_20_colors = list(colormaps["tab20"].colors).copy()
-plot_cmap_20 = ListedColormap(type_20_colors)
 # Set colors cmap
 type_set_colors = [
     "#66c2a5", "#fc8d62", "#8da0cb", "#e78ac3", "#a6d854", "#f4d037",
@@ -100,10 +94,15 @@ type_set_colors = [
 plot_cmap_set = ListedColormap(type_set_colors)
 # Plot color types
 plot_color_types: dict = {
-    "20": type_20_colors,
-    "50": type_50_colors,
     "set": type_set_colors
 }
+
+for colormap in colormaps.keys():
+    plot_color_types.update({colormap: colormaps[colormap].colors.copy()})
+
+# 50 colors cmap
+type_50_colors = plot_color_types["random50"]
+type_20_colors = plot_color_types["tab20"]
 
 # Chromosome type
 chrtype = CategoricalDtype(

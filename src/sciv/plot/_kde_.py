@@ -5,6 +5,7 @@ from typing import Literal, Any
 import numpy as np
 from anndata import AnnData
 import seaborn as sns
+from matplotlib.figure import Figure
 from tqdm import tqdm
 
 from .. import util as ul
@@ -14,6 +15,7 @@ from ..util import path, check_adata_get, plot_end, plot_start
 __name__: str = "plot_kde"
 
 log = ul.log(__name__, "ERROR")
+
 
 def kde(
     adata: AnnData,
@@ -28,7 +30,7 @@ def kde(
     show: bool = True,
     close: bool = False,
     **kwargs: Any
-) -> None:
+) -> tuple[Figure, Any]:
     """
     Plot Kernel Density Estimation (KDE) for single-cell data.
 
@@ -65,7 +67,7 @@ def kde(
     """
     log.info("Start plotting the Kernel density estimation chart")
 
-    fig, ax = plot_start(output, show)
+    fig, ax = plot_start()
 
     data = check_adata_get(adata, layer=layer, is_dense=True, is_matrix=False)
 
@@ -106,3 +108,5 @@ def kde(
             ax.legend(list(adata.obs.index))
 
     plot_end(fig, title, x_name, y_name, output, show, close)
+
+    return fig, ax

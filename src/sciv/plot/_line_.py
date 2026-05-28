@@ -2,6 +2,7 @@
 
 from typing import Optional, Tuple, Union, Any
 
+from matplotlib.figure import Figure
 from pandas import DataFrame
 from anndata import AnnData
 from matplotlib import pyplot as plt
@@ -16,6 +17,7 @@ __name__: str = "plot_line"
 
 log = ul.log(__name__, "ERROR")
 
+
 def base_line(
     data: Union[AnnData, DataFrame],
     x: str,
@@ -29,7 +31,7 @@ def base_line(
     legend_list: list = None,
     start_color_index: int = 0,
     color_step_size: int = 0,
-    color_type: str = "set",
+    cmap: str = "set",
     colors: list = None,
     line_width: float = 1.5,
     x_name_rotation: float = 65,
@@ -40,7 +42,7 @@ def base_line(
     show: bool = True,
     close: bool = False,
     **kwargs: Any
-) -> None:
+) -> tuple[Figure, Any]:
     """
     Base line plot function for visualizing data trends over time or categories.
 
@@ -73,7 +75,7 @@ def base_line(
         Starting index for color selection from the color palette.
     color_step_size : int, default 0
         Step size for selecting colors from the palette.
-    color_type : str, default "set"
+    cmap : str, default "set"
         Type of color palette to use (key from plot_color_types).
     colors : list, default None
         Custom list of colors to use for the plot.
@@ -101,7 +103,7 @@ def base_line(
     None
         The function displays and/or saves the plot but does not return any value.
     """
-    fig, ax = plot_start(output, show)
+    fig, ax = plot_start()
 
     new_data = data.copy()
 
@@ -165,7 +167,7 @@ def base_line(
                 palette = []
 
                 for i in range(len(hue_types)):
-                    palette.append(plot_color_types[color_type][start_color_index + i * color_step_size + i])
+                    palette.append(plot_color_types[cmap][start_color_index + i * color_step_size + i])
     else:
         palette = colors
 
@@ -187,3 +189,5 @@ def base_line(
         plt.xticks(x_ticks, rotation=x_name_rotation)
 
     plot_end(fig, title, x_name, y_name, output, show, close)
+
+    return fig, ax

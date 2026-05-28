@@ -9,6 +9,7 @@ import pandas as pd
 from anndata import AnnData
 from matplotlib import pyplot as plt
 from matplotlib.colors import ListedColormap
+from matplotlib.figure import Figure
 from pandas import DataFrame
 import seaborn as sns
 
@@ -18,6 +19,7 @@ from ..util import path, collection, type_50_colors, type_20_colors, chrtype, ty
 __name__: str = "plot_pie"
 
 log = ul.log(__name__, "ERROR")
+
 
 def scatter_base(
     df: DataFrame,
@@ -43,7 +45,7 @@ def scatter_base(
     show: bool = True,
     close: bool = False,
     **kwargs: Any
-) -> None:
+) -> tuple[Figure, Any]:
     """
     Create a base scatter plot with customizable aesthetics.
     
@@ -96,7 +98,7 @@ def scatter_base(
     **kwargs : Any
         Additional arguments passed to sns.scatterplot
     """
-    fig, ax = plot_start(output, show)
+    fig, ax = plot_start()
 
     # scatter
     if number:
@@ -109,6 +111,7 @@ def scatter_base(
             data=df,
             x=x,
             y=y,
+            ax=ax,
             palette=cmap,
             hue=hue,
             s=size,
@@ -160,6 +163,7 @@ def scatter_base(
             data=df,
             x=x,
             y=y,
+            ax=ax,
             edgecolor=edge_color,
             palette=colors,
             hue="__hue__" if legend is not None else hue,
@@ -201,6 +205,8 @@ def scatter_base(
 
     plot_end(fig, title, x_name, y_name, output, show, close)
 
+    return fig, ax
+
 
 def scatter_3d(
     df: DataFrame,
@@ -228,7 +234,7 @@ def scatter_3d(
     show: bool = True,
     close: bool = False,
     **kwargs: Any
-):
+) -> tuple[Figure, Any]:
     """
     Create a 3D scatter plot with customizable aesthetics.
     
@@ -286,12 +292,10 @@ def scatter_3d(
         Additional arguments passed to ax.scatter
     """
 
-    if output is None and not show:
-        log.error(f"At least one of the `output` and `show` parameters is required")
-        raise ValueError(f"At least one of the `output` and `show` parameters is required")
-
     fig = plt.figure(figsize=(width, height))
     ax = fig.add_subplot(projection='3d')
+
+    hue_cat = None
 
     if hue is not None:
         hue_cat = pd.Categorical(df[hue])
@@ -352,6 +356,8 @@ def scatter_3d(
         )
 
     plot_end(fig, None, None, None, output, show, close)
+
+    return fig, ax
 
 
 def scatter_atac(
@@ -635,7 +641,7 @@ def volcano_base(
     show: bool = True,
     close: bool = False,
     **kwargs: Any
-) -> None:
+) -> tuple[Figure, Any]:
     """
     Plot volcano plot.
 
@@ -653,12 +659,6 @@ def volcano_base(
         Size.
     palette : Optional[list], optional
         Palette.
-    width : float, optional
-        Width.
-    height : float, optional
-        Height.
-    bottom : float, optional
-        Bottom.
     y_min : float, optional
         Y-min.
     axh_value : float, optional
@@ -687,7 +687,7 @@ def volcano_base(
     None
     """
 
-    fig, ax = plot_start(output, show)
+    fig, ax = plot_start()
 
     if palette is None:
         palette = ["#01c5c4", "#686d76", "#ff414d"]
@@ -702,6 +702,8 @@ def volcano_base(
     plt.axvline(axv_right_value, color='grey', linestyle='--')
 
     plot_end(fig, title, x_name, y_name, output, show, close)
+
+    return fig, ax
 
 
 def manhattan_causal_variant(
@@ -723,7 +725,7 @@ def manhattan_causal_variant(
     show: bool = True,
     close: bool = False,
     **kwargs: Any
-) -> None:
+) -> tuple[Figure, Any]:
     """
     Create a Manhattan plot for causal variant visualization across chromosomes.
     
@@ -778,7 +780,7 @@ def manhattan_causal_variant(
         colors = type_20_colors.copy()
         colors.extend(type_set_colors)
 
-    fig, ax = plot_start(output, show)
+    fig, ax = plot_start()
 
     x_labels = []
     x_labels_pos = []
@@ -824,6 +826,8 @@ def manhattan_causal_variant(
 
     plot_end(fig, title, x_name, y_name, output, show, close)
 
+    return fig, ax
+
 
 def pseudo_time_score(
     df: DataFrame,
@@ -841,7 +845,7 @@ def pseudo_time_score(
     show: bool = True,
     close: bool = False,
     **kwargs: Any
-) -> None:
+) -> tuple[Figure, Any]:
     """
     Create a scatter plot showing pseudo-time scores with a smoothed trend line.
     
@@ -880,7 +884,7 @@ def pseudo_time_score(
     """
     from scipy.signal import savgol_filter
 
-    fig, ax = plot_start(output, show)
+    fig, ax = plot_start()
 
     pseudo_times = df[x].values
     scores = df[y].values
@@ -905,3 +909,5 @@ def pseudo_time_score(
     plt.tight_layout()
 
     plot_end(fig, title, x_name, y_name, output, show, close)
+
+    return fig, ax

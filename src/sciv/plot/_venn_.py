@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from matplotlib.figure import Figure
 from matplotlib_venn import venn3, venn3_circles, venn2, venn2_circles
 
 from .. import util as ul
@@ -10,6 +11,7 @@ from ..util import path, collection, type_set_colors, plot_end, plot_start
 __name__: str = "plot_venn"
 
 log = ul.log(__name__, "ERROR")
+
 
 def three_venn(
     set1: collection,
@@ -26,7 +28,7 @@ def three_venn(
     show: bool = True,
     close: bool = False,
     **kwargs: Any
-) -> None:
+) -> tuple[Figure, Any]:
     """
     Plot three Venn diagram.
 
@@ -64,7 +66,7 @@ def three_venn(
     -------
     None
     """
-    fig, ax = plot_start(output, show)
+    fig, ax = plot_start()
 
     if colors is None:
         colors = type_set_colors[:3]
@@ -92,15 +94,14 @@ def three_venn(
 
     plot_end(fig, title, x_name, y_name, output, show, close)
 
+    return fig, ax
+
 
 def two_venn(
     set1: collection,
     set2: collection,
     name1: str = "Set1",
     name2: str = "Set2",
-    width: float = 2,
-    height: float = 2,
-    bottom: float = 0,
     colors: list = None,
     x_name: str = None,
     y_name: str = None,
@@ -109,7 +110,7 @@ def two_venn(
     show: bool = True,
     close: bool = False,
     **kwargs: Any
-) -> None:
+) -> tuple[Figure, Any]:
     """
     Plot two Venn diagram.
 
@@ -143,7 +144,7 @@ def two_venn(
     -------
     None
     """
-    fig, ax = plot_start(output, show)
+    fig, ax = plot_start()
 
     if colors is None:
         colors = type_set_colors[:2]
@@ -167,3 +168,5 @@ def two_venn(
     ax.axis('off')
 
     plot_end(fig, title, x_name, y_name, output, show, close)
+
+    return fig, ax

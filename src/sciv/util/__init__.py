@@ -22,9 +22,7 @@ from ._constant_ import (
     ax,
     plot_color_types,
     type_50_colors,
-    plot_cmap_50,
     type_20_colors,
-    plot_cmap_20,
     type_set_colors,
     plot_cmap_set
 )
@@ -74,8 +72,6 @@ __all__ = [
     "plot_rc_config",
     "fig",
     "ax",
-    "plot_cmap_20",
-    "plot_cmap_50",
     "plot_cmap_set",
     "type_set_colors",
     "get_real_predict_label",

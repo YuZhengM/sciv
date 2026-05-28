@@ -2,13 +2,14 @@
 
 import math
 import random
-from typing import Optional, Literal, Union
+from typing import Optional, Literal, Union, Any
 
 import matplotlib
 import networkx as nx
 import numpy as np
 from anndata import AnnData
 from matplotlib import pyplot as plt, gridspec
+from matplotlib.figure import Figure
 
 from .. import util as ul
 from ..util import (
@@ -31,6 +32,7 @@ _LayoutType = Optional[Literal[
 
 log = ul.log(__name__, "ERROR")
 
+
 def graph(
     data: matrix_data,
     labels: collection = None,
@@ -43,7 +45,7 @@ def graph(
     output: path = None,
     show: bool = True,
     close: bool = False
-) -> None:
+) -> tuple[Figure, Any]:
     """
     Plot a graph from an adjacency matrix.
 
@@ -72,11 +74,8 @@ def graph(
     close : bool, default=False
         Whether to close the figure after display.
     """
-    if output is None and not show:
-        log.error(f"At least one of the `output` and `show` parameters is required")
-        raise ValueError(f"At least one of the `output` and `show` parameters is required")
 
-    fig, ax = plot_start(output, show)
+    fig, ax = plot_start()
 
     # Determine whether it is a square array
     if data.shape[0] != data.shape[1]:
@@ -123,6 +122,8 @@ def graph(
 
     plot_end(fig, title, x_name, y_name, output, show, close)
 
+    return fig, ax
+
 
 def communities_graph(
     adata: AnnData,
@@ -139,7 +140,7 @@ def communities_graph(
     output: path = None,
     show: bool = True,
     close: bool = False
-):
+) -> tuple[Figure, Any]:
     """
     Plot a cell-cell network diagram with community detection coloring.
 
@@ -183,9 +184,6 @@ def communities_graph(
     None
         The function displays and/or saves the network plot.
     """
-    if output is None and not show:
-        log.error(f"At least one of the `output` and `show` parameters is required")
-        raise ValueError(f"At least one of the `output` and `show` parameters is required")
 
     log.info("Start cell-cell network diagram")
 
@@ -201,7 +199,7 @@ def communities_graph(
 
     type_colors = type_20_colors if len(__hue_order__) <= 20 else type_50_colors
 
-    fig, ax = plot_start(output, show)
+    fig, ax = plot_start()
 
     log.info("Get position")
     color_index = 0
@@ -241,6 +239,8 @@ def communities_graph(
     )
 
     plot_end(fig, title, x_name, y_name, output, show, close)
+
+    return fig, ax
 
 
 def network_two_types(
@@ -336,9 +336,6 @@ def network_two_types(
     None
         The function displays and/or saves the network plot.
     """
-    if output is None and not show:
-        log.error(f"At least one of the `output` and `show` parameters is required")
-        raise ValueError(f"At least one of the `output` and `show` parameters is required")
 
     # Create a node list of genes and variations
     type1_nodes = []
