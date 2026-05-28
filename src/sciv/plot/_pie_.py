@@ -11,6 +11,7 @@ from ..util import path, collection, get_real_predict_label, type_20_colors, typ
 
 __name__: str = "plot_pie"
 
+log = ul.log(__name__, "ERROR")
 
 def base_pie(
     values: list,
@@ -18,9 +19,6 @@ def base_pie(
     x_name: str = None,
     y_name: str = None,
     title: str = None,
-    width: float = 2,
-    height: float = 2,
-    bottom: float = 0,
     pct_distance: float = 0.6,
     label_distance: float = 1.1,
     colors: list = None,
@@ -48,12 +46,6 @@ def base_pie(
         The label for the y-axis. Default is None.
     title : str, optional
         The title of the pie chart. Default is None.
-    width : float, optional
-        The width of the figure in inches. Default is 2.
-    height : float, optional
-        The height of the figure in inches. Default is 2.
-    bottom : float, optional
-        The bottom margin of the figure. Default is 0.
     pct_distance : float, optional
         The distance of the percentage labels from the center of the pie.
         Default is 0.6.
@@ -74,12 +66,12 @@ def base_pie(
     **kwargs : Any
         Additional keyword arguments passed to matplotlib's pie function.
     """
-    fig, ax = plot_start(width, height, bottom, output, show)
+    fig, ax = plot_start(output, show)
 
     size = len(values)
 
     if size is not len(labels):
-        ul.log(__name__).error(f"The parameter lengths of `values`({size}) and `labels`({len(labels)}) must be equal.")
+        log.error(f"The parameter lengths of `values`({size}) and `labels`({len(labels)}) must be equal.")
         raise ValueError(f"The parameter lengths of `values`({size}) and `labels`({len(labels)}) must be equal.")
 
     if colors is None:
@@ -110,9 +102,6 @@ def pie_label(
     x_name: str = None,
     y_name: str = None,
     title: str = None,
-    width: float = 2,
-    height: float = 2,
-    bottom: float = 0,
     radius: float = 0.6,
     fontsize: float = 17,
     pct_distance: float = 0.6,
@@ -146,12 +135,6 @@ def pie_label(
         The label for the y-axis. Default is None.
     title : str, optional
         The title of the pie chart. Default is None.
-    width : float, optional
-        The width of the figure in inches. Default is 2.
-    height : float, optional
-        The height of the figure in inches. Default is 2.
-    bottom : float, optional
-        The bottom margin of the figure. Default is 0.
     radius : float, optional
         The radius of the inner white circle to create donut effect. Default is 0.6.
     fontsize : float, optional
@@ -174,13 +157,13 @@ def pie_label(
     **kwargs : Any
         Additional keyword arguments passed to matplotlib's pie function.
     """
-    fig, ax = plot_start(width, height, bottom, output, show)
+    fig, ax = plot_start(output, show)
 
     # judge
     df_columns = list(df.columns)
 
     if value not in df_columns:
-        ul.log(__name__).error(
+        log.error(
             f"The `value` ({value}) parameter must be in the `df` parameter data column name ({df_columns})")
         raise ValueError(
             f"The `value` ({value}) parameter must be in the `df` parameter data column name ({df_columns})"
@@ -239,8 +222,6 @@ def pie_trait(
     x_name: str = None,
     y_name: str = None,
     title: str = None,
-    width: float = 2,
-    height: float = 2,
     radius: float = 0.6,
     fontsize: float = 17,
     pct_distance: float = 0.6,
@@ -281,10 +262,6 @@ def pie_trait(
     title : str, optional
         The base title for the pie charts. Trait name will be appended if provided.
         Default is None.
-    width : float, optional
-        The width of the figure in inches. Default is 2.
-    height : float, optional
-        The height of the figure in inches. Default is 2.
     radius : float, optional
         The radius of the inner white circle to create donut effect. Default is 0.6.
     fontsize : float, optional
@@ -326,13 +303,12 @@ def pie_trait(
             The DataFrame containing trait data for plotting.
         """
         if trait_ not in trait_groupby_map_key_list:
-            ul.log(__name__).error(
-                f"The key in `trait_groupby_map` does not contain the `{trait_}` trait and needs to be added")
+            log.error(f"The key in `trait_groupby_map` does not contain the `{trait_}` trait and needs to be added")
             raise ValueError(
                 f"The key in `trait_groupby_map` does not contain the `{trait_}` trait and needs to be added"
             )
 
-        ul.log(__name__).info("Plotting pie {}".format(trait_))
+        log.info("Plotting pie {}".format(trait_))
         # get gene score
         trait_score = atac_cell_df_[atac_cell_df_[trait_column_name] == trait_]
         # Sort gene scores from small to large
@@ -343,8 +319,6 @@ def pie_trait(
             groupby=groupby,
             x_name=x_name,
             y_name=y_name,
-            width=width,
-            height=height,
             radius=radius,
             fontsize=fontsize,
             pct_distance=pct_distance,
@@ -361,7 +335,7 @@ def pie_trait(
     trait_list = list(set(data[trait_column_name]))
     # judge trait
     if trait_name != "All" and trait_name not in trait_list:
-        ul.log(__name__).error(f"The {trait_name} trait/disease is not in the trait/disease list {trait_list}.")
+        log.error(f"The {trait_name} trait/disease is not in the trait/disease list {trait_list}.")
         raise ValueError(f"The {trait_name} trait/disease is not in the trait/disease list {trait_list}.")
 
     # plot

@@ -26,8 +26,6 @@ from ._bubble_ import bubble
 from ._radar_ import radar, base_radar, radar_trait, rate_circular_bar_plot
 from ._venn_ import three_venn, two_venn
 
-matplotlib.set_loglevel("error")
-
 __all__ = [
     "graph",
     "communities_graph",

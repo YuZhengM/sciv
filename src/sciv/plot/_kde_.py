@@ -13,6 +13,7 @@ from ..util import path, check_adata_get, plot_end, plot_start
 
 __name__: str = "plot_kde"
 
+log = ul.log(__name__, "ERROR")
 
 def kde(
     adata: AnnData,
@@ -20,9 +21,6 @@ def kde(
     x_name: str = None,
     y_name: str = None,
     title: str = None,
-    width: float = 4,
-    height: float = 2,
-    bottom: float = 0.3,
     axis: Literal[-1, 0, 1] = -1,
     sample_number: int = 1000000,
     is_legend: bool = True,
@@ -46,12 +44,6 @@ def kde(
         Label for the y-axis.
     title : str, optional
         Title of the plot.
-    width : float, default=4
-        Width of the figure in inches.
-    height : float, default=2
-        Height of the figure in inches.
-    bottom : float, default=0.3
-        Bottom margin of the figure.
     axis : Literal[-1, 0, 1], default=-1
         Axis along which to compute KDE:
         - -1: Flatten all data and compute single KDE.
@@ -71,9 +63,9 @@ def kde(
     **kwargs : Any
         Additional keyword arguments passed to `seaborn.kdeplot`.
     """
-    ul.log(__name__).info("Start plotting the Kernel density estimation chart")
+    log.info("Start plotting the Kernel density estimation chart")
 
-    fig, ax = plot_start(width, height, bottom, output, show)
+    fig, ax = plot_start(output, show)
 
     data = check_adata_get(adata, layer=layer, is_dense=True, is_matrix=False)
 

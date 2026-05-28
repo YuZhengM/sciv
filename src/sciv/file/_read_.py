@@ -512,7 +512,7 @@ def read_sc_atac_10x_h5(
     Parameters
     ----------
     file : path
-        A comprehensive h5ad file. (It can be obtained through cell-ranger)
+        A comprehensive h5 file. (It can be obtained through cell-ranger)
     clusters : str, optional
         The column name for cell clusters or cell types. (In most cases, this column can be ignored.)
         It is worth noting that only the values in this column are judged to determine whether they contain NA values.
@@ -585,7 +585,7 @@ def read_sc_atac(
     ----------
     resource : path, optional
         Input data source. Can be one of the following:
-        1. Path to directory containing matrix, bed file, etc. (output from cell-ranger)
+        1. Path to directory containing matrix, bed file, etc.
         2. H5 file obtained through cell-ranger
         3. A comprehensive h5ad file
         4. A table file with cell or peak columns and indexes, where content is fragment counts

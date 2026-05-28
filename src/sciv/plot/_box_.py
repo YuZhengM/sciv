@@ -11,6 +11,7 @@ from ..util import path, plot_end, plot_start
 
 __name__: str = "plot_box"
 
+log = ul.log(__name__, "ERROR")
 
 def box_base(
     df: DataFrame,
@@ -19,9 +20,6 @@ def box_base(
     x_name: str = None,
     y_name: str = "value",
     palette: Union[Tuple, list] = None,
-    width: float = 2,
-    height: float = 2,
-    bottom: float = 0.3,
     line_width: float = 0.3,
     marker_size: float = 0.2,
     rotation: float = 65,
@@ -53,12 +51,6 @@ def box_base(
         Custom label for the y-axis.
     palette : Union[Tuple, list], optional
         Color palette for the boxes. If None and "color" column exists, uses that.
-    width : float, default 2
-        Width of the figure in inches.
-    height : float, default 2
-        Height of the figure in inches.
-    bottom : float, default 0.3
-        Bottom margin adjustment for the plot.
     line_width : float, default 0.3
         Width of lines in the plot (box edges, whiskers, etc.).
     marker_size : float, default 0.2
@@ -91,10 +83,10 @@ def box_base(
     df_columns = list(df.columns)
 
     if y not in df_columns:
-        ul.log(__name__).error(f"The `y` ({y}) parameter must be in the `df` parameter data column name ({df_columns})")
+        log.error(f"The `y` ({y}) parameter must be in the `df` parameter data column name ({df_columns})")
         raise ValueError(f"The `y` ({y}) parameter must be in the `df` parameter data column name ({df_columns})")
 
-    fig, ax = plot_start(width, height, bottom, output, show)
+    fig, ax = plot_start(output, show)
 
     group_columns = [x]
 
@@ -185,11 +177,8 @@ def box_trait(
     y_name: str = "value",
     palette: Union[Tuple, list] = None,
     orient: str = None,
-    width: float = 2,
-    height: float = 2,
     line_width: float = 0.1,
     marker_size: float = 0.5,
-    bottom: float = 0.3,
     rotation: float = 65,
     whis: float = 1.5,
     show_fliers: bool = True,
@@ -227,16 +216,10 @@ def box_trait(
         Color palette for the boxes.
     orient : str, optional
         Orientation of the plot ("v" for vertical, "h" for horizontal).
-    width : float, default 2
-        Width of the figure in inches.
-    height : float, default 2
-        Height of the figure in inches.
     line_width : float, default 0.1
         Width of lines in the plot.
     marker_size : float, default 0.5
         Size of outlier markers.
-    bottom : float, default 0.3
-        Bottom margin adjustment for the plot.
     rotation : float, default 65
         Rotation angle for x-axis tick labels in degrees.
     whis : float, default 1.5
@@ -272,7 +255,7 @@ def box_trait(
         atac_cell_df_ : DataFrame
             The input dataframe containing trait data and values.
         """
-        ul.log(__name__).info("Plotting box {}".format(trait_))
+        log.info("Plotting box {}".format(trait_))
         # get gene score
         trait_score = atac_cell_df_[atac_cell_df_[trait_column_name] == trait_]
         # Sort gene scores from small to large
@@ -282,10 +265,7 @@ def box_trait(
             y=value,
             x_name=x_name,
             y_name=y_name,
-            width=width,
             palette=palette,
-            height=height,
-            bottom=bottom,
             rotation=rotation,
             is_sort=is_sort,
             whis=whis,
@@ -305,7 +285,7 @@ def box_trait(
     trait_list = list(set(data[trait_column_name]))
     # judge trait
     if trait_name != "All" and trait_name not in trait_list:
-        ul.log(__name__).error(f"The {trait_name} trait/disease is not in the trait/disease list {trait_list}.")
+        log.error(f"The {trait_name} trait/disease is not in the trait/disease list {trait_list}.")
         raise ValueError(f"The {trait_name} trait/disease is not in the trait/disease list {trait_list}.")
 
     # plot

@@ -20,9 +20,6 @@ def bubble(
     x_name: str = None,
     y_name: str = None,
     title: str = None,
-    width: float = 2,
-    height: float = 2,
-    bottom: float = 0,
     output: path = None,
     show: bool = True,
     close: bool = False,
@@ -49,12 +46,6 @@ def bubble(
         Custom label for y-axis.
     title : str, optional
         Plot title.
-    width : float, default=2
-        Figure width in inches.
-    height : float, default=2
-        Figure height in inches.
-    bottom : float, default=0
-        Bottom margin adjustment.
     output : path, optional
         File path to save the figure.
     show : bool, default=True
@@ -64,7 +55,7 @@ def bubble(
     **kwargs : Any
         Additional arguments passed to seaborn.relplot.
     """
-    fig, ax = plot_start(width, height, bottom, output, show)
+    fig, ax = plot_start(output, show)
 
     if size is not None:
         _size_ = df[size].values

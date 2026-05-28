@@ -9,6 +9,7 @@ from ..util import path, collection, type_set_colors, plot_end, plot_start
 
 __name__: str = "plot_venn"
 
+log = ul.log(__name__, "ERROR")
 
 def three_venn(
     set1: collection,
@@ -17,9 +18,6 @@ def three_venn(
     name1: str = "Set1",
     name2: str = "Set2",
     name3: str = "Set3",
-    width: float = 2,
-    height: float = 2,
-    bottom: float = 0,
     colors: list = None,
     x_name: str = None,
     y_name: str = None,
@@ -46,12 +44,6 @@ def three_venn(
         Name of the second set.
     name3 : str, optional
         Name of the third set.
-    width : float, optional
-        Width of the diagram.
-    height : float, optional
-        Height of the diagram.
-    bottom : float, optional
-        Bottom of the diagram.
     colors : list, optional
         Colors for the sets.
     x_name : str, optional
@@ -72,13 +64,13 @@ def three_venn(
     -------
     None
     """
-    fig, ax = plot_start(width, height, bottom, output, show)
+    fig, ax = plot_start(output, show)
 
     if colors is None:
         colors = type_set_colors[:3]
 
     if len(colors) < 3:
-        ul.log(__name__).info(f"The value of colors requires three elements.")
+        log.info(f"The value of colors requires three elements.")
         raise ValueError(f"The value of colors requires three elements.")
     elif len(colors) > 3:
         colors = colors[:3]
@@ -131,12 +123,6 @@ def two_venn(
         Name of the first set.
     name2 : str, optional
         Name of the second set.
-    width : float, optional
-        Width of the diagram.
-    height : float, optional
-        Height of the diagram.
-    bottom : float, optional
-        Bottom of the diagram.
     colors : list, optional
         Colors for the sets.
     x_name : str, optional
@@ -157,13 +143,13 @@ def two_venn(
     -------
     None
     """
-    fig, ax = plot_start(width, height, bottom, output, show)
+    fig, ax = plot_start(output, show)
 
     if colors is None:
         colors = type_set_colors[:2]
 
     if len(colors) < 2:
-        ul.log(__name__).info(f"The value of colors requires three elements.")
+        log.info(f"The value of colors requires three elements.")
         raise ValueError(f"The value of colors requires three elements.")
     elif len(colors) > 2:
         colors = colors[:2]

@@ -13,6 +13,7 @@ __name__: str = "plot_violin"
 
 _Kind = Literal["strip", "swarm", "box", "violin", "boxen", "point", "bar", "count"]
 
+log = ul.log(__name__, "ERROR")
 
 def violin_base(
     df: DataFrame,
@@ -23,9 +24,6 @@ def violin_base(
     groupby: str = "clusters",
     palette: Union[Tuple, list] = None,
     hue: str = None,
-    width: float = 2,
-    height: float = 2,
-    bottom: float = 0.3,
     rotation: float = 65,
     line_width: float = 0.5,
     title: str = None,
@@ -58,12 +56,6 @@ def violin_base(
         Palette.
     hue : str, optional
         Hue column.
-    width : float, optional
-        Width.
-    height : float, optional
-        Height.
-    bottom : float, optional
-        Bottom.
     rotation : float, optional
         Rotation.
     line_width : float, optional
@@ -92,18 +84,16 @@ def violin_base(
     df_columns = list(df.columns)
 
     if value not in df_columns:
-        ul.log(__name__).error(
-            f"The `value` ({value}) parameter must be in the `df` parameter data column name ({df_columns})")
+        log.error(f"The `value` ({value}) parameter must be in the `df` parameter data column name ({df_columns})")
         raise ValueError(
-            f"The `value` ({value}) parameter must be in the `df` parameter data column name ({df_columns})")
+            f"The `value` ({value}) parameter must be in the `df` parameter data column name ({df_columns})"
+        )
 
     if hue is not None and hue not in df_columns:
-        ul.log(__name__).error(
-            f"The `hue` ({hue}) parameter must be in the `df` parameter data column name ({df_columns})"
-        )
+        log.error(f"The `hue` ({hue}) parameter must be in the `df` parameter data column name ({df_columns})")
         raise ValueError(f"The `hue` ({hue}) parameter must be in the `df` parameter data column name ({df_columns})")
 
-    fig, ax = plot_start(width, height, bottom, output, show)
+    fig, ax = plot_start(output, show)
 
     group_columns = [groupby]
 
@@ -181,11 +171,8 @@ def violin_trait(
     x_name: str = None,
     y_name: str = "value",
     palette: Tuple = None,
-    width: float = 2,
-    height: float = 2,
     rotation: float = 65,
     line_width: float = 0.1,
-    bottom: float = 0.3,
     split: bool = False,
     is_sort: bool = True,
     order_names: list = None,
@@ -221,16 +208,10 @@ def violin_trait(
         Label for the y-axis.
     palette : Tuple, optional
         Color palette for the plot.
-    width : float, optional
-        Width of the figure in inches.
-    height : float, optional
-        Height of the figure in inches.
     rotation : float, optional
         Rotation angle for x-axis labels in degrees.
     line_width : float, optional
         Width of the plot lines.
-    bottom : float, optional
-        Bottom margin of the figure.
     split : bool, optional
         Whether to split the violin plot when using hue.
     is_sort : bool, optional
@@ -269,7 +250,7 @@ def violin_trait(
         -------
         None
         """
-        ul.log(__name__).info("Plotting box {}".format(_trait_))
+        log.info("Plotting box {}".format(_trait_))
         # Get gene score
         _filename_: str = _trait_
         trait_score = _cell_df_[_cell_df_[trait_column_name] == _trait_]
@@ -279,10 +260,7 @@ def violin_trait(
             value=value,
             x_name=x_name,
             y_name=y_name,
-            width=width,
             palette=palette,
-            height=height,
-            bottom=bottom,
             split=split,
             is_sort=is_sort,
             rotation=rotation,
@@ -304,12 +282,12 @@ def violin_trait(
     if trait_name != "All":
         if isinstance(trait_name, str):
             if trait_name not in trait_list:
-                ul.log(__name__).error(f"The {trait_name} trait/disease is not in the trait/disease list {trait_list}.")
+                log.error(f"The {trait_name} trait/disease is not in the trait/disease list {trait_list}.")
                 raise ValueError(f"The {trait_name} trait/disease is not in the trait/disease list {trait_list}.")
         else:
             for tn in trait_name:
                 if tn not in trait_list:
-                    ul.log(__name__).error(f"The {tn} trait/disease is not in the trait/disease list {trait_list}.")
+                    log.error(f"The {tn} trait/disease is not in the trait/disease list {trait_list}.")
                     raise ValueError(f"The {tn} trait/disease is not in the trait/disease list {trait_list}.")
 
     # Plot

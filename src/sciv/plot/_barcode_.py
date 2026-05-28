@@ -13,6 +13,7 @@ from ..util import path, type_50_colors, type_20_colors, plot_end
 
 __name__: str = "plot_barcode"
 
+log = ul.log(__name__, "ERROR")
 
 def barcode_base(
     df: DataFrame,
@@ -120,7 +121,7 @@ def barcode_base(
     )
 
     # [left, bottom, width, height]
-    cax = fig.add_axes([0.12, 0.09, 0.5, 0.04] if is_ticks else [0.1, 0.04, 0.5, 0.04])
+    cax = fig.add_axes((0.12, 0.09, 0.5, 0.04) if is_ticks else (0.1, 0.04, 0.5, 0.04))
     color_bar = plt.colorbar(im2, ax=ax2, cax=cax, label=bar_label, orientation='horizontal')
     color_bar.set_label(bar_label)
 
@@ -215,7 +216,7 @@ def barcode_trait(
         :param atac_cell_df_:
         :return: None
         """
-        ul.log(__name__).info("Plotting barcode {}".format(trait_))
+        log.info("Plotting barcode {}".format(trait_))
         # get gene score
         trait_score = atac_cell_df_[atac_cell_df_[trait_column_name] == trait_]
         # Sort gene scores from small to large
@@ -241,7 +242,7 @@ def barcode_trait(
     trait_list = list(set(data[trait_column_name]))
     # judge trait
     if trait_name != "All" and trait_name not in trait_list:
-        ul.log(__name__).error(f"The {trait_name} trait/disease is not in the trait/disease list {trait_list}.")
+        log.error(f"The {trait_name} trait/disease is not in the trait/disease list {trait_list}.")
         raise ValueError(f"The {trait_name} trait/disease is not in the trait/disease list {trait_list}.")
 
     # plot

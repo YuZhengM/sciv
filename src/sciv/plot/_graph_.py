@@ -29,6 +29,7 @@ _LayoutType = Optional[Literal[
     'spring', 'kamada_kawai', 'circular', 'shell', 'circular_type1', 'circular_type2', 'square_type1', 'square_type2'
 ]]
 
+log = ul.log(__name__, "ERROR")
 
 def graph(
     data: matrix_data,
@@ -38,9 +39,6 @@ def graph(
     x_name: str = None,
     y_name: str = None,
     title: str = None,
-    width: float = 2,
-    height: float = 2,
-    bottom: float = 0,
     is_font: bool = False,
     output: path = None,
     show: bool = True,
@@ -65,12 +63,6 @@ def graph(
         Label for the y-axis.
     title : str, optional
         Title of the plot.
-    width : float, default=2
-        Width of the figure in inches.
-    height : float, default=2
-        Height of the figure in inches.
-    bottom : float, default=0
-        Bottom margin adjustment.
     is_font : bool, default=False
         Whether to display node labels.
     output : path, optional
@@ -81,16 +73,14 @@ def graph(
         Whether to close the figure after display.
     """
     if output is None and not show:
-        ul.log(__name__).error(f"At least one of the `output` and `show` parameters is required")
+        log.error(f"At least one of the `output` and `show` parameters is required")
         raise ValueError(f"At least one of the `output` and `show` parameters is required")
 
-    plt.figure(figsize=(width, height), dpi=300)
-
-    fig, ax = plot_start(width, height, bottom, output, show)
+    fig, ax = plot_start(output, show)
 
     # Determine whether it is a square array
     if data.shape[0] != data.shape[1]:
-        ul.log(__name__).error("The input data must be a square matrix.")
+        log.error("The input data must be a square matrix.")
         raise ValueError("The input data must be a square matrix.")
 
     # set labels
@@ -99,7 +89,7 @@ def graph(
     if labels is not None:
 
         if data.shape[0] != np.asarray(labels).size:
-            ul.log(__name__).error(
+            log.error(
                 f"The number of input data nodes {data.shape[0]} and the number of "
                 f"labels {np.asarray(labels).size} must be consistent"
             )
@@ -142,9 +132,6 @@ def communities_graph(
     x_name: str = None,
     y_name: str = None,
     title: str = None,
-    width: float = 2,
-    height: float = 2,
-    bottom: float = 0,
     node_size: float = 2.0,
     line_widths: float = 0.001,
     start_color_index: int = 0,
@@ -176,12 +163,6 @@ def communities_graph(
         Label for the y-axis.
     title : str, optional
         Title of the plot.
-    width : float, default=2
-        Width of the figure in inches.
-    height : float, default=2
-        Height of the figure in inches.
-    bottom : float, default=0
-        Bottom margin adjustment.
     node_size : float, default=2.0
         Size of the nodes in the network.
     line_widths : float, default=0.001
@@ -203,10 +184,10 @@ def communities_graph(
         The function displays and/or saves the network plot.
     """
     if output is None and not show:
-        ul.log(__name__).error(f"At least one of the `output` and `show` parameters is required")
+        log.error(f"At least one of the `output` and `show` parameters is required")
         raise ValueError(f"At least one of the `output` and `show` parameters is required")
 
-    ul.log(__name__).info("Start cell-cell network diagram")
+    log.info("Start cell-cell network diagram")
 
     new_data = check_adata_get(adata=adata, layer=layer)
 
@@ -220,9 +201,9 @@ def communities_graph(
 
     type_colors = type_20_colors if len(__hue_order__) <= 20 else type_50_colors
 
-    fig, ax = plot_start(width, height, bottom, output, show)
+    fig, ax = plot_start(output, show)
 
-    ul.log(__name__).info("Get position")
+    log.info("Get position")
     color_index = 0
     g = nx.from_numpy_array(adj_matrix)
     partition: list = [0 for _ in range(g.number_of_nodes())]
@@ -356,7 +337,7 @@ def network_two_types(
         The function displays and/or saves the network plot.
     """
     if output is None and not show:
-        ul.log(__name__).error(f"At least one of the `output` and `show` parameters is required")
+        log.error(f"At least one of the `output` and `show` parameters is required")
         raise ValueError(f"At least one of the `output` and `show` parameters is required")
 
     # Create a node list of genes and variations

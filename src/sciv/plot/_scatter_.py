@@ -17,8 +17,7 @@ from ..util import path, collection, type_50_colors, type_20_colors, chrtype, ty
 
 __name__: str = "plot_pie"
 
-matplotlib.set_loglevel("error")
-
+log = ul.log(__name__, "ERROR")
 
 def scatter_base(
     df: DataFrame,
@@ -31,12 +30,7 @@ def scatter_base(
     title: str = None,
     bar_label: str = None,
     cmap: str = "Oranges",
-    width: float = 2,
-    height: float = 2,
-    right: float = 0.9,
-    bottom: float = 0,
     text_fontsize: float = 7,
-    legend_fontsize: float = 7,
     start_color_index: int = 0,
     color_step_size: int = 0,
     type_colors: collection = None,
@@ -75,18 +69,8 @@ def scatter_base(
         Label for colorbar when number=True
     cmap : str, default "Oranges"
         Colormap for continuous coloring
-    width : float, default 2
-        Figure width in inches
-    height : float, default 2
-        Figure height in inches
-    right : float, default 0.9
-        Position for legend anchor
-    bottom : float, default 0
-        Bottom margin adjustment
     text_fontsize : float, default 7
         Font size for annotation text
-    legend_fontsize : float, default 7
-        Font size for legend text
     start_color_index : int, default 0
         Starting index in color palette
     color_step_size : int, default 0
@@ -112,7 +96,7 @@ def scatter_base(
     **kwargs : Any
         Additional arguments passed to sns.scatterplot
     """
-    fig, ax = plot_start(width, height, bottom, output, show)
+    fig, ax = plot_start(output, show)
 
     # scatter
     if number:
@@ -204,14 +188,6 @@ def scatter_base(
                     ),
                     fontsize=text_fontsize
                 )
-
-        # Add legend outside the plot area
-        ax.legend(
-            loc="center left",
-            bbox_to_anchor=(right, 0.5),
-            bbox_transform=fig.transFigure,
-            fontsize=legend_fontsize
-        )
 
     # Remove scales and labels on the coordinate axis
     ax.set_xticks([])
@@ -311,7 +287,7 @@ def scatter_3d(
     """
 
     if output is None and not show:
-        ul.log(__name__).error(f"At least one of the `output` and `show` parameters is required")
+        log.error(f"At least one of the `output` and `show` parameters is required")
         raise ValueError(f"At least one of the `output` and `show` parameters is required")
 
     fig = plt.figure(figsize=(width, height))
@@ -485,9 +461,6 @@ def scatter_trait(
     layers: Union[None, collection] = None,
     columns: Tuple[str, str] = ("UMAP1", "UMAP2"),
     cmap: str = "viridis",
-    width: float = 2,
-    height: float = 2,
-    right: float = 0.9,
     x_name: str = None,
     y_name: str = None,
     number: bool = True,
@@ -524,12 +497,6 @@ def scatter_trait(
         Column names for x and y coordinates in trait_adata.obs
     cmap : str, default "viridis"
         Colormap for continuous coloring
-    width : float, default 2
-        Figure width in inches
-    height : float, default 2
-        Figure height in inches
-    right : float, default 0.9
-        Position for legend anchor
     x_name : str, optional
         Label for x-axis
     y_name : str, optional
@@ -571,7 +538,7 @@ def scatter_trait(
     if layers is not None and len(layers) != 0:
         for layer in layers:
             if layer not in trait_adata_layers:
-                ul.log(__name__).error("The `layers` parameter needs to include in `trait_adata.layers`")
+                log.error("The `layers` parameter needs to include in `trait_adata.layers`")
                 raise ValueError("The `layers` parameter needs to include in `trait_adata.layers`")
 
     def trait_plot(trait_: str, atac_cell_df_: DataFrame, layer_: str = None, new_data_: AnnData = None) -> None:
@@ -583,7 +550,7 @@ def scatter_trait(
         :param new_data_:
         :return: None
         """
-        ul.log(__name__).info(f"Plotting scatter {trait_}")
+        log.info(f"Plotting scatter {trait_}")
         # get gene score
         trait_score = new_data_[:, trait_].to_df()
         trait_score = trait_score.rename_axis("__barcode__")
@@ -603,9 +570,6 @@ def scatter_trait(
             bar_label=bar_label,
             legend=legend,
             cmap=cmap,
-            width=width,
-            height=height,
-            right=right,
             number=number,
             size=size,
             x_name=x_name,
@@ -633,8 +597,7 @@ def scatter_trait(
 
         # judge trait
         if trait_name != "All" and trait_name not in trait_list:
-            ul.log(__name__).error(
-                f"The {trait_name} trait/disease is not in the trait/disease list (trait_adata.var_names)")
+            log.error(f"The {trait_name} trait/disease is not in the trait/disease list (trait_adata.var_names)")
             raise ValueError(f"The {trait_name} trait/disease is not in the trait/disease list (trait_adata.var_names)")
 
         new_data: AnnData = AnnData(data.layers[layer], var=data.var, obs=data.obs) if layer_ is not None else data
@@ -650,7 +613,7 @@ def scatter_trait(
         handle_plot()
     else:
         for layer in layers:
-            ul.log(__name__).info(f"Start {layer}")
+            log.info(f"Start {layer}")
             handle_plot(layer)
 
 
@@ -661,9 +624,6 @@ def volcano_base(
     hue: str = "type",
     size: int = 3,
     palette: Optional[list] = None,
-    width: float = 2,
-    height: float = 2,
-    bottom: float = 0,
     y_min: float = 0,
     axh_value: float = -np.log10(1e-3),
     axv_left_value: float = -1,
@@ -727,7 +687,7 @@ def volcano_base(
     None
     """
 
-    fig, ax = plot_start(width, height, bottom, output, show)
+    fig, ax = plot_start(output, show)
 
     if palette is None:
         palette = ["#01c5c4", "#686d76", "#ff414d"]
@@ -752,9 +712,6 @@ def manhattan_causal_variant(
     size: int = 30,
     labels: Optional[list] = None,
     colors: Optional[list] = None,
-    width: float = 8,
-    height: float = 2,
-    bottom: float = 0,
     title: str = None,
     is_sort: bool = True,
     line_width: float = 0.5,
@@ -786,12 +743,6 @@ def manhattan_causal_variant(
         List of specific variant labels to annotate on the plot
     colors : Optional[list], optional
         Custom color palette for different chromosomes
-    width : float, default 8
-        Figure width in inches
-    height : float, default 2
-        Figure height in inches
-    bottom : float, default 0
-        Bottom margin adjustment
     title : str, optional
         Plot title
     is_sort : bool, default True
@@ -827,7 +778,7 @@ def manhattan_causal_variant(
         colors = type_20_colors.copy()
         colors.extend(type_set_colors)
 
-    fig, ax = plot_start(width, height, bottom, output, show)
+    fig, ax = plot_start(output, show)
 
     x_labels = []
     x_labels_pos = []
@@ -881,9 +832,6 @@ def pseudo_time_score(
     x_name: str = None,
     y_name: str = None,
     title: str = None,
-    width: float = 2,
-    height: float = 1.2,
-    bottom: float = 0,
     alpha: float = 0.65,
     line_width: float = 1.5,
     step_length: int = 5,
@@ -911,12 +859,6 @@ def pseudo_time_score(
         Label for y-axis
     title : str, optional
         Plot title
-    width : float, default 2
-        Figure width in inches
-    height : float, default 1.2
-        Figure height in inches
-    bottom : float, default 0
-        Bottom margin adjustment
     alpha : float, default 0.65
         Transparency of scatter points
     line_width : float, default 1.5
@@ -938,7 +880,7 @@ def pseudo_time_score(
     """
     from scipy.signal import savgol_filter
 
-    fig, ax = plot_start(width, height, bottom, output, show)
+    fig, ax = plot_start(output, show)
 
     pseudo_times = df[x].values
     scores = df[y].values

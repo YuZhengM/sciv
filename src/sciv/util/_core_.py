@@ -55,7 +55,7 @@ def file_method(name: str = None, is_verbose: bool = False) -> StaticMethod:
     return StaticMethod(log_file=log_file, is_form_log_file=ul.is_form_log_file, is_verbose=is_verbose)
 
 
-def log(name: str = None) -> Logger:
+def log(name: str = None, level: str = "INFO") -> Logger:
     """
     Create log handler class
     
@@ -67,7 +67,9 @@ def log(name: str = None) -> Logger:
     ----------
     name : str, optional
         Log handler name suffix, default is None
-        
+    level : str, optional
+        Log printing level. Default is INFO.
+
     Returns
     -------
     Logger
@@ -76,7 +78,7 @@ def log(name: str = None) -> Logger:
     # Build log file name: if name is provided, concatenate project name and name; otherwise use project name
     name = f"{project_name}_{name}" if name is not None else project_name
     # Create and return Logger instance, specifying log file path and whether to format log file
-    return Logger(name, log_path=os.path.join(ul.log_file_path, name), is_form_file=ul.is_form_log_file)
+    return Logger(name, log_path=os.path.join(ul.log_file_path, name), is_form_file=ul.is_form_log_file, level=level)
 
 
 def track_with_memory(interval: float = 60) -> Callable:
@@ -757,9 +759,6 @@ def check_gpu_availability(verbose: bool = False) -> bool:
 
 
 def plot_start(
-    width: float = 2,
-    height: float = 2,
-    bottom: float = 0,
     output: str = None,
     show: bool = True
 ):
@@ -768,12 +767,6 @@ def plot_start(
     
     Parameters
     ----------
-    width : float, optional
-        Width of the plot. Default is 2.
-    height : float, optional
-        Height of the plot. Default is 2.
-    bottom : float, optional
-        Bottom margin of the plot. Default is 0.
     output : str, optional
         Output file path. Default is None.
     show : bool, optional
@@ -787,13 +780,12 @@ def plot_start(
         Axes object.
     """
     if output is None and not show:
-        ul.log(__name__).error(f"At least one of the `output` and `show` parameters is required")
+        ul.log(__name__, "ERROR").error(f"At least one of the `output` and `show` parameters is required")
         raise ValueError(f"At least one of the `output` and `show` parameters is required")
 
-    fig, ax = plt.subplots(figsize=(width, height))
-    fig.subplots_adjust(bottom=bottom)
+    fig, ax = ul.fig, ul.ax
 
-    plt.rcParams['axes.grid'] = False
+    plt.rcParams.update(ul.plot_rc_config)
 
     return fig, ax
 

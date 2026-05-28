@@ -12,10 +12,11 @@ from pandas import DataFrame
 
 from ._util_ import complete_ratio
 from .. import util as ul
-from ..util import path, collection, plot_end, type_20_colors, type_50_colors
+from ..util import path, collection, plot_end, type_20_colors, type_50_colors, plot_start
 
 __name__: str = "plot_radar"
 
+log = ul.log(__name__, "ERROR")
 
 def radar(
     ax_x: collection,
@@ -24,9 +25,6 @@ def radar(
     y_name: str = None,
     title: str = None,
     colors: collection = None,
-    width: float = 4,
-    height: float = 4,
-    bottom: float = 0,
     center_text: str = None,
     rotation: float = 25,
     value_top: float = 0.1,
@@ -57,12 +55,6 @@ def radar(
         Title of the chart.
     colors : collection, optional
         Colors for the radar chart.
-    width : float, optional
-        Width of the chart.
-    height : float, optional
-        Height of the chart.
-    bottom : float, optional
-        Bottom margin adjustment.
     center_text : str, optional
         Center text for the chart.
     rotation : float, optional
@@ -93,11 +85,10 @@ def radar(
     """
 
     if output is None and not show:
-        ul.log(__name__).error(f"At least one of the `output` and `show` parameters is required")
+        log.error(f"At least one of the `output` and `show` parameters is required")
         raise ValueError(f"At least one of the `output` and `show` parameters is required")
 
-    fig, ax = plt.subplots(figsize=(width, height), subplot_kw={'projection': 'polar'})
-    fig.subplots_adjust(bottom=bottom)
+    fig, ax = plot_start(output=output, show=show)
 
     ax_x = list(ax_x)
     ax_y = list(ax_y)
@@ -172,9 +163,6 @@ def base_radar(
     x_name: str = None,
     y_name: str = None,
     title: str = None,
-    width: float = 4,
-    height: float = 4,
-    bottom: float = 0,
     colors: collection = None,
     line_width: float = 0.5,
     y_limit: Tuple = (0, 1),
@@ -205,12 +193,6 @@ def base_radar(
         Label for the y-axis.
     title : str, optional
         Title of the chart.
-    width : float, optional
-        Width of the chart figure.
-    height : float, optional
-        Height of the chart figure.
-    bottom : float, optional
-        Bottom margin adjustment.
     colors : collection, optional
         Colors for each group line.
     line_width : float, optional
@@ -237,11 +219,10 @@ def base_radar(
     None
     """
     if output is None and not show:
-        ul.log(__name__).error(f"At least one of the `output` and `show` parameters is required")
+        log.error(f"At least one of the `output` and `show` parameters is required")
         raise ValueError(f"At least one of the `output` and `show` parameters is required")
 
-    fig, ax = plt.subplots(figsize=(width, height), subplot_kw=dict(polar=True))
-    fig.subplots_adjust(bottom=bottom)
+    fig, ax = plot_start(output=output, show=show)
 
     ax_x_values = sorted(df[ax_x].unique())
     hue_values = sorted(df[hue].unique())
@@ -288,8 +269,6 @@ def radar_trait(
     clusters: str = "clusters",
     color: Union[collection, str] = None,
     clusters_sort: Optional[list] = None,
-    width: float = 4,
-    height: float = 4,
     rotation: float = 65,
     title: str = None,
     value_top: float = 0.1,
@@ -325,10 +304,6 @@ def radar_trait(
         Colors for the radar chart bars. Can be a column name (str) or a collection of colors.
     clusters_sort : Optional[list], optional
         Custom order for clusters. If None, clusters are sorted by value in descending order.
-    width : float, optional
-        Width of the figure in inches. Default is 4.
-    height : float, optional
-        Height of the figure in inches. Default is 4.
     rotation : float, optional
         Rotation angle for text labels in degrees. Default is 65.
     title : str, optional
@@ -367,7 +342,7 @@ def radar_trait(
         :param cell_df_:
         :return: None
         """
-        ul.log(__name__).info("Plotting bar {}".format(trait_))
+        log.info("Plotting bar {}".format(trait_))
         trait_score = cell_df_[cell_df_[trait_column_name] == trait_]
 
         # Sort
@@ -392,8 +367,6 @@ def radar_trait(
             ax_y=trait_score[value].tolist(),
             title=f"{title} {trait_}" if title is not None else title,
             colors=colors,
-            width=width,
-            height=height,
             rotation=rotation,
             value_top=value_top,
             text_top=text_top,
@@ -411,7 +384,7 @@ def radar_trait(
     trait_list = list(set(trait_df[trait_column_name]))
     # judge trait
     if trait_name != "All" and trait_name not in trait_list:
-        ul.log(__name__).error(
+        log.error(
             f"The {trait_name} trait/disease is not in the trait/disease list {trait_list}, "
             f"Suggest modifying the {trait_column_name} parameter information"
         )
@@ -437,8 +410,6 @@ def rate_circular_bar_plot(
     groupby: str = "clusters",
     color: Union[collection, str] = None,
     groupby_sort: Optional[list] = None,
-    width: float = 2,
-    height: float = 2,
     rotation: float = 25,
     title: str = None,
     value_top: float = 0.1,
@@ -478,10 +449,6 @@ def rate_circular_bar_plot(
         to use for coloring bars based on data values.
     groupby_sort : Optional[list], optional
         Custom order for clusters. If None, uses default sorting.
-    width : float, default 2
-        The width of the output figure in inches.
-    height : float, default 2
-        The height of the output figure in inches.
     rotation : float, default 25
         Rotation angle for the circular plot in degrees.
     title : str, optional
@@ -537,8 +504,6 @@ def rate_circular_bar_plot(
         groupby_sort=groupby_sort,
         trait_name=trait_name,
         color=color,
-        width=width,
-        height=height,
         rotation=rotation,
         value_top=value_top,
         text_top=text_top,

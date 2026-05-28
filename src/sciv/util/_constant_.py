@@ -7,7 +7,7 @@ from pathlib import Path
 import matplotlib
 from numpy import ndarray, matrix
 from pandas import CategoricalDtype
-from matplotlib import rcParams, colormaps
+from matplotlib import colormaps, pyplot as plt
 from matplotlib.colors import ListedColormap
 from PyComplexHeatmap import colors
 
@@ -44,9 +44,6 @@ is_form_log_file: bool = False
 # Log file path
 log_file_path: str = os.path.join(project_cache_path, "log")
 
-# set matplotlib log level to error
-matplotlib.set_loglevel("error")
-
 # Path type
 path = Union[str, Path]
 # Number type
@@ -68,6 +65,9 @@ enrichment_optional = Literal['golden', 'half', 'e', 'pi', 'none']
 # Difference peak optional
 difference_peak_optional = Literal['emp_effect', 'bayes_factor', 'emp_prob1', 'all']
 
+# set matplotlib log level to error
+matplotlib.set_loglevel("error")
+
 # Plot rc config
 plot_rc_config = {
     "font.family": 'Arial',
@@ -78,7 +78,8 @@ plot_rc_config = {
     "ps.fonttype": 42,
     "axes.unicode_minus": False
 }
-rcParams.update(plot_rc_config)
+
+fig, ax = plt.subplots(figsize=(2, 2))
 
 # Define cmap
 colors.define_cmap()

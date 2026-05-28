@@ -16,12 +16,11 @@ from ..util import path, type_20_colors, type_50_colors, plot_end, plot_start
 
 __name__: str = "plot_heat_map"
 
+log = ul.log(__name__, "ERROR")
 
 def heatmap_annotation(
     adata: AnnData,
     layer: Optional[str] = None,
-    width: float = 4,
-    height: float = 4,
     title: Optional[str] = None,
     label: str = "value",
     row_name: Optional[str] = None,
@@ -42,7 +41,6 @@ def heatmap_annotation(
     cluster_metric: str = "correlation",
     row_names_side: str = "left",
     col_names_side: str = "bottom",
-    bottom: float = 0.01,
     label_size: float = 9,
     fontsize: float = 9,
     level_bar_height: float = None,
@@ -81,10 +79,6 @@ def heatmap_annotation(
         Input AnnData object containing the data matrix and metadata.
     layer : Optional[str], default None
         Layer name in adata.layers to use for plotting. If None, uses adata.X.
-    width : float, default 4
-        Width of the figure in inches.
-    height : float, default 4
-        Height of the figure in inches.
     title : Optional[str], default None
         Title of the figure.
     label : str, default "value"
@@ -125,8 +119,6 @@ def heatmap_annotation(
         Side to display row names ("left" or "right").
     col_names_side : str, default "bottom"
         Side to display column names ("top" or "bottom").
-    bottom : float, default 0.01
-        Bottom margin of the figure.
     label_size : float, default 9
         Font size for row and column name labels.
     fontsize : float, default 9
@@ -189,8 +181,8 @@ def heatmap_annotation(
     None
         Displays or saves the heatmap figure.
     """
-    ul.log(__name__).info("Start plotting the heatmap")
-    fig, ax = plot_start(width, height, bottom, output, show)
+    log.info("Start plotting the heatmap")
+    fig, ax = plot_start(output, show)
 
     data = adata.copy()
 
@@ -198,7 +190,7 @@ def heatmap_annotation(
     if layer is not None:
 
         if layer not in list(data.layers):
-            ul.log(__name__).error("The value of the `layer` parameter must be one of the keys in `adata.layers`.")
+            log.error("The value of the `layer` parameter must be one of the keys in `adata.layers`.")
             raise ValueError(f"The `{layer}` parameter needs to include in `adata.layers`")
 
         data.X = data.layers[layer]
@@ -349,9 +341,6 @@ def heatmap(
     adata: AnnData,
     layer: str = None,
     title: Optional[str] = None,
-    width: float = 4,
-    height: float = 4,
-    bottom: float = 0,
     annot: bool = False,
     square: bool = True,
     is_cluster: bool = False,
@@ -377,12 +366,6 @@ def heatmap(
         Layer name in adata.layers to use for plotting. If None, uses adata.X.
     title : Optional[str], default None
         Title of the figure.
-    width : float, default 4
-        Width of the figure in inches.
-    height : float, default 4
-        Height of the figure in inches.
-    bottom : float, default 0
-        Bottom margin of the figure.
     annot : bool, default False
         Whether to annotate each cell with its numeric value.
     square : bool, default True
@@ -415,7 +398,7 @@ def heatmap(
     None
         Displays or saves the heatmap figure.
     """
-    fig, ax = plot_start(width, height, bottom, output, show)
+    fig, ax = plot_start(output, show)
 
     data = adata.copy()
 
@@ -423,13 +406,13 @@ def heatmap(
     if layer is not None:
 
         if layer not in list(data.layers):
-            ul.log(__name__).error("The value of the `layer` parameter must be one of the keys in `adata.layers`.")
+            log.error("The value of the `layer` parameter must be one of the keys in `adata.layers`.")
             raise ValueError("The value of the `layer` parameter must be one of the keys in `adata.layers`.")
 
         data.X = data.layers[layer]
 
     # DataFrame
-    ul.log(__name__).info(f"to DataFrame")
+    log.info(f"to DataFrame")
     df: DataFrame = data.to_df()
     # seaborn
     heat_map: Axes = sns.clustermap(data=df, square=square, annot=annot, cmap=cmap, fmt=fmt, **kwargs) \

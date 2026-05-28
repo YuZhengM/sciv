@@ -19,4 +19,3 @@ from . import tool as tl
 from . import util as ul
 
 __version__ = f"{ul.project_name}: v{ul.project_version}"
-__cache__ = ul.project_cache_path

@@ -18,6 +18,7 @@ from ..util import path, collection, plot_color_types, plot_start, plot_end
 
 __name__: str = "plot_bar"
 
+log = ul.log(__name__, "ERROR")
 
 def bar(
     ax_x: collection,
@@ -27,9 +28,6 @@ def bar(
     title: str = None,
     color: str = "#70b5de",
     text_color: str = "#000205",
-    width: float = 2,
-    height: float = 2,
-    bottom: float = 0,
     text_left_move: float = 0.1,
     direction: Literal['vertical', 'horizontal'] = "vertical",
     output: path = None,
@@ -59,12 +57,6 @@ def bar(
         Color of the bars.
     text_color : str, default "#000205"
         Color of the value labels on bars.
-    width : float, default 2
-        Width of the figure in inches.
-    height : float, default 2
-        Height of the figure in inches.
-    bottom : float, default 0
-        Bottom margin adjustment.
     text_left_move : float, default 0.1
         Horizontal adjustment for text position on bars.
     direction : Literal['vertical', 'horizontal'], default "vertical"
@@ -83,7 +75,7 @@ def bar(
     None
         The function displays and/or saves the plot but does not return any value.
     """
-    fig, ax = plot_start(width, height, bottom, output, show)
+    fig, ax = plot_start(output, show)
 
     ax_x = np.array(ax_x).astype(str)
 
@@ -92,7 +84,7 @@ def bar(
     elif direction == 'horizontal':
         ax.barh(ax_x, ax_y, color=color, **kwargs)
     else:
-        ul.log(__name__).error("The `direction` must be 'vertical' or 'horizontal'.")
+        log.error("The `direction` must be 'vertical' or 'horizontal'.")
         raise ValueError("The `direction` must be 'vertical' or 'horizontal'.")
 
     ax.set_xticklabels(labels=list(ax_x), rotation=65)
@@ -118,9 +110,6 @@ def two_bar(
     legend: Tuple = ("1", "2"),
     color: Tuple = ("#2e6fb7", "#f7f7f7"),
     text_color: str = "#000205",
-    width: float = 2,
-    height: float = 2,
-    bottom: float = 0,
     rotation: float = 65,
     text_left_move: float = 0.15,
     y_limit: Tuple[float, float] = (0, 1),
@@ -154,12 +143,6 @@ def two_bar(
         Colors for the two bar segments (first segment, second segment).
     text_color : str, default "#000205"
         Color of the value labels on bars.
-    width : float, default 2
-        Width of the figure in inches.
-    height : float, default 2
-        Height of the figure in inches.
-    bottom : float, default 0
-        Bottom margin adjustment.
     rotation : float, default 65
         Rotation angle for x-axis tick labels in degrees.
     text_left_move : float, default 0.15
@@ -182,7 +165,7 @@ def two_bar(
     None
         The function displays and/or saves the plot but does not return any value.
     """
-    fig, ax = plot_start(width, height, bottom, output, show)
+    fig, ax = plot_start(output, show)
 
     ax_x = np.array(ax_x).astype(str)
     ax.bar(ax_x, ax_y[0], label=legend[0], color=color[0], **kwargs)
@@ -226,9 +209,6 @@ def class_bar(
     legend: Tuple = ("Enrichment", "Conservative"),
     text_color: str = "#000205",
     groupby_sort: Optional[list] = None,
-    width: float = 2,
-    height: float = 2,
-    bottom: float = 0,
     rotation: float = 65,
     title: str = None,
     text_left_move: float = 0.15,
@@ -269,12 +249,6 @@ def class_bar(
     groupby_sort : Optional[list], default None
         Custom order for clusters. If provided, clusters will be sorted according to this list.
         If None, clusters will be sorted by value in descending order.
-    width : float, default 2
-        Width of the figure in inches.
-    height : float, default 2
-        Height of the figure in inches.
-    bottom : float, default 0
-        Bottom margin adjustment.
     rotation : float, default 65
         Rotation angle for x-axis tick labels in degrees.
     title : str, optional
@@ -320,11 +294,8 @@ def class_bar(
         x_name=x_name,
         y_name=y_name,
         legend=legend,
-        width=width,
-        height=height,
         color=color,
         text_color=text_color,
-        bottom=bottom,
         rotation=rotation,
         text_left_move=text_left_move,
         y_limit=y_limit,
@@ -348,9 +319,6 @@ def bar_trait(
     legend: Tuple = ("Enrichment", "Conservative"),
     text_color: str = "#000205",
     groupby_sort: Optional[list] = None,
-    width: float = 2,
-    height: float = 2,
-    bottom: float = 0,
     rotation: float = 65,
     title: str = None,
     text_left_move: float = 0.15,
@@ -395,12 +363,6 @@ def bar_trait(
     groupby_sort : Optional[list], default None
         Custom order for clusters. If provided, clusters will be sorted according
         to this list. If None, clusters are sorted by enrichment value.
-    width : float, default 2
-        Width of the figure in inches.
-    height : float, default 2
-        Height of the figure in inches.
-    bottom : float, default 0
-        Bottom margin adjustment.
     rotation : float, default 65
         Rotation angle for x-axis tick labels in degrees.
     title : str, optional
@@ -433,7 +395,7 @@ def bar_trait(
         :param cell_df_:
         :return: None
         """
-        ul.log(__name__).info("Plotting bar {}".format(trait_))
+        log.info("Plotting bar {}".format(trait_))
         # get gene score
         trait_score = cell_df_[cell_df_[trait_column_name] == trait_]
         # Sort gene scores from small to large
@@ -444,12 +406,9 @@ def bar_trait(
             title=f"{title} {trait_}" if title is not None else title,
             color=color,
             legend=legend,
-            width=width,
             x_name=x_name,
             y_name=y_name,
             groupby_sort=groupby_sort,
-            height=height,
-            bottom=bottom,
             rotation=rotation,
             text_left_move=text_left_move,
             y_limit=y_limit,
@@ -464,7 +423,7 @@ def bar_trait(
 
     # judge trait
     if trait_name != "All" and trait_name not in trait_list:
-        ul.log(__name__).error(
+        log.error(
             f"The {trait_name} trait/disease is not in the trait/disease list {trait_list}, "
             f"Suggest modifying the {trait_column_name} parameter information"
         )
@@ -494,9 +453,6 @@ def bar_significance(
     legend: str = None,
     legend_list: list = None,
     hue_order: list = None,
-    width: float = 2,
-    height: float = 2,
-    bottom: float = 0,
     legend_gap: float = 1.15,
     line_width: float = 0.5,
     capsize: float = 0.1,
@@ -553,12 +509,6 @@ def bar_significance(
         will be plotted. Default is None.
     hue_order : list, optional
         Order of hue categories for plotting and legend. Default is None.
-    width : float, default 2
-        Width of the figure in inches.
-    height : float, default 2
-        Height of the figure in inches.
-    bottom : float, default 0
-        Bottom margin adjustment.
     legend_gap : float, default 1.15
         Vertical gap between plot and legend, specified as a ratio of the y-axis height.
     line_width : float, default 0.5
@@ -615,7 +565,7 @@ def bar_significance(
     None
         The function displays and/or saves the plot but does not return any value.
     """
-    fig, ax = plot_start(width, height, bottom, output, show)
+    fig, ax = plot_start(output, show)
 
     if legend_list is not None:
         new_data: DataFrame = df[df[hue].isin(legend_list)].copy()
@@ -645,10 +595,10 @@ def bar_significance(
                 if hue_type in colors:
                     palette.append(colors[hue_type])
                 else:
-                    ul.log(__name__).warning(f"`{hue_type}` is not in `colors` ({colors})")
+                    log.warning(f"`{hue_type}` is not in `colors` ({colors})")
                     raise ValueError(f"`{hue_type}` is not in `colors` ({colors})")
         else:
-            ul.log(__name__).error(f"`colors` ({colors}) must be a list or dict")
+            log.error(f"`colors` ({colors}) must be a list or dict")
             raise ValueError(f"`colors` ({colors}) must be a list or dict")
     else:
         if "color" in new_data_columns:
@@ -656,8 +606,11 @@ def bar_significance(
         else:
             palette = []
 
-            for i in range(len(hue_types)):
-                palette.append(plot_color_types[color_type][start_color_index + i * color_step_size + i])
+            for i in range(len(new_data[legend])):
+                _index_ = hue_types.index(i)
+                palette.append(plot_color_types[color_type][start_color_index + _index_ * color_step_size + _index_])
+
+    palette_dict = dict(zip(new_data[legend], palette))
 
     # Set y-axis limits first to prevent seaborn from overriding
     ax.set_ylim(y_limit)
@@ -668,11 +621,11 @@ def bar_significance(
         y=y,
         hue=legend,
         hue_order=hue_order,
-        errorbar=('ci', ci),
+        errorbar=ci if isinstance(ci, str) else ('ci', ci),
         capsize=capsize,
         err_kws={'color': errcolor, 'linewidth': line_width},
         ax=ax,
-        palette=palette,
+        palette=palette_dict,
         edgecolor=errcolor,
         linewidth=line_width,
         **kwargs
@@ -703,7 +656,7 @@ def bar_significance(
         class_list = new_data[legend].unique().tolist()
 
         if anchor not in class_list:
-            ul.log(__name__).error(f"`anchor` ({anchor}) is not in the `df[hue]` ({class_list})")
+            log.error(f"`anchor` ({anchor}) is not in the `df[hue]` ({class_list})")
             raise ValueError(f"`anchor` ({anchor}) is not in the `df[hue]` ({class_list})")
 
         class_list.remove(anchor)
@@ -748,9 +701,6 @@ def rate_bar_plot(
     y_name: str = "Enrichment ratio",
     groupby_sort: Optional[list] = None,
     text_color: str = "#000205",
-    width: float = 2,
-    height: float = 2,
-    bottom: float = 0,
     rotation: float = 65,
     title: str = None,
     text_left_move: float = 0.15,
@@ -793,12 +743,6 @@ def rate_bar_plot(
         Custom order for clusters. If None, uses default sorting.
     text_color : str, default "#000205"
         Color for text annotations in the plot.
-    width : float, default 2
-        The width of the output figure in inches.
-    height : float, default 2
-        The height of the output figure in inches.
-    bottom : float, default 0
-        Bottom margin adjustment for the plot.
     rotation : float, default 65
         Rotation angle for x-axis labels in degrees.
     title : str, optional
@@ -847,9 +791,6 @@ def rate_bar_plot(
         color=color,
         legend=legend,
         text_color=text_color,
-        width=width,
-        height=height,
-        bottom=bottom,
         rotation=rotation,
         text_left_move=text_left_move,
         y_limit=y_limit,

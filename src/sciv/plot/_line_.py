@@ -14,15 +14,13 @@ from ..util import path, plot_color_types, collection, plot_end, plot_start
 
 __name__: str = "plot_line"
 
+log = ul.log(__name__, "ERROR")
 
 def base_line(
     data: Union[AnnData, DataFrame],
     x: str,
     y: str,
     layer: Optional[str] = None,
-    width: float = 2,
-    height: float = 2,
-    bottom: float = 0,
     title: Optional[str] = None,
     x_name: Optional[str] = None,
     y_name: Optional[str] = None,
@@ -59,12 +57,6 @@ def base_line(
         Column name to use for y-axis values.
     layer : Optional[str], default None
         Specific layer to use from AnnData.layers when data is AnnData.
-    width : float, default 2
-        Figure width in inches.
-    height : float, default 2
-        Figure height in inches.
-    bottom : float, default 0
-        Bottom margin adjustment for the plot.
     title : Optional[str], default None
         Title of the plot.
     x_name : Optional[str], default None
@@ -109,7 +101,7 @@ def base_line(
     None
         The function displays and/or saves the plot but does not return any value.
     """
-    fig, ax = plot_start(width, height, bottom, output, show)
+    fig, ax = plot_start(output, show)
 
     new_data = data.copy()
 
@@ -132,13 +124,13 @@ def base_line(
         if layer is not None:
 
             if layer not in list(new_data.layers):
-                ul.log(__name__).error("The value of the `layer` parameter must be one of the keys in `adata.layers`.")
+                log.error("The value of the `layer` parameter must be one of the keys in `adata.layers`.")
                 raise ValueError("The value of the `layer` parameter must be one of the keys in `adata.layers`.")
 
             new_data.X = new_data.layers[layer]
 
         # DataFrame
-        ul.log(__name__).info(f"to DataFrame")
+        log.info(f"to DataFrame")
         df: DataFrame = adata_map_df(new_data, column="value")
 
     elif isinstance(new_data, DataFrame):
@@ -149,7 +141,7 @@ def base_line(
             df: DataFrame = new_data.copy()
 
     else:
-        ul.log(__name__).error(f"The `data` parameter only support `AnnData` and `DataFrame` class types.")
+        log.error(f"The `data` parameter only support `AnnData` and `DataFrame` class types.")
         raise ValueError(f"The `data` parameter only support `AnnData` and `DataFrame` class types.")
 
     if legend is None and label is not None:
