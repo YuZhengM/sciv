@@ -593,11 +593,14 @@ def bar_significance(
     hue_types = new_data[legend].unique().tolist()
 
     if colors is not None:
+
         if isinstance(colors, list):
             palette = colors
         elif isinstance(colors, dict):
             palette = []
+
             for hue_type in hue_types:
+
                 if hue_type in colors:
                     palette.append(colors[hue_type])
                 else:
@@ -606,7 +609,9 @@ def bar_significance(
         else:
             log.error(f"`colors` ({colors}) must be a list or dict")
             raise ValueError(f"`colors` ({colors}) must be a list or dict")
+
     else:
+
         if "color" in new_data_columns:
             palette = new_data["color"]
         else:
@@ -638,6 +643,7 @@ def bar_significance(
     )
 
     if anno:
+
         for p in ax.patches:
             y_value = p.get_height()
             height = p.get_height() / 2 - y_deviation
@@ -673,8 +679,9 @@ def bar_significance(
                 box_pairs.append(((x_ele, anchor), (x_ele, class_ele)))
 
         annotator = Annotator(ax=ax, data=new_data, x=x, y=y, hue=legend, hue_order=hue_order, pairs=box_pairs)
-        annotator.configure(test=test, text_format='star', line_height=line_height, line_offset=line_offset,
-                            line_width=0.7)
+        annotator.configure(
+            test=test, text_format='star', line_height=line_height, line_offset=line_offset, line_width=0.7
+        )
         annotator.apply_and_annotate()
 
     ax.tick_params(which='major', direction='in', length=3, width=1.0, bottom=False)

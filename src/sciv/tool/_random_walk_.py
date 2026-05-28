@@ -2,7 +2,7 @@
 
 import math
 import time
-from typing import Union, Tuple, Literal
+from typing import Union, Tuple, Literal, Dict, Any, List
 
 import torch
 import torch.nn as nn
@@ -33,20 +33,21 @@ __name__: str = "tool_random_walk"
 
 
 def _random_walk_cpu_(
-    seed_cell_vector: Union[list, np.ndarray, np.matrix],
-    weight: matrix_data = None,
+    init_prob: matrix_data,
+    weight: matrix_data,
     gamma: float = 0.05,
     epsilon: float = 1e-5,
     max_steps: int = 300,
-    p: int = 2
+    p: int = 2,
+    is_perfect: bool = False
 ) -> collection:
     """
     Perform a random walk with restart on CPU.
 
     Parameters
     ----------
-    seed_cell_vector : Union[list, np.ndarray, np.matrix]
-        Initial seed cell vector representing the starting distribution.
+    init_prob : Union[list, np.ndarray, np.matrix]
+        Initial probability distribution.
     weight : matrix_data, optional
         Transition probability matrix (weight matrix). Defaults to None.
     gamma : float, optional
@@ -57,38 +58,88 @@ def _random_walk_cpu_(
         Maximum number of iterations. Defaults to 300.
     p : int, optional
         Order of the norm used for convergence check {1: Manhattan, 2: Euclidean}. Defaults to 2.
+    is_perfect : bool, optional
+        If True, performs a "perfect" random walk where each sample (column) stops iterating 
+        individually once it converges, rather than waiting for all samples to converge. 
+        This ensures that converged samples retain their final values without further updates. 
+        Defaults to False.
 
     Returns
     -------
     collection
         The stationary distribution after random walk convergence.
     """
-    # Random walk
-    p0 = np.asarray(seed_cell_vector, dtype=float).ravel()[:, np.newaxis]
-    pt: matrix_data = p0.copy()
-    step = 0
-    delta = 1
+
+    if isinstance(init_prob, collection):
+        init_prob = np.asarray(init_prob, dtype=float)
+
+    if len(init_prob.shape) == 1:
+        v0: matrix_data = np.asarray(init_prob, dtype=float).ravel()[:, np.newaxis]
+    else:
+        row_number, col_number = init_prob.shape
+
+        if row_number == 1 or col_number == 1:
+            v0: matrix_data = np.asarray(init_prob, dtype=float).ravel()[:, np.newaxis]
+        else:
+            v0: matrix_data = init_prob
+
+        del row_number, col_number
+
+    element_number, sample_number = v0.shape
+
+    if element_number != weight.shape[1]:
+        ul.log(__name__).error(
+            f"Dimension mismatch: initial probability distribution shape {v0.shape} is incompatible with "
+            f"weight matrix shape {weight.shape}. Expected v0.shape[0] ({element_number}) to equal "
+            f"weight.shape[1] ({weight.shape[1]})."
+        )
+        raise ValueError(
+            f"Dimension mismatch: initial probability distribution shape {v0.shape} is incompatible with "
+            f"weight matrix shape {weight.shape}. Expected v0.shape[0] ({element_number}) to equal "
+            f"weight.shape[1] ({weight.shape[1]})."
+        )
+
+    del init_prob, element_number
+
+    vt: matrix_data = v0.copy()
+    step: int = 0
+    delta: np.ndarray = np.ones(sample_number, dtype=np.float32)
+
+    if is_perfect:
+        vt_finish: matrix_data = np.zeros(v0.shape)
+        label: np.ndarray = np.zeros(sample_number, dtype=int)
+
+    del sample_number
 
     # iteration
-    while delta > epsilon and max_steps > step:
+    while np.any(delta > epsilon) and max_steps > step:
 
         if hasattr(weight, "dot"):
-            p1 = (1 - gamma) * weight.dot(pt) + gamma * p0
+            v1 = (1 - gamma) * weight.dot(vt) + gamma * v0
         else:
-            p1 = (1 - gamma) * np.dot(weight, pt) + gamma * p0
+            v1 = (1 - gamma) * np.dot(weight, vt) + gamma * v0
 
         # 1 and 2, It would be faster alone
         if p == 1:
-            delta = np.abs(pt - p1).sum()
+            delta = np.abs(vt - v1).sum(axis=0)
         elif p == 2:
-            delta = np.sqrt(np.square(np.abs(pt - p1)).sum())
+            delta = np.sqrt(np.square(np.abs(vt - v1)).sum(axis=0))
         else:
-            delta = np.float_power(np.float_power(np.abs(pt - p1), p).sum(), 1.0 / p)
+            delta = np.float_power(np.float_power(np.abs(vt - v1), p).sum(axis=0), 1.0 / p)
 
-        pt = p1
+        vt = v1
         step += 1
 
-    return pt.flatten()
+        if is_perfect:
+            is_label = delta > epsilon
+            label[~is_label] += 1
+            vt_finish[:, label == 1] = vt[:, label == 1]
+            vt[:, label == 1] = 0
+
+    if is_perfect:
+        vt = vt_finish
+
+    return vt.flatten() if vt.shape[1] == 1 else vt
 
 
 class RandomWalkModel(nn.Module):
@@ -103,7 +154,7 @@ class RandomWalkModel(nn.Module):
         max_steps: int = 300,
         p: int = 2,
         device: str = 'auto',
-        pbar=None
+        is_perfect: bool = False
     ):
         """
         Initialize the random walk model.
@@ -120,15 +171,18 @@ class RandomWalkModel(nn.Module):
             Order of the norm used for convergence check {1: Manhattan, 2: Euclidean}. Defaults to 2.
         device : str, optional
             Device to run the model. Defaults to 'auto'.
-        pbar : tqdm, optional
-            Progress bar to update the progress of the model. Defaults to None.
+        is_perfect : bool, optional
+            If True, performs a "perfect" random walk where each sample (column) stops iterating
+            individually once it converges, rather than waiting for all samples to converge.
+            This ensures that converged samples retain their final values without further updates.
+            Defaults to False.
         """
         super().__init__()
         self.gamma = gamma
         self.epsilon = epsilon
         self.max_steps = max_steps
         self.p = p
-        self.pbar = pbar
+        self.is_perfect = is_perfect
 
         is_gpu_available = check_gpu_availability()
 
@@ -136,14 +190,14 @@ class RandomWalkModel(nn.Module):
 
         self.factor = 1 - self.gamma
 
-    def core(self, seed_cell_vector: Tensor, weight: Tensor) -> Tensor:
+    def forward(self, init_prob: Tensor, weight: Tensor) -> Tensor:
         """
         Perform a random walk with restart on GPU.
 
         Parameters
         ----------
-        seed_cell_vector : Tensor
-            Initial seed cell vector representing the starting distribution.
+        init_prob : Tensor
+            Initial probability distribution.
         weight : Tensor
             Transition probability matrix (weight matrix). Defaults to None.
 
@@ -153,48 +207,36 @@ class RandomWalkModel(nn.Module):
             The stationary distribution after random walk convergence.
         """
 
-        p0 = seed_cell_vector
-        pt = p0.clone()
+        v0: Tensor = init_prob
 
-        delta = 1.0
-        step = 0
+        vt: Tensor = v0.clone()
+        step: int = 0
 
-        while delta > self.epsilon and self.max_steps > step:
-            p1 = self.factor * torch.matmul(weight, pt) + self.gamma * p0
-            delta = torch.linalg.norm(pt - p1, ord=self.p).item()
-            pt = p1
+        delta: Tensor = torch.ones(v0.shape[1], dtype=torch.float32).cuda()
+
+        if self.is_perfect:
+            vt_finish: Tensor = torch.zeros(v0.shape).cuda()
+            label: Tensor = torch.ones(v0.shape[1], dtype=torch.int8).cuda()
+
+        while np.any(delta > self.epsilon) and self.max_steps > step:
+
+            v1 = self.factor * torch.matmul(weight, vt) + self.gamma * v0
+
+            delta = torch.linalg.norm(vt - v1, ord=self.p).item()
+
+            vt = v1
             step += 1
 
-        if self.pbar is not None:
-            self.pbar.update(1)
+            if self.is_perfect:
+                is_label = delta > self.epsilon
+                label[~is_label] += 1
+                vt_finish[:, label == 1] = vt[:, label == 1]
+                vt[:, label == 1] = 0
 
-        return pt.flatten()
+        if self.is_perfect:
+            vt = vt_finish
 
-    def forward(self, seed_cell_weight: Tensor, weight: Tensor) -> Tensor:
-        """
-        Forward pass of the random walk model.
-
-        Parameters
-        ----------
-        seed_cell_weight : Tensor
-            Seed cell weight matrix, where each column represents a seed cell.
-        weight : Tensor
-            Transition probability matrix (weight matrix). Defaults to None.
-
-        Returns
-        -------
-        Tensor
-            The association score matrix, where each column represents the association score of a seed cell.
-        """
-
-        sample_count = seed_cell_weight.shape[1]
-
-        score = torch.zeros(seed_cell_weight.shape).cuda()
-
-        for i in range(sample_count):
-            score[:, i] = self.core(seed_cell_weight[:, i], weight)
-
-        return score
+        return vt.flatten() if vt.shape[1] == 1 else vt
 
 
 class TraitDataParallel(nn.DataParallel):
@@ -202,7 +244,12 @@ class TraitDataParallel(nn.DataParallel):
     Data parallel module for trait analysis.
     """
 
-    def scatter(self, inputs, kwargs, device_ids):
+    def scatter(
+        self,
+        inputs: Tuple[torch.Tensor, torch.Tensor],
+        kwargs: Dict[str, Any],
+        device_ids: List[int]
+    ) -> Tuple[List[Tuple[torch.Tensor, torch.Tensor]], List[Dict[str, Any]]]:
         """
         Scatter the input data to multiple devices.
 
@@ -220,20 +267,21 @@ class TraitDataParallel(nn.DataParallel):
         tuple
             Tuple of scattered input data and keyword arguments.
         """
-        _seed_cell_weight_, _weight_ = inputs
-        scattered_seed_cell_weight = torch.nn.parallel.scatter(_seed_cell_weight_, device_ids, dim=1)
-        scattered_weight = [_weight_.to(f'cuda:{device_id}') for device_id in device_ids]
-        scattered_inputs = [(ssw, sw) for ssw, sw in zip(scattered_seed_cell_weight, scattered_weight)]
+        _init_prob_, _weight_ = inputs
+        scattered_init_prob = torch.nn.parallel.scatter(_init_prob_, device_ids, dim=1)
+        scattered_weight = [_weight_.to(device) for device in device_ids]
+        scattered_inputs = list(zip(scattered_init_prob, scattered_weight))
 
+        # Handling kwargs (hyperparameters such as gamma, epsilon, etc.)
         scattered_kwargs = []
 
         for device_id in device_ids:
             device_kwargs = {}
 
             for key, value in kwargs.items():
-
+                # Only Tensor type parameters require mobile devices
                 if isinstance(value, torch.Tensor):
-                    device_kwargs[key] = value.to(f'cuda:{device_id}')
+                    device_kwargs[key] = value.to(device_id)
                 else:
                     device_kwargs[key] = value
 
@@ -262,12 +310,13 @@ class TraitDataParallel(nn.DataParallel):
 
 
 def _random_walk_gpu_(
-    seed_cell_weight: matrix_data,
+    init_prob: matrix_data,
     weight: matrix_data,
     gamma: float = 0.05,
     epsilon: float = 1e-5,
     max_steps: int = 300,
     p: int = 2,
+    is_perfect: bool = False,
     device: str = 'auto'
 ) -> matrix_data:
     """
@@ -275,8 +324,8 @@ def _random_walk_gpu_(
 
     Parameters
     ----------
-    seed_cell_weight : matrix_data
-        Seed cell weight matrix, where each column represents a seed cell.
+    init_prob : matrix_data
+        Initial probability distribution.
     weight : matrix_data
         Transition probability matrix (weight matrix). Defaults to None.
     gamma : float
@@ -287,6 +336,11 @@ def _random_walk_gpu_(
         Maximum number of steps. Defaults to 300.
     p : int
         Order of the random walk. Defaults to 2.
+    is_perfect : bool, optional
+        If True, performs a "perfect" random walk where each sample (column) stops iterating
+        individually once it converges, rather than waiting for all samples to converge.
+        This ensures that converged samples retain their final values without further updates.
+        Defaults to False.
     device : str
         Device to run the analysis on. Defaults to 'auto'.
 
@@ -296,23 +350,41 @@ def _random_walk_gpu_(
         The association score matrix, where each column represents the association score of a seed cell.
     """
 
-    with tqdm(total=seed_cell_weight.shape[1]) as pbar:
-        model = RandomWalkModel(gamma, epsilon, max_steps, p, device, pbar)
+    model = RandomWalkModel(gamma, epsilon, max_steps, p, device, is_perfect)
 
-        device = model.device
-        model.to(device)
+    device = model.device
+    model.to(device)
 
-        seed_cell_weight = torch.as_tensor(seed_cell_weight, device=device, dtype=torch.float32)
-        weight = to_dense(weight, is_array=True)
-        weight = torch.as_tensor(weight, device=device, dtype=torch.float32)
+    init_prob = torch.as_tensor(init_prob, device=device, dtype=torch.float32)
 
-        if device == 'cuda' and 1 < torch.cuda.device_count() < seed_cell_weight.shape[1]:
-            model = TraitDataParallel(model)
+    if not isinstance(weight, torch.Tensor):
 
-        with torch.no_grad():
-            result = model(seed_cell_weight, weight)
+        if hasattr(weight, 'toarray'):
+            weight = torch.sparse_coo_tensor(
+                torch.as_tensor(weight.nonzero(), device=device),
+                torch.as_tensor(weight.data, device=device, dtype=torch.float32),
+                weight.shape,
+                device=device,
+                dtype=torch.float32
+            )
+        else:
+            weight = torch.as_tensor(weight, device=device, dtype=torch.float32)
 
-        return result.cpu().numpy()
+            if weight.dim() == 2:
+                weight = weight.to_sparse()
+    else:
+        weight = weight.to(device)
+
+        if not weight.is_sparse:
+            weight = weight.to_sparse()
+
+    if device == 'cuda' and 1 < torch.cuda.device_count() < init_prob.shape[1]:
+        model = TraitDataParallel(model)
+
+    with torch.no_grad():
+        result = model(init_prob, weight)
+
+    return result.cpu().numpy()
 
 
 def random_walk(

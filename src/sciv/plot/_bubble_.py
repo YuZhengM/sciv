@@ -32,7 +32,7 @@ def bubble(
     Parameters
     ----------
     df : DataFrame
-        Input data structure.
+        Inpu t data structure.
     x : str
         Column name for x-axis values.
     y : str
