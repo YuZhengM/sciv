@@ -23,8 +23,7 @@ from ._constant_ import (
     plot_color_types,
     type_50_colors,
     type_20_colors,
-    type_set_colors,
-    plot_cmap_set
+    type_set_colors
 )
 
 from ._core_ import (
@@ -72,7 +71,6 @@ __all__ = [
     "plot_rc_config",
     "fig",
     "ax",
-    "plot_cmap_set",
     "type_set_colors",
     "get_real_predict_label",
     "to_dense",

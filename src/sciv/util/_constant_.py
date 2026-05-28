@@ -81,8 +81,6 @@ plot_rc_config = {
 
 fig, ax = plt.subplots(figsize=(2, 2))
 
-# Define cmap
-colors.define_cmap()
 # Set colors cmap
 type_set_colors = [
     "#66c2a5", "#fc8d62", "#8da0cb", "#e78ac3", "#a6d854", "#f4d037",
@@ -91,14 +89,20 @@ type_set_colors = [
     "#d3b48b", "#8b4513", "#7fff00", "#ff69b4", "#66cdaa", "#a52a2a",
     "#daa520"
 ]
-plot_cmap_set = ListedColormap(type_set_colors)
 # Plot color types
 plot_color_types: dict = {
     "set": type_set_colors
 }
 
+# Define cmap
+colors.define_cmap()
+
 for colormap in colormaps.keys():
-    plot_color_types.update({colormap: colormaps[colormap].colors.copy()})
+
+    cmap = colormaps[colormap]
+
+    if isinstance(cmap, ListedColormap):
+        plot_color_types.update({colormap: colormaps[colormap].colors})
 
 # 50 colors cmap
 type_50_colors = plot_color_types["random50"]
