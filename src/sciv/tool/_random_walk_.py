@@ -186,7 +186,7 @@ class RandomWalkModel(nn.Module):
 
         is_gpu_available = check_gpu_availability()
 
-        self.device = 'cuda' if (device == 'gpu' or (device == 'auto' and is_gpu_available)) else 'cpu'
+        self.device = 'cuda' if device == 'auto' and is_gpu_available else device
 
         self.factor = 1 - self.gamma
 
@@ -212,17 +212,17 @@ class RandomWalkModel(nn.Module):
         vt: Tensor = v0.clone()
         step: int = 0
 
-        delta: Tensor = torch.ones(v0.shape[1], dtype=torch.float32).cuda()
+        delta: Tensor = torch.ones(v0.shape[1], device=self.device, dtype=torch.float32).cuda()
 
         if self.is_perfect:
             vt_finish: Tensor = torch.zeros(v0.shape).cuda()
-            label: Tensor = torch.ones(v0.shape[1], dtype=torch.int8).cuda()
+            label: Tensor = torch.ones(v0.shape[1], device=self.device, dtype=torch.int8).cuda()
 
-        while np.any(delta > self.epsilon) and self.max_steps > step:
+        while (delta > self.epsilon).any() and self.max_steps > step:
 
             v1 = self.factor * torch.matmul(weight, vt) + self.gamma * v0
 
-            delta = torch.linalg.norm(vt - v1, ord=self.p).item()
+            delta = torch.linalg.norm(vt - v1, ord=self.p, dim=0)
 
             vt = v1
             step += 1
@@ -361,7 +361,7 @@ def _random_walk_gpu_(
 
         if hasattr(weight, 'toarray'):
             weight = torch.sparse_coo_tensor(
-                torch.as_tensor(weight.nonzero(), device=device),
+                torch.as_tensor(np.array(weight.nonzero()), device=device),
                 torch.as_tensor(weight.data, device=device, dtype=torch.float32),
                 weight.shape,
                 device=device,
@@ -394,7 +394,7 @@ def random_walk(
     epsilon: float = 1e-5,
     max_steps: int = 300,
     p: int = 2,
-    n_jobs: int = -1,
+    is_perfect: bool = False,
     device: str = 'auto'
 ) -> matrix_data:
     """
@@ -414,8 +414,11 @@ def random_walk(
         Maximum number of steps. Defaults to 300.
     p : int
         Order of the random walk. Defaults to 2.
-    n_jobs : int
-        Number of jobs to run in parallel. Defaults to -1, which means using all available processors.
+    is_perfect : bool, optional
+        If True, performs a "perfect" random walk where each sample (column) stops iterating
+        individually once it converges, rather than waiting for all samples to converge.
+        This ensures that converged samples retain their final values without further updates.
+        Defaults to False.
     device : str
         Device to run the analysis on. Defaults to 'auto'.
 
@@ -428,33 +431,44 @@ def random_walk(
     availability = check_gpu_availability()
 
     if device == 'cpu' or (device == 'auto' and not availability):
-        sample_count = seed_cell_weight.shape[1]
-
-        results = Parallel(n_jobs=n_jobs)(
-            delayed(_random_walk_cpu_)(seed_cell_weight[:, i], weight, gamma, epsilon, max_steps, p)
-            for i in tqdm(range(sample_count))
+        return _random_walk_cpu_(
+            init_prob=seed_cell_weight,
+            weight=weight,
+            gamma=gamma,
+            epsilon=epsilon,
+            max_steps=max_steps,
+            p=p,
+            is_perfect=is_perfect
         )
-
-        return np.column_stack(results)
-    elif device == 'gpu' or (device == 'auto' and availability):
+    elif device == 'cuda' or (device == 'auto' and availability):
 
         try:
-            return _random_walk_gpu_(seed_cell_weight, weight, gamma, epsilon, max_steps, p, device='gpu')
+            return _random_walk_gpu_(
+                init_prob=seed_cell_weight,
+                weight=weight,
+                gamma=gamma,
+                epsilon=epsilon,
+                max_steps=max_steps,
+                p=p,
+                is_perfect=is_perfect,
+                device='cuda'
+            )
         except RuntimeError as e:
             ul.log(__name__).warning(f"GPU failed to run, try to switch to CPU running.\n {e}")
-            sample_count = seed_cell_weight.shape[1]
-
-            results = Parallel(n_jobs=n_jobs)(
-                delayed(_random_walk_cpu_)(seed_cell_weight[:, i], weight, gamma, epsilon, max_steps, p)
-                for i in tqdm(range(sample_count))
+            return _random_walk_cpu_(
+                init_prob=seed_cell_weight,
+                weight=weight,
+                gamma=gamma,
+                epsilon=epsilon,
+                max_steps=max_steps,
+                p=p,
+                is_perfect=is_perfect
             )
-
-            return np.column_stack(results)
     else:
         ul.log(__name__).error(
             f'The `device` ({device}) is not supported. Only supports "cpu", "gpu", and "auto" values.'
         )
-        raise ValueError(f'The `device` ({device}) is not supported. Only supports "cpu", "gpu", and "auto" values.')
+        raise ValueError(f'The `device` ({device}) is not supported. Only supports "cpu", "cuda", and "auto" values.')
 
 
 def trs_scale_norm(score: matrix_data, axis: Literal[0, 1, -1] = 0, is_verbose: bool = True) -> matrix_data:
@@ -776,7 +790,6 @@ class RandomWalk:
                 epsilon=self.epsilon,
                 max_steps=self.max_steps,
                 p=self.p,
-                n_jobs=self.n_jobs,
                 device=_device_
             )
 
@@ -1079,8 +1092,7 @@ class RandomWalk:
 
             _seed_cell_en_index = trait_value_sort_index[_enrichment_start:_enrichment_end]
             seed_cell_weight_en[_seed_cell_en_index, i] = self._get_seed_cell_weight_(
-                seed_cell_index=_seed_cell_index if len(_seed_cell_en_index) == len(
-                    _seed_cell_index) else _seed_cell_en_index,
+                seed_cell_index=_seed_cell_index if len(_seed_cell_en_index) == len(_seed_cell_index) else _seed_cell_en_index,
                 value=trait_value,
                 seed_cell_index_enrichment=_seed_cell_en_index
             )
@@ -1088,12 +1100,19 @@ class RandomWalk:
             if not self.is_simple and self.is_ablation:
                 seed_cell_value = np.zeros(n_cells)
                 seed_cell_value[_seed_cell_index] = 1
-                seed_cell_matrix[:, i] = seed_cell_value / (1 if seed_cell_value.sum() == 0 else seed_cell_value.sum())
+
+                if seed_cell_value.sum() == 0:
+                    seed_cell_matrix[:, i] = seed_cell_value
+                else:
+                    seed_cell_matrix[:, i] = seed_cell_value / seed_cell_value.sum()
 
                 seed_cell_en_value = np.zeros(n_cells)
                 seed_cell_en_value[_seed_cell_en_index] = 1
-                seed_cell_matrix_en[:, i] = seed_cell_en_value / (
-                    1 if seed_cell_en_value.sum() == 0 else seed_cell_en_value.sum())
+
+                if seed_cell_en_value.sum() == 0:
+                    seed_cell_matrix_en[:, i] = seed_cell_en_value
+                else:
+                    seed_cell_matrix_en[:, i] = seed_cell_en_value / seed_cell_en_value.sum()
 
         # Parallel processing of all traits and real-time display of progress
         Parallel(n_jobs=self.n_jobs, backend='threading')(
