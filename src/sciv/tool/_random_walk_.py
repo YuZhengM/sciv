@@ -239,7 +239,7 @@ class RandomWalkModel(nn.Module):
         return vt.flatten() if vt.shape[1] == 1 else vt
 
 
-class TraitDataParallel(nn.DataParallel):
+class WalkRandomDataParallel(nn.DataParallel):
     """
     Data parallel module for trait analysis.
     """
@@ -379,7 +379,7 @@ def _random_walk_gpu_(
             weight = weight.to_sparse()
 
     if device == 'cuda' and 1 < torch.cuda.device_count() < init_prob.shape[1]:
-        model = TraitDataParallel(model)
+        model = WalkRandomDataParallel(model)
 
     with torch.no_grad():
         result = model(init_prob, weight)
@@ -466,7 +466,7 @@ def random_walk(
             )
     else:
         ul.log(__name__).error(
-            f'The `device` ({device}) is not supported. Only supports "cpu", "gpu", and "auto" values.'
+            f'The `device` ({device}) is not supported. Only supports "cpu", "cuda", and "auto" values.'
         )
         raise ValueError(f'The `device` ({device}) is not supported. Only supports "cpu", "cuda", and "auto" values.')
 
