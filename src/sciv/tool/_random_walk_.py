@@ -471,7 +471,7 @@ def random_walk(
         raise ValueError(f'The `device` ({device}) is not supported. Only supports "cpu", "cuda", and "auto" values.')
 
 
-def trs_scale_norm(score: matrix_data, axis: Literal[0, 1, -1] = 0, is_verbose: bool = True) -> matrix_data:
+def scale_normalize(score: matrix_data, axis: Literal[0, 1, -1] = 0, is_verbose: bool = True) -> matrix_data:
     """
     Standardize and normalize the cell scores.
 
@@ -508,6 +508,7 @@ class RandomWalk:
         gamma: float = 0.05,
         enrichment_gamma: float = 0.05,
         p: int = 2,
+        is_perfect: bool = False,
         n_jobs: int = -1,
         min_seed_cell_rate: float = 0.01,
         max_seed_cell_rate: float = 0.05,
@@ -536,6 +537,11 @@ class RandomWalk:
             Restart probability for random walk for enrichment.
         p : int
             Order of the norm used for loss {1: Manhattan distance, 2: Euclidean distance}.
+        is_perfect : bool, optional
+            If True, performs a "perfect" random walk where each sample (column) stops iterating
+            individually once it converges, rather than waiting for all samples to converge.
+            This ensures that converged samples retain their final values without further updates.
+            Defaults to False.
         n_jobs : int
             The maximum number of concurrently running jobs.
         min_seed_cell_rate : float
@@ -618,6 +624,7 @@ class RandomWalk:
         self.max_steps = max_steps
         self.gamma = gamma
         self.enrichment_gamma = enrichment_gamma
+        self.is_perfect = is_perfect
         self.p = p
         self.n_jobs = n_jobs
         self.min_seed_cell_rate = min_seed_cell_rate
@@ -790,6 +797,7 @@ class RandomWalk:
                 epsilon=self.epsilon,
                 max_steps=self.max_steps,
                 p=self.p,
+                is_perfect=self.is_perfect,
                 device=_device_
             )
 
@@ -1139,7 +1147,7 @@ class RandomWalk:
         matrix_data
             The normalized score matrix.
         """
-        return trs_scale_norm(score, axis=0, is_verbose=is_verbose)
+        return scale_normalize(score, axis=0, is_verbose=is_verbose)
 
     def _simple_error_(self) -> None:
         """

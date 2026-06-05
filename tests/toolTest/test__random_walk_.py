@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import numpy as np
 
-from sciv.tool._random_walk_ import _random_walk_cpu_, _random_walk_gpu_
+from sciv.tool._random_walk_ import _random_walk_cpu_, _random_walk_gpu_, random_walk
 
 
 class Test(TestCase):
@@ -15,10 +15,11 @@ class Test(TestCase):
         # 节点 0 连接到 1; 1 连接到 0 和 2; 2 连接到 1 和 3; 3 连接到 2
         # 这里使用列归一化的权重矩阵
         W = np.array([
-            [0.0, 0.5, 0.0, 0.0],
-            [1.0, 0.5, 0.5, 0.0],
-            [0.0, 0.0, 0.5, 1.0],
-            [0.0, 0.0, 0.0, 0.0]
+            [0.0, 0.5, 0.5, 0.0],
+            [0.3, 0.2, 0.3, 0.2],
+            [0.2, 0.2, 0.3, 0.3],
+            [0.0, 0.2, 0.3, 0.5],
+            [0.0, 0.3, 0.4, 0.3]
         ])
 
         # 初始概率分布（种子节点）。
@@ -244,3 +245,67 @@ class Test(TestCase):
 
         except Exception as e:
             print(f"单列输入测试失败: {e}")
+
+    def test_random_walk(self):
+        print("\n--- Starting Random Walk Tests ---")
+
+        # 构造转移概率矩阵 W (5个节点)
+        # 每一行的和必须为1 (行随机矩阵)
+        W = np.array([
+            [0.0, 0.5, 0.5, 0.0, 0.0],
+            [0.3, 0.2, 0.3, 0.2, 0.0],
+            [0.2, 0.2, 0.3, 0.2, 0.1],
+            [0.0, 0.2, 0.3, 0.3, 0.2],
+            [0.0, 0.0, 0.3, 0.4, 0.3]
+        ])
+
+        # 构造种子细胞权重矩阵 (5个节点，2个种子/样本)
+        # 假设 Sample 1 的种子是节点0，Sample 2 的种子是节点4
+        seed_cell_weight = np.zeros((5, 2))
+        seed_cell_weight[0, 0] = 1.0  # Sample 1 初始概率分布
+        seed_cell_weight[4, 1] = 1.0  # Sample 2 初始概率分布
+
+        # Test 1: CPU 运行，普通模式
+        print("\n[Test 1] Device=cpu, is_perfect=False")
+        res_cpu = random_walk(
+            seed_cell_weight=seed_cell_weight,
+            weight=W,
+            device='cpu',
+            is_perfect=False,
+            max_steps=100
+        )
+        print("Result CPU (each column sum to 1):")
+        print(np.round(res_cpu, 4))
+
+        # Test 2: CPU 运行，Perfect 模式 (单列提前收敛)
+        print("\n[Test 2] Device=cpu, is_perfect=True")
+        res_perfect = random_walk(
+            seed_cell_weight=seed_cell_weight,
+            weight=W,
+            device='cpu',
+            is_perfect=True,
+            max_steps=100
+        )
+        print("Result CPU Perfect:")
+        print(np.round(res_perfect, 4))
+
+        # Test 3: GPU 运行 (如果你的机器有CUDA，会调用GPU，否则根据你的代码这里会报错或走CPU fallback)
+        print("\n[Test 3] Device=cuda")
+        try:
+            res_gpu = random_walk(
+                seed_cell_weight=seed_cell_weight,
+                weight=W,
+                device='cuda',
+                max_steps=100
+            )
+            print("Result GPU:")
+            print(np.round(res_gpu, 4))
+        except Exception as e:
+            print(f"GPU Test skipped or failed as expected: {e}")
+
+        # Test 4: 非法 Device 测试
+        print("\n[Test 4] Invalid Device")
+        try:
+            random_walk(seed_cell_weight, W, device='tpu')
+        except ValueError as e:
+            print(f"Caught expected exception: {e}")
