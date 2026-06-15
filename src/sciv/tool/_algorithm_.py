@@ -2,7 +2,8 @@
 
 import random
 import time
-from typing import Union, Tuple, Literal, Optional
+from collections.abc import Collection
+from typing import Union, Tuple, Literal, Optional, Dict
 
 from scipy import sparse
 from scipy.stats import norm
@@ -994,40 +995,108 @@ def ami(labels_pred: collection, labels_true: collection) -> float:
     return adjusted_mutual_info_score(labels_true, labels_pred)
 
 
-def binary_indicator(
-    labels_true: collection,
-    labels_pred: collection
-) -> Tuple[float, float, float, float, float, float, float]:
+def evaluate_probability_metrics(
+    label_true: Collection[int],
+    label_pred: Collection[float]
+) -> Tuple[float, float, float, float, Dict[str, np.ndarray], Dict[str, np.ndarray]]:
     """
-    Accuracy, Recall, F1, FPR, TPR, AUROC, AUPRC.
+    Evaluate binary classification metrics based on predictive probabilities (soft labels).
+
+    This function calculates scalar metrics (AUROC, AUPRC, Brier Score, Cross-Entropy)
+    and extracts coordinate data for plotting ROC and Precision-Recall curves.
 
     Parameters
     ----------
-    labels_true : collection
-        Real labels for clustering;
-    labels_pred : collection
-        Predictive labels for clustering.
+    label_true : Collection[int]
+        Ground truth (correct) binary labels. Must contain only 0 and 1.
+    label_pred : Collection[float]
+        Predicted probabilities for the positive class. Must be continuous values
+        between 0.0 and 1.0 (NOT hard 0/1 predictions).
+
     Returns
     -------
-    tuple
-        Binary Indicators.
+    Tuple[float, float, float, float, Dict[str, np.ndarray], Dict[str, np.ndarray]]
+        A tuple containing:
+        - auroc (float): Area Under the Receiver Operating Characteristic Curve. (Higher is better)
+        - auprc (float): Area Under the Precision-Recall Curve. (Higher is better)
+        - brier (float): Brier score loss (Mean squared error of probabilities). (Lower is better)
+        - cross_entropy (float): Log loss / Cross-entropy loss. (Lower is better)
+        - roc_curve_data (Dict): Dictionary with keys 'fpr', 'tpr', 'thresholds' for ROC curve plotting.
+        - pr_curve_data (Dict): Dictionary with keys 'precision', 'recall', 'thresholds' for PR curve plotting.
+    """
+    from sklearn.metrics import (
+        log_loss,
+        brier_score_loss,
+        roc_auc_score,
+        average_precision_score,
+        roc_curve,
+        precision_recall_curve
+    )
+
+    # Scalar metrics
+    auroc = roc_auc_score(label_true, label_pred)
+    auprc = average_precision_score(label_true, label_pred)
+    brier = brier_score_loss(label_true, label_pred)
+    cross_entropy = log_loss(label_true, label_pred)
+
+    # Curve data
+    fpr, tpr, roc_thresh = roc_curve(label_true, label_pred)
+    prec, rec, pr_thresh = precision_recall_curve(label_true, label_pred)
+
+    roc_curve_data = {"fpr": fpr, "tpr": tpr, "thresholds": roc_thresh}
+    pr_curve_data = {"precision": prec, "recall": rec, "thresholds": pr_thresh}
+
+    return auroc, auprc, brier, cross_entropy, roc_curve_data, pr_curve_data
+
+
+def evaluate_classification_metrics(
+    label_true: Collection[int],
+    label_pred: Collection[int]
+) -> Tuple[float, float, float, float, float, float]:
+    """
+    Evaluate binary classification metrics based on hard predictive labels.
+
+    This function calculates metrics derived from the confusion matrix, requiring
+    discrete 0/1 predictions rather than continuous probabilities.
+
+    Parameters
+    ----------
+    label_true : Collection[int]
+        Ground truth (correct) binary labels. Must contain only 0 and 1.
+    label_pred : Collection[int]
+        Predicted binary labels. Must contain only 0 and 1.
+
+    Returns
+    -------
+    Tuple[float, float, float, float, float, float]
+        A tuple containing:
+        - accuracy (float): Accuracy score.
+        - precision (float): Precision score (for positive class).
+        - recall (float): Recall score (for positive class).
+        - f1 (float): F1 score (harmonic mean of precision and recall).
+        - specificity (float): Specificity score (True Negative Rate).
+        - mcc (float): Matthews Correlation Coefficient.
     """
     from sklearn.metrics import (
         accuracy_score,
-        recall_score,
-        f1_score,
-        roc_curve,
-        roc_auc_score,
-        average_precision_score
+        precision_recall_fscore_support,
+        confusion_matrix,
+        matthews_corrcoef
     )
 
-    acc_s = accuracy_score(labels_true, labels_pred)
-    rec_s = recall_score(labels_true, labels_pred)
-    f1_s = f1_score(labels_true, labels_pred)
-    fpr, tpr, thresholds = roc_curve(labels_true, labels_pred)
-    auroc_s = roc_auc_score(labels_true, labels_pred)
-    auprc_s = average_precision_score(labels_true, labels_pred)
-    return acc_s, rec_s, f1_s, fpr, tpr, auroc_s, auprc_s
+    accuracy = accuracy_score(label_true, label_pred)
+
+    precision, recall, f1, _ = precision_recall_fscore_support(
+        label_true, label_pred, average='binary', pos_label=1
+    )
+
+    # Specificity calculation
+    tn, fp, fn, tp = confusion_matrix(label_true, label_pred).ravel()
+    specificity = tn / (tn + fp) if (tn + fp) > 0 else 0.0
+
+    mcc = matthews_corrcoef(label_true, label_pred)
+
+    return accuracy, precision, recall, f1, specificity, mcc
 
 
 def euclidean_distances(data1: matrix_data, data2: matrix_data = None, block_size: int = -1) -> matrix_data:

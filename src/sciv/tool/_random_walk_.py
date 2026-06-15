@@ -1442,7 +1442,8 @@ class RandomWalk:
 
             # separate
             cell_value_credible = mean_symmetric_scale(
-                np.array(source_value[:, i]).flatten() - np.array(cell_value).flatten(), is_verbose=False)
+                np.array(source_value[:, i]).flatten() - np.array(cell_value).flatten(), is_verbose=False
+            )
 
             # This step is only executed if it contains cell clustering type weights
             if label == "run_en" or label == "run_en_ablation_nsw" or label == "run_en_ablation_m_knn":

@@ -276,7 +276,7 @@ def to_fragments(
 
         if source_row_size > data_obs.shape[0]:
             chrs_str = ",".join(list(chrtype.categories))
-            ul.log(__name__).warning(f"The chromatin with `chr` not in `{chrs_str}` has been deleted here.")
+            ul.log(__name__).warning(f"The chromatin in column `chr` that is not in `{chrs_str}` has been deleted here.")
 
         data = data[data_obs.index, :]
 

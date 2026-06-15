@@ -134,7 +134,9 @@ chrtype = CategoricalDtype(
         "chr21",
         "chr22",
         "chrX",
-        "chrY"
+        "chrx",
+        "chrY",
+        "chry"
     ],
     ordered=True
 )

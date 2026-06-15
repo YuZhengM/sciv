@@ -126,7 +126,8 @@ def poisson_vi(
             except Exception as ex:
 
                 try:
-                    ul.log(__name__).warning(f"Multiple GPU failed to run, attempting to run on one card.\n {ex}")
+                    ul.log(__name__).warning(f"Multiple GPUs failed to run, attempting to run program with parameter "
+                                             f"devices='auto'.\n {ex}")
                     with warnings.catch_warnings():
                         warnings.simplefilter("ignore")
                         _model_.train(
