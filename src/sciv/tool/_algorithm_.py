@@ -216,8 +216,10 @@ def min_max_norm(data: matrix_data, axis: Literal[0, 1, -1] = -1) -> dense_data:
     # Judgment dimension
     if axis == -1:
         data_extremum = data.max() - data.min()
+
         if data_extremum == 0:
             data_extremum = 1
+
         new_data = (data - data.min()) / data_extremum
     elif axis == 0:
         data_extremum = np.array(data.max(axis=axis) - data.min(axis=axis)).flatten()
@@ -997,7 +999,8 @@ def ami(labels_pred: collection, labels_true: collection) -> float:
 
 def evaluate_probability_metrics(
     label_true: Collection[int],
-    label_pred: Collection[float]
+    label_pred: Collection[float],
+    is_min_max: bool = False
 ) -> Tuple[float, float, float, float, Dict[str, np.ndarray], Dict[str, np.ndarray]]:
     """
     Evaluate binary classification metrics based on predictive probabilities (soft labels).
@@ -1012,6 +1015,7 @@ def evaluate_probability_metrics(
     label_pred : Collection[float]
         Predicted probabilities for the positive class. Must be continuous values
         between 0.0 and 1.0 (NOT hard 0/1 predictions).
+    is_min_max : bool
 
     Returns
     -------
@@ -1033,11 +1037,19 @@ def evaluate_probability_metrics(
         precision_recall_curve
     )
 
+    if is_min_max:
+        label_pred = min_max_norm(np.array(label_pred))
+
     # Scalar metrics
     auroc = roc_auc_score(label_true, label_pred)
     auprc = average_precision_score(label_true, label_pred)
-    brier = brier_score_loss(label_true, label_pred)
-    cross_entropy = log_loss(label_true, label_pred)
+
+    if is_min_max:
+        brier = brier_score_loss(label_true, label_pred)
+        cross_entropy = log_loss(label_true, label_pred)
+    else:
+        brier = None
+        cross_entropy = None
 
     # Curve data
     fpr, tpr, roc_thresh = roc_curve(label_true, label_pred)
@@ -1051,7 +1063,8 @@ def evaluate_probability_metrics(
 
 def evaluate_classification_metrics(
     label_true: Collection[int],
-    label_pred: Collection[int]
+    label_pred: Collection[int],
+    zero_division=0
 ) -> Tuple[float, float, float, float, float, float]:
     """
     Evaluate binary classification metrics based on hard predictive labels.
@@ -1065,6 +1078,8 @@ def evaluate_classification_metrics(
         Ground truth (correct) binary labels. Must contain only 0 and 1.
     label_pred : Collection[int]
         Predicted binary labels. Must contain only 0 and 1.
+    zero_division : {"warn", 0.0, 1.0, np.nan}, default="warn"
+        Sets the value to return when there is a zero division.
 
     Returns
     -------
@@ -1079,16 +1094,17 @@ def evaluate_classification_metrics(
     """
     from sklearn.metrics import (
         accuracy_score,
-        precision_recall_fscore_support,
+        precision_score,
+        recall_score,
+        f1_score,
         confusion_matrix,
         matthews_corrcoef
     )
 
     accuracy = accuracy_score(label_true, label_pred)
-
-    precision, recall, f1, _ = precision_recall_fscore_support(
-        label_true, label_pred, average='binary', pos_label=1
-    )
+    precision = precision_score(label_true, label_pred, zero_division=zero_division)
+    recall = recall_score(label_true, label_pred)
+    f1 = f1_score(label_true, label_pred)
 
     # Specificity calculation
     tn, fp, fn, tp = confusion_matrix(label_true, label_pred).ravel()

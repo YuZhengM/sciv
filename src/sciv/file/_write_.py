@@ -19,7 +19,7 @@ __name__: str = "file_write"
 _Field = Optional[Literal['real', 'complex', 'pattern', 'integer']]
 
 
-def save_h5ad(data: AnnData, file: path) -> AnnData:
+def save_h5ad(data: AnnData, file: path, is_compression: bool = True) -> AnnData:
     """
     Save AnnData data to h5ad file.
 
@@ -29,6 +29,7 @@ def save_h5ad(data: AnnData, file: path) -> AnnData:
         Input AnnData object to save.
     file : path
         Path to save file.
+    is_compression :
 
     Returns
     -------
@@ -36,7 +37,7 @@ def save_h5ad(data: AnnData, file: path) -> AnnData:
         The input AnnData object.
     """
     ul.log(__name__).info("Saving data to {}".format(file))
-    return data.write_h5ad(Path(file), compression='gzip')
+    return data.write_h5ad(Path(file), compression='gzip' if is_compression else None)
 
 
 def save_h5(data: dict, save_file: path, group_name: str = "matrix") -> None:

@@ -566,8 +566,7 @@ def get_real_predict_label(
     predict_label = list(np.ones(df_cluster_size))
     predict_label.extend(np.zeros(total_size - df_cluster_size))
     df_sort.insert(0, "predict_label", 0)
-    df_sort.loc[:, "predict_label"] = predict_label
-    df_sort["predict_label"] = df_sort["predict_label"].astype(int)
+    df_sort.loc[:, "predict_label"] = np.array(predict_label).astype(int)
 
     return df_sort, df_cluster_size, cluster_list
 
