@@ -110,17 +110,8 @@ def base_line(
     if isinstance(new_data, AnnData):
 
         if label is not None and legend_list is not None:
-
-            index_list = []
-            label_list = list(new_data.var[label])
-
-            for lab in range(len(label_list)):
-
-                if legend_list.count(label_list[lab]) > 0:
-                    index_list.append(lab)
-
-            if legend_list is not None:
-                new_data = new_data[:, index_list]
+            mask = new_data.var[label].isin(legend_list)
+            new_data = new_data[:, mask]
 
         # judge layers
         if layer is not None:
@@ -149,12 +140,12 @@ def base_line(
     if legend is None and label is not None:
         legend = "category"
 
+    df[label] = df[label].astype(str)
+
     if label is not None:
 
         df[legend] = df[label].copy()
-
         hue_types = df[legend].unique().tolist()
-
         new_data_columns = list(df.columns)
 
         # noinspection DuplicatedCode
@@ -162,7 +153,7 @@ def base_line(
             palette = colors
         else:
             if "color" in new_data_columns:
-                palette = df["color"]
+                palette = df.set_index(legend)["color"].to_dict()
             else:
                 palette = []
 

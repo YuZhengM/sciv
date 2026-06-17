@@ -78,6 +78,7 @@ plot_rc_config = {
     "ps.fonttype": 42,
     "axes.unicode_minus": False
 }
+plt.rcParams.update(plot_rc_config)
 
 fig, ax = plt.subplots(figsize=(2, 2))
 

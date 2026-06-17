@@ -617,7 +617,7 @@ def bar_significance(
         else:
             palette = []
 
-            for i in range(len(new_data[legend])):
+            for i in new_data[legend]:
                 _index_ = hue_types.index(i)
                 palette.append(plot_color_types[cmap][start_color_index + _index_ * color_step_size + _index_])
 
