@@ -42,7 +42,7 @@ def scatter_base(
     number: bool = False,
     is_text: bool = False,
     output: path = None,
-    show: bool = True,
+    show: bool = False,
     close: bool = False,
     **kwargs: Any
 ) -> tuple[Figure, Any]:
@@ -231,7 +231,7 @@ def scatter_3d(
     is_add_max_label: bool = False,
     text_left_offset: float = 0.5,
     output: path = None,
-    show: bool = True,
+    show: bool = False,
     close: bool = False,
     **kwargs: Any
 ) -> tuple[Figure, Any]:
@@ -365,8 +365,6 @@ def scatter_atac(
     columns: Tuple[str, str] = ("UMAP1", "UMAP2"),
     groupby: str = "clusters",
     hue_order: list = None,
-    width: float = 2,
-    height: float = 2,
     x_name: str = None,
     y_name: str = None,
     start_color_index: int = 0,
@@ -378,7 +376,7 @@ def scatter_atac(
     legend_fontsize: float = 7,
     is_text: bool = False,
     output: path = None,
-    show: bool = True,
+    show: bool = False,
     close: bool = False,
     **kwargs: Any
 ) -> None:
@@ -395,10 +393,6 @@ def scatter_atac(
         Column name for cluster labels in adata.obs
     hue_order : list, optional
         Order of clusters for legend
-    width : float, default 2
-        Figure width in inches
-    height : float, default 2
-        Figure height in inches
     x_name : str, optional
         Label for x-axis
     y_name : str, optional
@@ -438,8 +432,6 @@ def scatter_atac(
         x=columns[0],
         y=columns[1],
         hue=groupby,
-        width=width,
-        height=height,
         size=size,
         x_name=x_name,
         y_name=y_name,
@@ -480,7 +472,7 @@ def scatter_trait(
     is_text: bool = False,
     legend: dict = None,
     output: path = None,
-    show: bool = True,
+    show: bool = False,
     close: bool = False,
     **kwargs: Any
 ) -> None:
@@ -638,7 +630,7 @@ def volcano_base(
     x_name: Optional[str] = None,
     y_name: Optional[str] = None,
     output: path = None,
-    show: bool = True,
+    show: bool = False,
     close: bool = False,
     **kwargs: Any
 ) -> tuple[Figure, Any]:
@@ -722,7 +714,7 @@ def manhattan_causal_variant(
     y_name: Optional[str] = "pp",
     y_limit: Tuple[float, float] = (0, 1),
     output: path = None,
-    show: bool = True,
+    show: bool = False,
     close: bool = False,
     **kwargs: Any
 ) -> tuple[Figure, Any]:
@@ -842,7 +834,7 @@ def pseudo_time_score(
     polyorder: int = 1,
     size: Union[float, collection] = 1.0,
     output: path = None,
-    show: bool = True,
+    show: bool = False,
     close: bool = False,
     **kwargs: Any
 ) -> tuple[Figure, Any]:

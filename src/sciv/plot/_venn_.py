@@ -25,7 +25,7 @@ def three_venn(
     y_name: str = None,
     title: str = None,
     output: path = None,
-    show: bool = True,
+    show: bool = False,
     close: bool = False,
     **kwargs: Any
 ) -> tuple[Figure, Any]:
@@ -107,7 +107,7 @@ def two_venn(
     y_name: str = None,
     title: str = None,
     output: path = None,
-    show: bool = True,
+    show: bool = False,
     close: bool = False,
     **kwargs: Any
 ) -> tuple[Figure, Any]:

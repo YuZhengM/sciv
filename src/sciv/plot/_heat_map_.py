@@ -67,7 +67,7 @@ def heatmap_annotation(
     row_score_name: str = "association_score",
     cmap: str = "Oranges",
     is_sort: bool = True,
-    show: bool = True,
+    show: bool = False,
     close: bool = False,
     output: path = None,
     **kwargs
@@ -355,7 +355,7 @@ def heatmap(
     x_name: str = None,
     y_name: str = None,
     output: path = None,
-    show: bool = True,
+    show: bool = False,
     close: bool = False,
     **kwargs: Any
 ) -> tuple[Figure, Any]:

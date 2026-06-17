@@ -33,7 +33,7 @@ def bar(
     text_left_move: float = 0.1,
     direction: Literal['vertical', 'horizontal'] = "vertical",
     output: path = None,
-    show: bool = True,
+    show: bool = False,
     close: bool = False,
     **kwargs: Any
 ) -> tuple[Figure, Any]:
@@ -119,7 +119,7 @@ def two_bar(
     y_limit: Tuple[float, float] = (0, 1),
     title: str = None,
     output: path = None,
-    show: bool = True,
+    show: bool = False,
     close: bool = False,
     **kwargs: Any
 ) -> tuple[Figure, Any]:
@@ -220,7 +220,7 @@ def class_bar(
     text_left_move: float = 0.15,
     y_limit: Tuple[float, float] = (0, 1),
     output: path = None,
-    show: bool = True,
+    show: bool = False,
     close: bool = False,
     **kwargs: Any
 ) -> tuple[Figure, Any]:
@@ -330,7 +330,7 @@ def bar_trait(
     text_left_move: float = 0.15,
     y_limit: Tuple[float, float] = (0, 1),
     output: path = None,
-    show: bool = True,
+    show: bool = False,
     close: bool = False,
     **kwargs: Any
 ):
@@ -479,7 +479,7 @@ def bar_significance(
     colors: Union[list, dict] = None,
     title: str = None,
     output: path = None,
-    show: bool = True,
+    show: bool = False,
     close: bool = False,
     **kwargs: Any
 ) -> tuple[Figure, Any]:
@@ -721,7 +721,7 @@ def rate_bar_plot(
     text_left_move: float = 0.15,
     y_limit: Tuple[float, float] = (0, 1),
     plot_output: path = None,
-    show: bool = True,
+    show: bool = False,
     close: bool = False,
     **kwargs: Any
 ) -> None:

@@ -33,7 +33,7 @@ def violin_base(
     is_sort: bool = True,
     order_names: list = None,
     output: path = None,
-    show: bool = True,
+    show: bool = False,
     close: bool = False,
     **kwargs: Any
 ) -> tuple[Figure, Any]:
@@ -182,7 +182,7 @@ def violin_trait(
     order_names: list = None,
     title: str = None,
     output: path = None,
-    show: bool = True,
+    show: bool = False,
     close: bool = False,
     **kwargs: Any
 ):

@@ -33,7 +33,7 @@ def barcode_base(
     colors: list = None,
     ground_true: list = None,
     output: path = None,
-    show: bool = True,
+    show: bool = False,
     close: bool = False
 ) -> tuple[Figure, Any, Any]:
     """
@@ -151,7 +151,7 @@ def barcode_trait(
     title: str = None,
     suffix: str = "pdf",
     output: path = None,
-    show: bool = True,
+    show: bool = False,
     close: bool = False
 ) -> None:
     """

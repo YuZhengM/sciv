@@ -36,7 +36,7 @@ def radar(
     y_limit: Tuple = (-0.5, 1),
     y_axis_scale: Tuple = (0, 1),
     output: path = None,
-    show: bool = True,
+    show: bool = False,
     close: bool = False,
     **kwargs: Any
 ) -> tuple[Figure, Any]:
@@ -170,7 +170,7 @@ def base_radar(
     is_fill: bool = True,
     fill_alpha: float = 0.2,
     output: path = None,
-    show: bool = True,
+    show: bool = False,
     close: bool = False,
     **kwargs: Any
 ) -> tuple[Figure, Any]:
@@ -277,7 +277,7 @@ def radar_trait(
     y_limit: Tuple = (-0.5, 1),
     y_axis_scale: Tuple = (0, 1),
     output: path = None,
-    show: bool = True,
+    show: bool = False,
     close: bool = False,
     **kwargs: Any
 ):
@@ -418,7 +418,7 @@ def rate_circular_bar_plot(
     y_limit: Tuple = (-0.5, 1),
     y_axis_scale: Tuple = (0, 1),
     plot_output: path = None,
-    show: bool = True,
+    show: bool = False,
     close: bool = False
 ) -> None:
     """

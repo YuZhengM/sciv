@@ -783,7 +783,7 @@ def plot_end(
     x_name: str = None,
     y_name: str = None,
     output: str = None,
-    show: bool = True,
+    show: bool = False,
     close: bool = False,
     dpi: float = 300
 ):
@@ -836,6 +836,8 @@ def plot_end(
 
     if show:
         plt.show()
+    else:
+        fig.clear()
 
     if close:
         plt.close('all')

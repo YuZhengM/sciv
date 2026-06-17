@@ -27,7 +27,7 @@ def kde(
     sample_number: int = 1000000,
     is_legend: bool = True,
     output: path = None,
-    show: bool = True,
+    show: bool = False,
     close: bool = False,
     **kwargs: Any
 ) -> tuple[Figure, Any]:

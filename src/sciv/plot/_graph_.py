@@ -43,7 +43,7 @@ def graph(
     title: str = None,
     is_font: bool = False,
     output: path = None,
-    show: bool = True,
+    show: bool = False,
     close: bool = False
 ) -> tuple[Figure, Any]:
     """
@@ -138,7 +138,7 @@ def communities_graph(
     start_color_index: int = 0,
     color_step_size: int = 0,
     output: path = None,
-    show: bool = True,
+    show: bool = False,
     close: bool = False
 ) -> tuple[Figure, Any]:
     """
@@ -267,7 +267,7 @@ def network_two_types(
     is_fluctuate: bool = True,
     layout_type: str = 'spring',
     output: path = None,
-    show: bool = True,
+    show: bool = False,
     close: bool = False
 ):
     """

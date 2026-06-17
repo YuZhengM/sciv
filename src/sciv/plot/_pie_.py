@@ -26,7 +26,7 @@ def base_pie(
     colors: list = None,
     autopct: str = '%1.2f%%',
     output: path = None,
-    show: bool = True,
+    show: bool = False,
     close: bool = False,
     **kwargs: Any
 ) -> tuple[Figure, Any]:
@@ -112,7 +112,7 @@ def pie_label(
     label_distance: float = 1.1,
     colors: list = None,
     output: path = None,
-    show: bool = True,
+    show: bool = False,
     close: bool = False,
     **kwargs: Any
 ) -> tuple[Figure, Any]:
@@ -234,7 +234,7 @@ def pie_trait(
     label_distance: float = 1.1,
     colors: list = None,
     output: path = None,
-    show: bool = True,
+    show: bool = False,
     close: bool = False,
     **kwargs: Any
 ) -> None:

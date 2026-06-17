@@ -39,7 +39,7 @@ def base_line(
     y_limit: Tuple[float, float] = (0, 1),
     output: Optional[path] = None,
     is_str: bool = True,
-    show: bool = True,
+    show: bool = False,
     close: bool = False,
     **kwargs: Any
 ) -> tuple[Figure, Any]:
