@@ -34,7 +34,7 @@ def barcode_base(
     ground_true: list = None,
     output: path = None,
     show: bool = False,
-    close: bool = False
+    close: bool = True
 ) -> tuple[Figure, Any, Any]:
     """
     Plot barcode plot.
@@ -152,7 +152,7 @@ def barcode_trait(
     suffix: str = "pdf",
     output: path = None,
     show: bool = False,
-    close: bool = False
+    close: bool = True
 ) -> None:
     """
     Plot barcode plots for traits/diseases.

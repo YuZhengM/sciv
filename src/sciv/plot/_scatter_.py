@@ -43,7 +43,7 @@ def scatter_base(
     is_text: bool = False,
     output: path = None,
     show: bool = False,
-    close: bool = False,
+    close: bool = True,
     **kwargs: Any
 ) -> tuple[Figure, Any]:
     """
@@ -106,7 +106,6 @@ def scatter_base(
         norm = plt.Normalize(df[hue].min(), df[hue].max())
         sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
         sm.set_array([])
-        plt.colorbar(sm, label=bar_label)
         sns.scatterplot(
             data=df,
             x=x,
@@ -119,6 +118,7 @@ def scatter_base(
             edgecolor=edge_color,
             **kwargs
         )
+        plt.colorbar(sm, label=bar_label, ax=ax)
     else:
         # Get unique hue categories and sort them
         __hue_order__ = list(np.sort(list(set(df[hue]))))
@@ -232,7 +232,7 @@ def scatter_3d(
     text_left_offset: float = 0.5,
     output: path = None,
     show: bool = False,
-    close: bool = False,
+    close: bool = True,
     **kwargs: Any
 ) -> tuple[Figure, Any]:
     """
@@ -373,11 +373,10 @@ def scatter_atac(
     edge_color: str = None,
     size: float = 1.0,
     text_fontsize: float = 7,
-    legend_fontsize: float = 7,
     is_text: bool = False,
     output: path = None,
     show: bool = False,
-    close: bool = False,
+    close: bool = True,
     **kwargs: Any
 ) -> None:
     """
@@ -409,8 +408,6 @@ def scatter_atac(
         Size of scatter points
     text_fontsize : float, default 7
         Font size for annotation text
-    legend_fontsize : float, default 7
-        Font size for legend text
     is_text : bool, default False
         Whether to add text annotations
     output : path, optional
@@ -442,11 +439,9 @@ def scatter_atac(
         edge_color=edge_color,
         is_text=is_text,
         text_fontsize=text_fontsize,
-        legend_fontsize=legend_fontsize,
         output=output,
         show=show,
         close=close,
-        right=0.75,
         **kwargs
     )
 
@@ -465,7 +460,6 @@ def scatter_trait(
     edge_color: str = None,
     size: Union[float, collection] = 1.0,
     text_fontsize: float = 7,
-    legend_fontsize: float = 7,
     start_color_index: int = 0,
     color_step_size: int = 0,
     type_colors: collection = None,
@@ -473,7 +467,7 @@ def scatter_trait(
     legend: dict = None,
     output: path = None,
     show: bool = False,
-    close: bool = False,
+    close: bool = True,
     **kwargs: Any
 ) -> None:
     """
@@ -507,8 +501,6 @@ def scatter_trait(
         Size of scatter points
     text_fontsize : float, default 7
         Font size for annotation text
-    legend_fontsize : float, default 7
-        Font size for legend text
     start_color_index : int, default 0
         Starting index in color palette
     color_step_size : int, default 0
@@ -574,7 +566,6 @@ def scatter_trait(
             y_name=y_name,
             type_colors=type_colors,
             text_fontsize=text_fontsize,
-            legend_fontsize=legend_fontsize,
             start_color_index=start_color_index,
             color_step_size=color_step_size,
             edge_color=edge_color,
@@ -631,7 +622,7 @@ def volcano_base(
     y_name: Optional[str] = None,
     output: path = None,
     show: bool = False,
-    close: bool = False,
+    close: bool = True,
     **kwargs: Any
 ) -> tuple[Figure, Any]:
     """
@@ -715,7 +706,7 @@ def manhattan_causal_variant(
     y_limit: Tuple[float, float] = (0, 1),
     output: path = None,
     show: bool = False,
-    close: bool = False,
+    close: bool = True,
     **kwargs: Any
 ) -> tuple[Figure, Any]:
     """
@@ -835,7 +826,7 @@ def pseudo_time_score(
     size: Union[float, collection] = 1.0,
     output: path = None,
     show: bool = False,
-    close: bool = False,
+    close: bool = True,
     **kwargs: Any
 ) -> tuple[Figure, Any]:
     """

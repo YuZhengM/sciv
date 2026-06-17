@@ -44,7 +44,7 @@ def graph(
     is_font: bool = False,
     output: path = None,
     show: bool = False,
-    close: bool = False
+    close: bool = True
 ) -> tuple[Figure, Any]:
     """
     Plot a graph from an adjacency matrix.
@@ -139,7 +139,7 @@ def communities_graph(
     color_step_size: int = 0,
     output: path = None,
     show: bool = False,
-    close: bool = False
+    close: bool = True
 ) -> tuple[Figure, Any]:
     """
     Plot a cell-cell network diagram with community detection coloring.
@@ -268,7 +268,7 @@ def network_two_types(
     layout_type: str = 'spring',
     output: path = None,
     show: bool = False,
-    close: bool = False
+    close: bool = True
 ):
     """
     Plot a bipartite network graph with two types of nodes.

@@ -14,7 +14,6 @@ import numpy as np
 import pandas as pd
 import torch
 from matplotlib import pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.figure import Figure
 from numpy import asarray
 from anndata import AnnData
@@ -772,6 +771,12 @@ def plot_start() -> tuple[Figure, Any]:
 
     fig, ax = ul.fig, ul.ax
 
+    if not fig:
+        fig = plt.figure(figsize=(2, 2))
+
+    if not ax:
+        ax = plt.gca()
+
     plt.rcParams.update(ul.plot_rc_config)
 
     return fig, ax
@@ -784,7 +789,7 @@ def plot_end(
     y_name: str = None,
     output: str = None,
     show: bool = False,
-    close: bool = False,
+    close: bool = True,
     dpi: float = 300
 ):
     """
@@ -825,10 +830,7 @@ def plot_end(
     if output is not None:
 
         if output.endswith(".pdf"):
-
-            with PdfPages(output) as pdf:
-                pdf.savefig(fig)
-
+            plt.savefig(output, bbox_inches='tight', pad_inches=0.1)
         elif output.endswith(".png") or output.endswith(".jpg") or output.endswith(".svg"):
             plt.savefig(output, dpi=dpi)
         else:

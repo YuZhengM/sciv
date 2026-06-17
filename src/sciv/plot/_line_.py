@@ -40,7 +40,7 @@ def base_line(
     output: Optional[path] = None,
     is_str: bool = True,
     show: bool = False,
-    close: bool = False,
+    close: bool = True,
     **kwargs: Any
 ) -> tuple[Figure, Any]:
     """

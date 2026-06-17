@@ -42,7 +42,7 @@ def read_h5ad(file: path, is_verbose: bool = True) -> AnnData:
     return ad.read_h5ad(Path(file))
 
 
-def read_h5(file: path, is_close: bool = False):
+def read_h5(file: path, is_close: bool = True):
     """
     Read AnnData data from an h5 file.
 

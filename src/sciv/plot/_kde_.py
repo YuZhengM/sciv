@@ -28,7 +28,7 @@ def kde(
     is_legend: bool = True,
     output: path = None,
     show: bool = False,
-    close: bool = False,
+    close: bool = True,
     **kwargs: Any
 ) -> tuple[Figure, Any]:
     """

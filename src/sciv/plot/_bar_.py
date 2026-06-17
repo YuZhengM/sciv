@@ -34,7 +34,7 @@ def bar(
     direction: Literal['vertical', 'horizontal'] = "vertical",
     output: path = None,
     show: bool = False,
-    close: bool = False,
+    close: bool = True,
     **kwargs: Any
 ) -> tuple[Figure, Any]:
     """
@@ -120,7 +120,7 @@ def two_bar(
     title: str = None,
     output: path = None,
     show: bool = False,
-    close: bool = False,
+    close: bool = True,
     **kwargs: Any
 ) -> tuple[Figure, Any]:
     """
@@ -221,7 +221,7 @@ def class_bar(
     y_limit: Tuple[float, float] = (0, 1),
     output: path = None,
     show: bool = False,
-    close: bool = False,
+    close: bool = True,
     **kwargs: Any
 ) -> tuple[Figure, Any]:
     """
@@ -331,7 +331,7 @@ def bar_trait(
     y_limit: Tuple[float, float] = (0, 1),
     output: path = None,
     show: bool = False,
-    close: bool = False,
+    close: bool = True,
     **kwargs: Any
 ):
     """
@@ -480,7 +480,7 @@ def bar_significance(
     title: str = None,
     output: path = None,
     show: bool = False,
-    close: bool = False,
+    close: bool = True,
     **kwargs: Any
 ) -> tuple[Figure, Any]:
     """
@@ -722,7 +722,7 @@ def rate_bar_plot(
     y_limit: Tuple[float, float] = (0, 1),
     plot_output: path = None,
     show: bool = False,
-    close: bool = False,
+    close: bool = True,
     **kwargs: Any
 ) -> None:
     """

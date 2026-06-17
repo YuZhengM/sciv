@@ -37,7 +37,7 @@ def radar(
     y_axis_scale: Tuple = (0, 1),
     output: path = None,
     show: bool = False,
-    close: bool = False,
+    close: bool = True,
     **kwargs: Any
 ) -> tuple[Figure, Any]:
     """
@@ -171,7 +171,7 @@ def base_radar(
     fill_alpha: float = 0.2,
     output: path = None,
     show: bool = False,
-    close: bool = False,
+    close: bool = True,
     **kwargs: Any
 ) -> tuple[Figure, Any]:
     """
@@ -278,7 +278,7 @@ def radar_trait(
     y_axis_scale: Tuple = (0, 1),
     output: path = None,
     show: bool = False,
-    close: bool = False,
+    close: bool = True,
     **kwargs: Any
 ):
     """
@@ -419,7 +419,7 @@ def rate_circular_bar_plot(
     y_axis_scale: Tuple = (0, 1),
     plot_output: path = None,
     show: bool = False,
-    close: bool = False
+    close: bool = True
 ) -> None:
     """
     Generate a circular bar plot (radar chart) showing enrichment ratios for trait-cluster combinations.

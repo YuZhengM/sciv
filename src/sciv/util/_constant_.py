@@ -71,12 +71,14 @@ matplotlib.set_loglevel("error")
 # Plot rc config
 plot_rc_config = {
     "font.family": 'Arial',
-    "axes.labelsize": 7,
+    "axes.labelsize": 8,
     "font.size": 7,
     "legend.fontsize": 7,
     "pdf.fonttype": 42,
     "ps.fonttype": 42,
-    "axes.unicode_minus": False
+    "axes.unicode_minus": False,
+    "xtick.labelsize": 7,
+    "ytick.labelsize": 7
 }
 plt.rcParams.update(plot_rc_config)
 
