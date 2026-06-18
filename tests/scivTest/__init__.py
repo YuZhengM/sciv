@@ -20,7 +20,7 @@ if __name__ == '__main__':
     sciv.ul.is_form_log_file = True
     sciv.ul.log_file_path = log_path
 
-    # set cache path
+    # set a cache path
     sciv.ul.project_cache_path = cache_path
 
     # read variant information
@@ -30,7 +30,7 @@ if __name__ == '__main__':
     sc_atac = sciv.fl.read_sc_atac(resource=sc_atac_base_path)
 
     # run
-    trs = sciv.ml.core(
+    trs = sciv.ml.trs(
         adata=sc_atac,
         variants=variants,
         trait_info=trait_info,

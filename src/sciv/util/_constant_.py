@@ -1,7 +1,7 @@
 # -*- coding: UTF-8 -*-
 
 import os
-from typing import Union, Tuple, Literal
+from typing import Union, Tuple, Literal, Optional
 from pathlib import Path
 
 import matplotlib
@@ -63,7 +63,9 @@ matrix_data = Union[sparse_data, dense_data]
 # Enrichment optional
 enrichment_optional = Literal['golden', 'half', 'e', 'pi', 'none']
 # Difference peak optional
-difference_peak_optional = Literal['emp_effect', 'bayes_factor', 'emp_prob1', 'all']
+diff_peak_optional = Literal['emp_effect', 'bayes_factor', 'emp_prob1', 'all']
+
+diff_method = Optional[Literal['logreg', 't-test', 'wilcoxon', 't-test_overestim_var']]
 
 # set matplotlib log level to error
 matplotlib.set_loglevel("error")

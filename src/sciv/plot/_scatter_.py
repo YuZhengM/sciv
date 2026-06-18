@@ -360,99 +360,13 @@ def scatter_3d(
     return fig, ax
 
 
-def scatter_atac(
+def scatter_element(
     adata: AnnData,
-    columns: Tuple[str, str] = ("UMAP1", "UMAP2"),
-    groupby: str = "clusters",
-    hue_order: list = None,
-    x_name: str = None,
-    y_name: str = None,
-    start_color_index: int = 0,
-    color_step_size: int = 0,
-    type_colors: collection = None,
-    edge_color: str = None,
-    size: float = 1.0,
-    text_fontsize: float = 7,
-    is_text: bool = False,
-    output: path = None,
-    show: bool = False,
-    close: bool = True,
-    **kwargs: Any
-) -> None:
-    """
-    Create a scatter plot for ATAC-seq data with cluster coloring.
-    
-    Parameters
-    ----------
-    adata : AnnData
-        AnnData object containing observations and coordinates
-    columns : Tuple[str, str], default ("UMAP1", "UMAP2")
-        Column names for x and y coordinates in adata.obs
-    groupby : str, default "clusters"
-        Column name for cluster labels in adata.obs
-    hue_order : list, optional
-        Order of clusters for legend
-    x_name : str, optional
-        Label for x-axis
-    y_name : str, optional
-        Label for y-axis
-    start_color_index : int, default 0
-        Starting index in color palette
-    color_step_size : int, default 0
-        Step size for color selection
-    type_colors : collection, optional
-        Custom color palette
-    edge_color : str, optional
-        Edge color for scatter points
-    size : float, default 1.0
-        Size of scatter points
-    text_fontsize : float, default 7
-        Font size for annotation text
-    is_text : bool, default False
-        Whether to add text annotations
-    output : path, optional
-        Output file path
-    show : bool, default True
-        Whether to display the plot
-    close : bool, default False
-        Whether to close the figure after saving
-    **kwargs : Any
-        Additional arguments passed to scatter_base
-    """
-
-    # DataFrame
-    df: DataFrame = adata.obs.copy()
-    df[groupby] = df[groupby].astype(str)
-    # scatter
-    scatter(
-        df,
-        x=columns[0],
-        y=columns[1],
-        hue=groupby,
-        size=size,
-        x_name=x_name,
-        y_name=y_name,
-        hue_order=hue_order,
-        start_color_index=start_color_index,
-        color_step_size=color_step_size,
-        type_colors=type_colors,
-        edge_color=edge_color,
-        is_text=is_text,
-        text_fontsize=text_fontsize,
-        output=output,
-        show=show,
-        close=close,
-        **kwargs
-    )
-
-
-def scatter_trait(
-    trait_adata: AnnData,
     title: str = None,
     bar_label: str = None,
-    trait_name: str = "All",
+    element_name: str = "All",
     layers: Union[None, collection] = None,
-    columns: Tuple[str, str] = ("UMAP1", "UMAP2"),
+    coordinates: Tuple[str, str] = ("UMAP1", "UMAP2"),
     cmap: str = "viridis",
     x_name: str = None,
     y_name: str = None,
@@ -475,17 +389,17 @@ def scatter_trait(
 
     Parameters
     ----------
-    trait_adata : AnnData
+    adata : AnnData
         AnnData object containing trait/disease scores and cell metadata
     title : str, optional
         Title prefix for the plot
     bar_label : str, optional
         Label for colorbar when number=True
-    trait_name : str, default "All"
+    element_name : str, default "All"
         Name of trait/disease to plot, or "All" to plot all traits
     layers : Union[None, collection], optional
         List of layer names to plot from trait_adata.layers
-    columns : Tuple[str, str], default ("UMAP1", "UMAP2")
+    coordinates : Tuple[str, str], default ("UMAP1", "UMAP2")
         Column names for x and y coordinates in trait_adata.obs
     cmap : str, default "viridis"
         Colormap for continuous coloring
@@ -520,43 +434,45 @@ def scatter_trait(
     **kwargs : Any
         Additional arguments passed to scatter_base
     """
-    data: AnnData = trait_adata.copy()
+    data: AnnData = adata.copy()
 
     # judge layers
-    trait_adata_layers = list(data.layers)
+    adata_layers = list(data.layers)
 
     if layers is not None and len(layers) != 0:
-        for layer in layers:
-            if layer not in trait_adata_layers:
-                log.error("The `layers` parameter needs to include in `trait_adata.layers`")
-                raise ValueError("The `layers` parameter needs to include in `trait_adata.layers`")
 
-    def trait_plot(trait_: str, atac_cell_df_: DataFrame, layer_: str = None, new_data_: AnnData = None) -> None:
+        for layer in layers:
+
+            if layer not in adata_layers:
+                log.error("The `layers` parameter needs to include in `adata.layers`")
+                raise ValueError("The `layers` parameter needs to include in `adata.layers`")
+
+    def element_plot(element_: str, df_: DataFrame, layer_: str = None, new_data_: AnnData = None) -> None:
         """
         show plot
-        :param trait_: trait name
-        :param atac_cell_df_:
+        :param element_: trait name
+        :param df_:
         :param layer_: layer
         :param new_data_:
         :return: None
         """
-        log.info(f"Plotting scatter {trait_}")
+        log.info(f"Plotting scatter {element_}")
         # get gene score
-        trait_score = new_data_[:, trait_].to_df()
-        trait_score = trait_score.rename_axis("__barcode__")
-        trait_score.reset_index(inplace=True)
-        atac_cell_df_ = atac_cell_df_.rename_axis("__barcode__")
-        atac_cell_df_.reset_index(inplace=True)
+        element_score = new_data_[:, element_].to_df()
+        element_score = element_score.rename_axis("__barcode__")
+        element_score.reset_index(inplace=True)
+        df_ = df_.rename_axis("__barcode__")
+        df_.reset_index(inplace=True)
         # trait_score.rename_axis("index")
-        df = atac_cell_df_.merge(trait_score, on="__barcode__", how="left")
+        df = df_.merge(element_score, on="__barcode__", how="left")
         # Sort gene scores from small to large
-        df.sort_values([trait_], inplace=True)
+        df.sort_values([element_], inplace=True)
         scatter(
             df,
-            x=columns[0],
-            y=columns[1],
-            hue=trait_,
-            title=f"{title} {trait_}" if title is not None else title,
+            x=coordinates[0],
+            y=coordinates[1],
+            hue=element_,
+            title=f"{title} {element_}" if title is not None else title,
             bar_label=bar_label,
             legend=legend,
             cmap=cmap,
@@ -571,7 +487,7 @@ def scatter_trait(
             edge_color=edge_color,
             is_text=is_text,
             output=os.path.join(
-                output, f"cell_{trait_}_score_{layer_}.pdf" if layer_ is not None else f"cell_{trait_}_score.pdf"
+                output, f"{element_}_{layer_}_score.pdf" if layer_ is not None else f"{element_}_score.pdf"
             ) if output is not None else None,
             show=show,
             close=close,
@@ -580,23 +496,23 @@ def scatter_trait(
 
     def handle_plot(layer_: str = None):
         # DataFrame
-        atac_cell_df: DataFrame = data.obs.copy()
-        atac_cell_df.rename_axis("index", inplace=True)
-        trait_list: list = list(data.var_names)
+        df: DataFrame = data.obs.copy()
+        df.rename_axis("index", inplace=True)
+        element_list: list = list(data.var_names)
 
-        # judge trait
-        if trait_name != "All" and trait_name not in trait_list:
-            log.error(f"The {trait_name} trait/disease is not in the trait/disease list (trait_adata.var_names)")
-            raise ValueError(f"The {trait_name} trait/disease is not in the trait/disease list (trait_adata.var_names)")
+        # judge element
+        if element_name != "All" and element_name not in element_list:
+            log.error(f"The {element_name} element is not in the element list (adata.var_names)")
+            raise ValueError(f"The {element_name} element is not in the element list (adata.var_names)")
 
         new_data: AnnData = AnnData(data.layers[layer], var=data.var, obs=data.obs) if layer_ is not None else data
 
         # plot
-        if trait_name == "All":
-            for trait in trait_list:
-                trait_plot(trait, atac_cell_df, layer_, new_data)
+        if element_name == "All":
+            for element in element_list:
+                element_plot(element, df, layer_, new_data)
         else:
-            trait_plot(trait_name, atac_cell_df, layer_, new_data)
+            element_plot(element_name, df, layer_, new_data)
 
     if layers is None or len(layers) == 0:
         handle_plot()

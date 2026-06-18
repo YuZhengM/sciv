@@ -1,9 +1,10 @@
 # -*- coding: UTF-8 -*-
 
-from ._core_ import core, association_score, knock
+from ._core_ import trs, association_score, knock, vrs
 
 __all__ = [
-    "core",
+    "trs",
     "association_score",
-    "knock"
+    "knock",
+    "vrs"
 ]

@@ -11,11 +11,9 @@ from pandas import DataFrame
 from .. import util as ul
 from ..file import save_h5ad
 from ..tool import lsi, tf_idf
-from ..util import add_cluster_info, matrix_data, set_inf_value, collection
+from ..util import add_cluster_info, matrix_data, set_inf_value, collection, diff_method
 
 __name__: str = "preprocessing_scanpy"
-
-_Method = Optional[Literal['logreg', 't-test', 'wilcoxon', 't-test_overestim_var']]
 
 
 def filter_data(
@@ -134,7 +132,7 @@ def filter_data(
 def get_difference_genes(
     adata: AnnData,
     groupby: str,
-    method: _Method = "wilcoxon",
+    method: diff_method = "wilcoxon",
     cell_anno: Optional[DataFrame] = None,
     diff_genes_file: Optional[str] = None
 ) -> AnnData:

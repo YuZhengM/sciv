@@ -11,11 +11,19 @@ from anndata import AnnData
 from pandas import DataFrame
 
 from .. import util as ul
-from ..tool import RandomWalk, overlap_sum, obtain_cell_cell_network, calculate_init_score_weight
+from ..tool import RandomWalk, overlap_sum, obtain_cell_cell_network, calculate_init_score_weight, scale_normalize
 
 from ..file import save_h5ad, save_pkl, read_h5ad, read_pkl
 from ..preprocessing import filter_data, poisson_vi
-from ..util import path, enrichment_optional, to_dense, collection, to_sparse, difference_peak_optional, project_name
+from ..util import (
+    path,
+    enrichment_optional,
+    to_dense,
+    collection,
+    to_sparse,
+    diff_peak_optional,
+    project_name
+)
 
 __name__: str = "model_core"
 
@@ -83,7 +91,7 @@ def _run_random_walk_(random_walk: RandomWalk, is_ablation: bool, is_simple: boo
     return random_walk.trs_adata
 
 
-def core(
+def trs(
     adata: AnnData,
     variants: dict,
     trait_info: DataFrame,
@@ -113,7 +121,7 @@ def core(
     min_seed_cell_rate: float = 0.01,
     max_seed_cell_rate: float = 0.05,
     credible_threshold: float = 0,
-    diff_peak_value: difference_peak_optional = 'emp_effect',
+    diff_peak_value: diff_peak_optional = 'emp_effect',
     enrichment_threshold: Union[enrichment_optional, float] = 'golden',
     is_ablation: bool = False,
     model_dir: Optional[path] = None,
@@ -297,86 +305,86 @@ def core(
     if cell_rate is not None:
 
         if cell_rate <= 0 or cell_rate >= 1:
-            ul.log(__name__).error("The parameter of `cell_rate` should be between 0 and 1.")
-            raise ValueError("The parameter of `cell_rate` should be between 0 and 1.")
+            ul.log(__name__).error(f"The parameter of `cell_rate` ({cell_rate}) should be between 0 and 1.")
+            raise ValueError(f"The parameter of `cell_rate` ({cell_rate}) should be between 0 and 1.")
 
     if peak_rate is not None:
 
         if peak_rate <= 0 or peak_rate >= 1:
-            ul.log(__name__).error("The parameter of `peak_rate` should be between 0 and 1.")
-            raise ValueError("The parameter of `peak_rate` should be between 0 and 1.")
+            ul.log(__name__).error(f"The parameter of `peak_rate` ({peak_rate}) should be between 0 and 1.")
+            raise ValueError(f"The parameter of `peak_rate` ({peak_rate}) should be between 0 and 1.")
 
     if resolution <= 0:
-        ul.log(__name__).error("The parameter `resolution` must be greater than zero.")
-        raise ValueError("The parameter `resolution` must be greater than zero.")
+        ul.log(__name__).error(f"The parameter `resolution` ({resolution}) must be greater than zero.")
+        raise ValueError(f"The parameter `resolution` ({resolution}) must be greater than zero.")
 
     if k <= 0:
-        ul.log(__name__).error("The `k` parameter must be a natural number greater than 0.")
-        raise ValueError("The `k` parameter must be a natural number greater than 0.")
+        ul.log(__name__).error(f"The `k` ({k}) parameter must be a natural number greater than 0.")
+        raise ValueError(f"The `k` ({k}) parameter must be a natural number greater than 0.")
 
     if or_k <= 0:
-        ul.log(__name__).error("The `or_k` parameter must be a natural number greater than 0.")
-        raise ValueError("The `or_k` parameter must be a natural number greater than 0.")
+        ul.log(__name__).error(f"The `or_k` ({or_k}) parameter must be a natural number greater than 0.")
+        raise ValueError(f"The `or_k` ({or_k}) parameter must be a natural number greater than 0.")
 
     if k < or_k:
         ul.log(__name__).warning(
-            "The parameter value of `or_k` is greater than the parameter value of `k`, "
+            f"The parameter value of `or_k` ({or_k}) is greater than the parameter value of `k` ({k}), "
             "which is highly likely to result in poor performance."
         )
 
     if local_k <= 0:
-        ul.log(__name__).error("The `local_k` parameter must be a natural number greater than 0.")
-        raise ValueError("The `local_k` parameter must be a natural number greater than 0.")
+        ul.log(__name__).error(f"The `local_k` ({local_k}) parameter must be a natural number greater than 0.")
+        raise ValueError(f"The `local_k` ({local_k}) parameter must be a natural number greater than 0.")
 
     if kernel not in ["laplacian", "gaussian"]:
-        ul.log(__name__).error("Parameter `kernel` only supports two values, `laplacian` and `gaussian`.")
-        raise ValueError("Parameter `kernel` only supports two values, `laplacian` and `gaussian`.")
+        ul.log(__name__).error(f"Parameter `kernel` ({kernel}) only supports two values, `laplacian` and `gaussian`.")
+        raise ValueError(f"Parameter `kernel` ({kernel}) only supports two values, `laplacian` and `gaussian`.")
 
     if weight < 0 or weight > 1:
-        ul.log(__name__).error("The parameter of `weight` should be between 0 and 1.")
-        raise ValueError("The parameter of `weight` should be between 0 and 1.")
+        ul.log(__name__).error(f"The parameter of `weight` ({weight}) should be between 0 and 1.")
+        raise ValueError(f"The parameter of `weight` ({weight}) should be between 0 and 1.")
 
     if gamma < 0 or gamma > 1:
-        ul.log(__name__).error("The parameter of `gamma` should be between 0 and 1.")
-        raise ValueError("The parameter of `gamma` should be between 0 and 1.")
+        ul.log(__name__).error(f"The parameter of `gamma` ({gamma}) should be between 0 and 1.")
+        raise ValueError(f"The parameter of `gamma` ({gamma}) should be between 0 and 1.")
 
     if enrichment_gamma < 0 or enrichment_gamma > 1:
-        ul.log(__name__).error("The parameter of `enrichment_gamma` should be between 0 and 1.")
-        raise ValueError("The parameter of `enrichment_gamma` should be between 0 and 1.")
+        ul.log(__name__).error(f"The parameter of `enrichment_gamma` ({enrichment_gamma}) should be between 0 and 1.")
+        raise ValueError(f"The parameter of `enrichment_gamma` ({enrichment_gamma}) should be between 0 and 1.")
 
     if max_steps <= 0:
-        ul.log(__name__).error("The `max_steps` parameter must be a natural number greater than 0.")
-        raise ValueError("The `max_steps` parameter must be a natural number greater than 0.")
+        ul.log(__name__).error(f"The `max_steps` ({max_steps}) parameter must be a natural number greater than 0.")
+        raise ValueError(f"The `max_steps` ({max_steps}) parameter must be a natural number greater than 0.")
 
     if min_seed_cell_rate < 0 or min_seed_cell_rate > 1:
-        ul.log(__name__).error("The parameter of `min_seed_cell_rate` should be between 0 and 1.")
-        raise ValueError("The parameter of `min_seed_cell_rate` should be between 0 and 1.")
+        ul.log(__name__).error(f"The parameter of `min_seed_cell_rate` ({min_seed_cell_rate}) should be between 0 and 1.")
+        raise ValueError(f"The parameter of `min_seed_cell_rate` ({min_seed_cell_rate}) should be between 0 and 1.")
 
     if max_seed_cell_rate < 0 or max_seed_cell_rate > 1:
-        ul.log(__name__).error("The parameter of `max_seed_cell_rate` should be between 0 and 1.")
-        raise ValueError("The parameter of `max_seed_cell_rate` should be between 0 and 1.")
+        ul.log(__name__).error(f"The parameter of `max_seed_cell_rate` ({max_seed_cell_rate}) should be between 0 and 1.")
+        raise ValueError(f"The parameter of `max_seed_cell_rate` ({max_seed_cell_rate}) should be between 0 and 1.")
 
     if epsilon > 0.1:
         ul.log(__name__).warning(
-            f"Excessive value of parameter `epsilon`=({epsilon}) can lead to "
+            f"Excessive value of parameter `epsilon` ({epsilon}) can lead to "
             f"incorrect iteration and poor enrichment effect."
         )
     elif epsilon <= 0:
-        ul.log(__name__).error("The parameter of `epsilon` must be greater than zero.")
-        raise ValueError("The parameter of `epsilon` must be greater than zero.")
+        ul.log(__name__).error(f"The parameter of `epsilon` ({epsilon}) must be greater than zero.")
+        raise ValueError(f"The parameter of `epsilon` ({epsilon}) must be greater than zero.")
 
     if p <= 0:
-        ul.log(__name__).error("The `p` parameter must be a natural number greater than 0.")
-        raise ValueError("The `p` parameter must be a natural number greater than 0.")
+        ul.log(__name__).error(f"The `p` ({p}) parameter must be a natural number greater than 0.")
+        raise ValueError(f"The `p` ({p}) parameter must be a natural number greater than 0.")
     elif p > 3:
-        ul.log(__name__).warning("Suggested value for `p` is 1 or 2.")
+        ul.log(__name__).warning(f"Suggested value for `p` ({p}) is 1 or 2.")
 
     if isinstance(enrichment_threshold, float):
 
         if enrichment_threshold <= 0 or enrichment_threshold >= np.log1p(1):
             ul.log(__name__).warning(
-                "The `enrichment_threshold` parameter is not set within the range of (0, log1p(1)), this parameter "
-                "will become invalid."
+                f"The `enrichment_threshold` ({enrichment_threshold}) parameter is not set within the range of "
+                "(0, log1p(1)), this parameter will become invalid."
             )
             ul.log(__name__).warning(
                 "It is recommended to set the `enrichment_threshold` parameter to the 'golden' value."
@@ -384,23 +392,23 @@ def core(
 
     elif enrichment_threshold not in ["golden", "half", "e", "pi", "none"]:
         ul.log(__name__).error(
-            "Invalid enrichment settings. The string type in the `enrichment_threshold` parameter only supports the "
-            "following parameter 'golden', 'half', 'e', 'pi', 'none',  Alternatively, input a floating-point type "
-            "value within the range of (0, log1p(1))"
+            f"Invalid enrichment settings. The string type in the `enrichment_threshold` ({enrichment_threshold}) "
+            "parameter only supports the following parameter 'golden', 'half', 'e', 'pi', 'none',  Alternatively, "
+            "input a floating-point type value within the range of (0, log1p(1))"
         )
         raise ValueError(
-            "Invalid enrichment settings. The string type in the `enrichment_threshold` parameter only supports the "
-            "following parameter 'golden', 'half', 'e', 'pi', 'none',  Alternatively, input a floating-point type "
-            "value within the range of (0, log1p(1))"
+            f"Invalid enrichment settings. The string type in the `enrichment_threshold` ({enrichment_threshold}) "
+            "parameter only supports the following parameter 'golden', 'half', 'e', 'pi', 'none',  Alternatively, "
+            "input a floating-point type value within the range of (0, log1p(1))"
         )
 
     if diff_peak_value not in ['emp_effect', 'bayes_factor', 'emp_prob1', 'all']:
         ul.log(__name__).error(
-            "The `diff_peak_value` parameter only supports one of the "
+            f"The `diff_peak_value` ({diff_peak_value}) parameter only supports one of the "
             "{'emp_effect', 'bayes_factor', 'emp_prob1', 'all'} values."
         )
         raise ValueError(
-            "The `diff_peak_value` parameter only supports one of the "
+            f"The `diff_peak_value` ({diff_peak_value}) parameter only supports one of the "
             "{'emp_effect', 'bayes_factor', 'emp_prob1', 'all'} values."
         )
 
@@ -664,8 +672,8 @@ def core(
 
     del random_walk_is_read, init_score, cc_data
 
-    trs = _run_random_walk_(random_walk, is_ablation, is_simple)
-    trs.uns["params"] = params
+    trs_adata = _run_random_walk_(random_walk, is_ablation, is_simple)
+    trs_adata.uns["params"] = params
 
     del params
 
@@ -680,7 +688,7 @@ def core(
 
     ul.log(__name__).info(f"Algorithm {project_name} consumes a total of {elapsed_time:.2f}s.")
 
-    trs.uns["elapsed_time"] = {
+    trs_adata.uns["elapsed_time"] = {
         "PoissonVI": poisson_vi_time,
         "Overlap": overlap_time,
         "initial TRS": init_score_time,
@@ -690,9 +698,9 @@ def core(
     }
 
     if save_path is not None:
-        save_h5ad(trs, file=trs_save_file)
+        save_h5ad(trs_adata, file=trs_save_file)
 
-    return trs
+    return trs_adata
 
 
 def association_score(
@@ -756,14 +764,13 @@ def association_score(
 
 
 def knock(
-    trs: AnnData,
+    adata: AnnData,
     sc_atac: AnnData,
     da_peaks: AnnData,
     cc_data: AnnData,
     knock_trait: str,
     knock_info: dict[str, Union[str, collection]],
-    knock_value: float = 0,
-    is_add_control: bool = False
+    knock_value: float = 0
 ) -> AnnData:
     """
     Perform gene knockdown or knockout analysis on a specific trait.
@@ -774,7 +781,7 @@ def knock(
 
     Parameters
     ----------
-    trs : AnnData
+    adata : AnnData
         TRS result data from `ml.core`, containing parameters, variants, trait_info and trs_source.
     sc_atac : AnnData
         scATAC-seq data used in the original analysis.
@@ -791,8 +798,6 @@ def knock(
     knock_value : float, default 0
         The value to set for knocked-down variants. Default is 0 (complete knockout).
         Values >= 1e-3 are not recommended as they may not achieve the desired effect.
-    is_add_control : bool, default False
-        Whether to add control experiments (knocking out background variants).
 
     Returns
     -------
@@ -800,25 +805,25 @@ def knock(
         AnnData object containing TRS results after knockdown/knockout.
         Includes knock parameters in .uns["params"] and knock-specific metadata.
     """
-    if "params" not in trs.uns:
+    if "params" not in adata.uns:
         ul.log(__name__).error("`params` is not in `trs.uns`, please execute function `ml.core` first to obtain the "
                                "result as input for the `trs` parameter.")
         raise ValueError("`params` is not in `trs.uns`, please execute function `ml.core` first to obtain the result "
                          "as input for the `trs` parameter.")
 
-    if "variants" not in trs.uns:
+    if "variants" not in adata.uns:
         ul.log(__name__).error("`variants` is not in `trs.uns`, please execute function `ml.core` first to obtain the "
                                "result as input for the `trs` parameter.")
         raise ValueError("`variants` is not in `trs.uns`, please execute function `ml.core` first to obtain the result "
                          "as input for the `trs` parameter.")
 
-    if "trait_info" not in trs.uns:
+    if "trait_info" not in adata.uns:
         ul.log(__name__).error("`trait_info` is not in `trs.uns`, please execute function `ml.core` first to obtain "
                                "the result as input for the `trs` parameter.")
         raise ValueError("`trait_info` is not in `trs.uns`, please execute function `ml.core` first to obtain the "
                          "result as input for the `trs` parameter.")
 
-    if "trs_source" not in trs.layers:
+    if "trs_source" not in adata.layers:
         ul.log(__name__).error("`trs_source` is not in `trs.layers`, please execute function `ml.core` first to obtain "
                                "the result as input for the `trs` parameter.")
         raise ValueError("`trs_source` is not in `trs.layers`, please execute function `ml.core` first to obtain the "
@@ -828,23 +833,23 @@ def knock(
         ul.log(__name__).warning("The value set for `knock_value` here is greater than 1e-3, which can easily fail to "
                                  "achieve the desired effect.")
 
+    if knock_trait not in adata.var["id"]:
+        ul.log(__name__).error(f"`{knock_trait}` trait or disease does not exist.")
+        raise ValueError(f"`{knock_trait}` trait or disease does not exist.")
+
     # param information
-    params = trs.uns["params"]
+    params = adata.uns["params"]
 
     # variant information
-    variants = trs.uns["variants"]
-    trait_info = trs.uns["trait_info"]
+    variants = adata.uns["variants"]
+    trait_info = adata.uns["trait_info"]
 
     knock_variants: dict = {}
     knock_variants_bg: dict = {}
 
-    if knock_trait not in trs.var["id"]:
-        ul.log(__name__).error(f"`{knock_trait}` trait or disease does not exist.")
-        raise ValueError(f"`{knock_trait}` trait or disease does not exist.")
-
-    trait_obs = variants[knock_trait].obs
     knock_variant: AnnData = variants[knock_trait].copy()
     knock_variant_value = to_dense(knock_variant.X)
+    trait_obs = knock_variant.obs
 
     _trait_info_ = trait_info[trait_info["id"] == knock_trait].values[0]
     knock_trait_info = pd.DataFrame(columns=trait_info.columns)
@@ -854,93 +859,136 @@ def knock(
     for k, v in knock_info.items():
 
         if isinstance(v, str):
+
             if v not in trait_obs["rsId"].tolist():
                 ul.log(__name__).error(f"`{v}` variant does not exist in `{knock_trait}` trait or disease")
                 raise ValueError(f"`{v}` variant does not exist in `{knock_trait}` trait or disease")
+
         elif isinstance(v, collection):
+
             if not set(v).issubset(set(trait_obs["rsId"].tolist())):
                 ul.log(__name__).error(f"`{v}` variants does not exist in `{knock_trait}` trait or disease")
                 raise ValueError(f"`{v}` variants does not exist in `{knock_trait}` trait or disease")
 
-        need_k_index = trait_obs["rsId"].isin(list([v] if isinstance(v, str) else v)).values
-        knock_variant_k = knock_variant.copy()
-        knock_variant_k_value = knock_variant_value.copy()
-        knock_variant_k_value[need_k_index, :] = knock_value
-        knock_variant_k.X = to_sparse(knock_variant_k_value)
-        knock_variants[k] = knock_variant_k
+        knock_index = trait_obs["rsId"].isin(list([v] if isinstance(v, str) else v)).values
+        knock_variant_key = knock_variant.copy()
+        knock_variant_key_value = knock_variant_value.copy()
+        knock_variant_key_value[knock_index, :] = knock_value
+        knock_variant_key.X = to_sparse(knock_variant_key_value)
+        knock_variants[k] = knock_variant_key
+        del knock_variant_key
 
-        knock_variant_k_bg = knock_variant.copy()
-        knock_variant_k_value_bg = knock_variant_value.copy()
-        knock_variant_k_value_bg[~need_k_index, :] = knock_value
-        knock_variant_k_bg.X = to_sparse(knock_variant_k_value_bg)
-        knock_variants_bg[k] = knock_variant_k_bg
+        knock_variant_key_bg = knock_variant.copy()
+        knock_variant_key_value_bg = knock_variant_value.copy()
+        knock_variant_key_value_bg[~knock_index, :] = knock_value
+        knock_variant_key_bg.X = to_sparse(knock_variant_key_value_bg)
+        knock_variants_bg[k] = knock_variant_key_bg
+        del knock_variant_key_bg
 
         _trait_info_[0] = k
         knock_trait_info.loc[knock_trait_info.shape[0], :] = _trait_info_
 
     knock_trait_info.index = knock_trait_info["id"].astype(str)
 
+    def _get_trs_(_knock_variants_: dict):
+        knock_overlap_adata: AnnData = overlap_sum(sc_atac, _knock_variants_, knock_trait_info)
+        # intermediate score data, integration data
+        knock_init_score: AnnData = calculate_init_score_weight(
+            adata=sc_atac,
+            da_peaks_adata=da_peaks,
+            overlap_adata=knock_overlap_adata,
+            diff_peak_value=params["diff_peak_value"],
+            is_simple=True,
+            block_size=params["block_size"]
+        )
+        knock_random_walk: RandomWalk = RandomWalk(
+            cc_adata=cc_data,
+            init_status=knock_init_score,
+            epsilon=params["epsilon"],
+            gamma=params["gamma"],
+            enrichment_gamma=params["enrichment_gamma"],
+            p=params["p"],
+            n_jobs=params["n_jobs"] if "n_jobs" in params else -1,
+            min_seed_cell_rate=params["min_seed_cell_rate"],
+            max_seed_cell_rate=params["max_seed_cell_rate"],
+            credible_threshold=params["credible_threshold"],
+            enrichment_threshold=params["enrichment_threshold"],
+            is_ablation=False,
+            is_simple=True
+        )
+
+        knock_random_walk.run_core()
+        return knock_random_walk.trs_adata
+
     ul.log(__name__).info(f"Run the process after knocking down or knocking out.")
-    knock_overlap_adata: AnnData = overlap_sum(sc_atac, knock_variants, knock_trait_info)
+    knock_trs = _get_trs_(knock_variants)
+    knock_trs_bg_score = _get_trs_(knock_variants_bg).layers["trs_source"]
 
-    # intermediate score data, integration data
-    knock_init_score: AnnData = calculate_init_score_weight(
-        adata=sc_atac,
-        da_peaks_adata=da_peaks,
-        overlap_adata=knock_overlap_adata,
-        diff_peak_value=params["diff_peak_value"],
-        is_simple=True,
-        block_size=params["block_size"]
-    )
-
-    # random walk
-    # noinspection DuplicatedCode
-    knock_random_walk: RandomWalk = RandomWalk(
-        cc_adata=cc_data,
-        init_status=knock_init_score,
-        epsilon=params["epsilon"],
-        gamma=params["gamma"],
-        enrichment_gamma=params["enrichment_gamma"],
-        p=params["p"],
-        n_jobs=params["n_jobs"] if "n_jobs" in params else -1,
-        min_seed_cell_rate=params["min_seed_cell_rate"],
-        max_seed_cell_rate=params["max_seed_cell_rate"],
-        credible_threshold=params["credible_threshold"],
-        enrichment_threshold=params["enrichment_threshold"],
-        is_ablation=False,
-        is_simple=True
-    )
-
-    # RUN
-    knock_random_walk.run_knock(trs, knock_trait, False)
-
-    if is_add_control:
-        knock_random_walk.run_knock(trs, knock_trait, True)
-
-    # Obtain result data
-    knock_trs = knock_random_walk.trs_adata
+    knock_trs.layers["effect_trs_source"] = knock_trs.layers["trs_source"] + (adata.layers["trs_source"] - knock_trs_bg_score)
+    knock_trs.X = scale_normalize(knock_trs.layers["effect_trs_source"], axis=0)
 
     knock_trs.uns["params"] = {
         "knock_trait": knock_trait,
         "knock_info": knock_info,
         "knock_value": knock_value,
-        "is_add_control": is_add_control,
         "run_core_params": params
     }
 
-    trs.uns["is_knock"] = True
-
-    if "pp_sum" in knock_trs.var.columns:
-        knock_trs.var["pp_sum"] = knock_trs.var["pp_sum"].astype(float)
-
-    if "pp_mean" in knock_trs.var.columns:
-        knock_trs.var["pp_mean"] = knock_trs.var["pp_mean"].astype(float)
-
-    if "count" in knock_trs.var.columns:
-        knock_trs.var["count"] = knock_trs.var["count"].astype(int)
-
-    # save result
-    if params["save_path"] is not None:
-        save_h5ad(knock_trs, file=os.path.join(params["save_path"], f"knock_trs_{knock_trait}.h5ad"))
-
     return knock_trs
+
+
+def vrs(
+    adata: AnnData,
+    sc_atac: AnnData,
+    da_peaks: AnnData,
+    cc_data: AnnData,
+    trait: str
+) -> AnnData:
+
+    if "params" not in adata.uns:
+        ul.log(__name__).error("`params` is not in `trs.uns`, please execute function `ml.core` first to obtain the "
+                               "result as input for the `trs` parameter.")
+        raise ValueError("`params` is not in `trs.uns`, please execute function `ml.core` first to obtain the result "
+                         "as input for the `trs` parameter.")
+
+    if "variants" not in adata.uns:
+        ul.log(__name__).error("`variants` is not in `trs.uns`, please execute function `ml.core` first to obtain the "
+                               "result as input for the `trs` parameter.")
+        raise ValueError("`variants` is not in `trs.uns`, please execute function `ml.core` first to obtain the result "
+                         "as input for the `trs` parameter.")
+
+    if "trait_info" not in adata.uns:
+        ul.log(__name__).error("`trait_info` is not in `trs.uns`, please execute function `ml.core` first to obtain "
+                               "the result as input for the `trs` parameter.")
+        raise ValueError("`trait_info` is not in `trs.uns`, please execute function `ml.core` first to obtain the "
+                         "result as input for the `trs` parameter.")
+
+    if "trs_source" not in adata.layers:
+        ul.log(__name__).error("`trs_source` is not in `trs.layers`, please execute function `ml.core` first to obtain "
+                               "the result as input for the `trs` parameter.")
+        raise ValueError("`trs_source` is not in `trs.layers`, please execute function `ml.core` first to obtain the "
+                         "result as input for the `trs` parameter.")
+
+    if trait not in adata.var["id"]:
+        ul.log(__name__).error(f"`{trait}` trait or disease does not exist.")
+        raise ValueError(f"`{trait}` trait or disease does not exist.")
+
+    # variant information
+    variants = adata.uns["variants"]
+    knock_variant: AnnData = variants[trait].copy()
+
+    rs_id_list = knock_variant.obs["rsId"].tolist()
+
+    knock_info: dict[str, str] = dict(zip(rs_id_list, rs_id_list))
+
+    effect_trs = knock(
+        adata=adata,
+        sc_atac=sc_atac,
+        da_peaks=da_peaks,
+        cc_data=cc_data,
+        knock_trait=trait,
+        knock_info=knock_info,
+        knock_value=0
+    )
+
+    return effect_trs

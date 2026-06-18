@@ -30,7 +30,7 @@ from ..util import (
     number,
     collection,
     get_index,
-    difference_peak_optional
+    diff_peak_optional
 )
 
 __name__: str = "tool_algorithm"
@@ -1506,7 +1506,7 @@ def calculate_init_score_weight(
     da_peaks_adata: AnnData,
     overlap_adata: AnnData,
     layer: Optional[str] = "fragments",
-    diff_peak_value: difference_peak_optional = 'emp_effect',
+    diff_peak_value: diff_peak_optional = 'emp_effect',
     is_simple: bool = True,
     block_size: int = -1
 ) -> AnnData:
