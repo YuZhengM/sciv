@@ -18,7 +18,7 @@ __name__: str = "plot_barcode"
 log = ul.log(__name__, "ERROR")
 
 
-def barcode_base(
+def barcode(
     df: DataFrame,
     groupby_list: list,
     sort_column: str = "value",
@@ -225,7 +225,7 @@ def barcode_trait(
         # get gene score
         trait_score = atac_cell_df_[atac_cell_df_[trait_column_name] == trait_]
         # Sort gene scores from small to large
-        barcode_base(
+        barcode(
             df=trait_score,
             groupby_list=groupby_list,
             sort_column=sort_column,

@@ -1,6 +1,5 @@
 # -*- coding: UTF-8 -*-
 
-import os
 from typing import Tuple, Union, Any
 
 from matplotlib.figure import Figure
@@ -15,7 +14,7 @@ __name__: str = "plot_box"
 log = ul.log(__name__, "ERROR")
 
 
-def box_base(
+def box(
     df: DataFrame,
     x: str = "clusters",
     y: str = "value",
@@ -169,132 +168,3 @@ def box_base(
     plot_end(fig, title, x_name, y_name, output, show, close)
 
     return fig, ax
-
-
-def box_trait(
-    trait_df: DataFrame,
-    trait_name: str = "All",
-    trait_column_name: str = "id",
-    value: str = "value",
-    groupby: str = "clusters",
-    x_name: str = None,
-    y_name: str = "value",
-    palette: Union[Tuple, list] = None,
-    orient: str = None,
-    line_width: float = 0.1,
-    marker_size: float = 0.5,
-    rotation: float = 65,
-    whis: float = 1.5,
-    show_fliers: bool = True,
-    is_sort: bool = True,
-    order_names: list = None,
-    title: str = None,
-    output: path = None,
-    show: bool = False,
-    close: bool = True,
-    **kwargs: Any
-) -> None:
-    """
-    Create box plots for trait/disease data across different clusters.
-
-    This function generates box plots for each trait or a specific trait from the input dataframe.
-    It filters data by trait and creates individual box plots using the box_base function.
-
-    Parameters
-    ----------
-    trait_df : DataFrame
-        Input data containing trait/disease information and values to plot.
-    trait_name : str, default "All"
-        Name of the trait/disease to plot. Use "All" to plot all traits.
-    trait_column_name : str, default "id"
-        Column name in trait_df that contains trait/disease identifiers.
-    value : str, default "value"
-        Column name for the numerical values to be plotted on y-axis.
-    groupby : str, default "clusters"
-        Column name for the cluster categories to be plotted on x-axis.
-    x_name : str, optional
-        Custom label for the x-axis. If None, uses the clusters column name.
-    y_name : str, default "value"
-        Custom label for the y-axis.
-    palette : Union[Tuple, list], optional
-        Color palette for the boxes.
-    orient : str, optional
-        Orientation of the plot ("v" for vertical, "h" for horizontal).
-    line_width : float, default 0.1
-        Width of lines in the plot.
-    marker_size : float, default 0.5
-        Size of outlier markers.
-    rotation : float, default 65
-        Rotation angle for x-axis tick labels in degrees.
-    whis : float, default 1.5
-        Proportion of the IQR to extend the whiskers.
-    show_fliers : bool, default True
-        Whether to display outlier points beyond the whiskers.
-    is_sort : bool, default True
-        Whether to sort boxes by median value.
-    order_names : list, optional
-        Custom order for x-axis categories.
-    title : str, optional
-        Base title for the plots. Trait name will be appended.
-    output : path, optional
-        Directory path to save the plots. If None, plots are not saved.
-    show : bool, default True
-        Whether to display the plots.
-    close : bool, default False
-        Whether to close the figure after displaying.
-    **kwargs : Any
-        Additional keyword arguments passed to box_base function.
-    """
-
-    data: DataFrame = trait_df.copy()
-
-    def trait_plot(trait_: str, atac_cell_df_: DataFrame) -> None:
-        """
-        Generate a box plot for a specific trait.
-
-        Parameters
-        ----------
-        trait_ : str
-            The name of the trait/disease to plot.
-        atac_cell_df_ : DataFrame
-            The input dataframe containing trait data and values.
-        """
-        log.info("Plotting box {}".format(trait_))
-        # get gene score
-        trait_score = atac_cell_df_[atac_cell_df_[trait_column_name] == trait_]
-        # Sort gene scores from small to large
-        box_base(
-            df=trait_score,
-            x=groupby,
-            y=value,
-            x_name=x_name,
-            y_name=y_name,
-            palette=palette,
-            rotation=rotation,
-            is_sort=is_sort,
-            whis=whis,
-            order_names=order_names,
-            line_width=line_width,
-            show_fliers=show_fliers,
-            marker_size=marker_size,
-            orient=orient,
-            title=f"{title} {trait_}" if title is not None else title,
-            output=os.path.join(output, f"cell_{trait_}_score_box.pdf") if output is not None else None,
-            show=show,
-            close=close,
-            **kwargs
-        )
-
-    # noinspection DuplicatedCode
-    trait_list = list(set(data[trait_column_name]))
-    # judge trait
-    if trait_name != "All" and trait_name not in trait_list:
-        log.error(f"The {trait_name} trait/disease is not in the trait/disease list {trait_list}.")
-        raise ValueError(f"The {trait_name} trait/disease is not in the trait/disease list {trait_list}.")
-
-    # plot
-    if trait_name == "All":
-        for trait in trait_list:
-            trait_plot(trait, trait_df)
-    else:
-        trait_plot(trait_name, trait_df)

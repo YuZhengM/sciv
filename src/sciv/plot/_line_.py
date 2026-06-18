@@ -18,7 +18,7 @@ __name__: str = "plot_line"
 log = ul.log(__name__, "ERROR")
 
 
-def base_line(
+def line(
     data: Union[AnnData, DataFrame],
     x: str,
     y: str,

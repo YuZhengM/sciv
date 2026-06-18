@@ -1,64 +1,61 @@
 # -*- coding: UTF-8 -*-
 
-import matplotlib
-
 from ._graph_ import graph, communities_graph, network_two_types
 from ._heat_map_ import heatmap, heatmap_annotation
 
 from ._scatter_ import (
-    scatter_base,
+    scatter,
     scatter_3d,
     scatter_atac,
     scatter_trait,
-    volcano_base,
+    volcano,
     manhattan_causal_variant,
     pseudo_time_score
 )
 
-from ._violin_ import violin_base, violin_trait
-from ._box_ import box_base, box_trait
+from ._violin_ import violin, violin_trait
+from ._box_ import box
 from ._kde_ import kde
-from ._line_ import base_line
-from ._bar_ import bar_trait, class_bar, bar, two_bar, bar_significance, rate_bar_plot
-from ._barcode_ import barcode_base, barcode_trait
-from ._pie_ import pie_trait, pie_label, base_pie
+from ._line_ import line
+from ._bar_ import bar_element, bar_class, bar, bar_two, bar_significance, bar_rate_plot
+from ._barcode_ import barcode, barcode_trait
+from ._pie_ import pie_trait, pie_label, pie
 from ._bubble_ import bubble
 from ._radar_ import radar, base_radar, radar_trait, rate_circular_bar_plot
-from ._venn_ import three_venn, two_venn
+from ._venn_ import venn_three, venn_two
 
 __all__ = [
     "graph",
     "communities_graph",
     "network_two_types",
     "heatmap",
-    "volcano_base",
+    "volcano",
     "heatmap_annotation",
-    "scatter_base",
+    "scatter",
     "scatter_atac",
     "scatter_trait",
-    "violin_base",
+    "violin",
     "violin_trait",
     "manhattan_causal_variant",
     "pseudo_time_score",
-    "barcode_base",
+    "barcode",
     "barcode_trait",
-    "box_base",
-    "box_trait",
+    "box",
     "bar_significance",
     "bar",
     "pie_trait",
     "pie_label",
-    "two_bar",
+    "bar_two",
     "kde",
-    "base_line",
-    "class_bar",
-    "bar_trait",
+    "line",
+    "bar_class",
+    "bar_element",
     "bubble",
-    "rate_bar_plot",
+    "bar_rate_plot",
     "rate_circular_bar_plot",
     "radar",
     "base_radar",
     "radar_trait",
-    "three_venn",
-    "two_venn"
+    "venn_three",
+    "venn_two"
 ]

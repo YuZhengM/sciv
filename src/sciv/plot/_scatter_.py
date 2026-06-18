@@ -21,7 +21,7 @@ __name__: str = "plot_pie"
 log = ul.log(__name__, "ERROR")
 
 
-def scatter_base(
+def scatter(
     df: DataFrame,
     x: str,
     y: str,
@@ -424,7 +424,7 @@ def scatter_atac(
     df: DataFrame = adata.obs.copy()
     df[groupby] = df[groupby].astype(str)
     # scatter
-    scatter_base(
+    scatter(
         df,
         x=columns[0],
         y=columns[1],
@@ -551,7 +551,7 @@ def scatter_trait(
         df = atac_cell_df_.merge(trait_score, on="__barcode__", how="left")
         # Sort gene scores from small to large
         df.sort_values([trait_], inplace=True)
-        scatter_base(
+        scatter(
             df,
             x=columns[0],
             y=columns[1],
@@ -606,7 +606,7 @@ def scatter_trait(
             handle_plot(layer)
 
 
-def volcano_base(
+def volcano(
     df: DataFrame,
     x: str = "Log2(Fold change)",
     y: str = "-Log10(P value)",

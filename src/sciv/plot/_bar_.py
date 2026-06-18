@@ -106,7 +106,7 @@ def bar(
     return fig, ax
 
 
-def two_bar(
+def bar_two(
     ax_x: collection,
     ax_y: Tuple,
     x_name: str = None,
@@ -204,7 +204,7 @@ def two_bar(
     return fig, ax
 
 
-def class_bar(
+def bar_class(
     df: DataFrame,
     value: str = "rate",
     by: str = "value",
@@ -294,7 +294,7 @@ def class_bar(
 
     ax_y = (df1[value], df2[value])
 
-    return two_bar(
+    return bar_two(
         ax_x=ax_x,
         ax_y=ax_y,
         x_name=x_name,
@@ -311,141 +311,6 @@ def class_bar(
         close=close,
         **kwargs
     )
-
-
-def bar_trait(
-    trait_df: DataFrame,
-    trait_name: str = "All",
-    trait_column_name: str = "id",
-    value: str = "rate",
-    groupby: str = "clusters",
-    x_name: str = "Cell type",
-    y_name: str = "Enrichment ratio",
-    color: Tuple = ("#2e6fb7", "#f7f7f7"),
-    legend: Tuple = ("Enrichment", "Conservative"),
-    text_color: str = "#000205",
-    groupby_sort: Optional[list] = None,
-    rotation: float = 65,
-    title: str = None,
-    text_left_move: float = 0.15,
-    y_limit: Tuple[float, float] = (0, 1),
-    output: path = None,
-    show: bool = False,
-    close: bool = True,
-    **kwargs: Any
-):
-    """
-    Create stacked bar charts for multiple traits or a specific trait.
-
-    This function generates enrichment bar plots for traits (e.g., diseases, gene sets)
-    in the input DataFrame. It can plot all traits or a specific trait based on the
-    trait_name parameter. Each trait's enrichment data is visualized using the class_bar
-    function, with results saved to individual files.
-
-    Parameters
-    ----------
-    trait_df : DataFrame
-        Input DataFrame containing trait enrichment data. Must include columns for
-        trait identifiers, cluster labels, and enrichment values.
-    trait_name : str, default "All"
-        The specific trait to plot. If "All", plots bar charts for all unique traits
-        in the trait_column_name column.
-    trait_column_name : str, default "id"
-        Column name in trait_df that contains trait identifiers.
-    value : str, default "rate"
-        Column name containing the numerical enrichment values to plot.
-    groupby : str, default "clusters"
-        Column name containing cluster or cell type labels.
-    x_name : str, default "Cell type"
-        Label for the x-axis.
-    y_name : str, default "Enrichment ratio"
-        Label for the y-axis.
-    color : Tuple, default ("#2e6fb7", "#f7f7f7")
-        Colors for the two bar segments (enrichment color, conservative color).
-    legend : Tuple, default ("Enrichment", "Conservative")
-        Labels for the legend corresponding to the two bar segments.
-    text_color : str, default "#000205"
-        Color of the value labels on bars.
-    groupby_sort : Optional[list], default None
-        Custom order for clusters. If provided, clusters will be sorted according
-        to this list. If None, clusters are sorted by enrichment value.
-    rotation : float, default 65
-        Rotation angle for x-axis tick labels in degrees.
-    title : str, optional
-        Base title of the plot. The trait name will be appended to this title.
-        Default is None.
-    text_left_move : float, default 0.15
-        Horizontal adjustment for text position on bars.
-    y_limit : Tuple[float, float], default (0, 1)
-        The y-axis limits for the plot.
-    output : path, optional
-        Directory path to save the figures. If provided, each trait's plot will be
-        saved as a PDF file in this directory. Default is None.
-    show : bool, default True
-        Whether to display the plot.
-    close : bool, default False
-        Whether to close the figure after saving.
-    **kwargs : Any
-        Additional keyword arguments passed to the class_bar function.
-
-    Returns
-    -------
-    None
-        The function displays and/or saves the plots but does not return any value.
-    """
-
-    def trait_plot(trait_: str, cell_df_: DataFrame) -> None:
-        """
-        show plot
-        :param trait_: trait name
-        :param cell_df_:
-        :return: None
-        """
-        log.info("Plotting bar {}".format(trait_))
-        # get gene score
-        trait_score = cell_df_[cell_df_[trait_column_name] == trait_]
-        # Sort gene scores from small to large
-        class_bar(
-            df=trait_score,
-            value=value,
-            groupby=groupby,
-            title=f"{title} {trait_}" if title is not None else title,
-            color=color,
-            legend=legend,
-            x_name=x_name,
-            y_name=y_name,
-            groupby_sort=groupby_sort,
-            rotation=rotation,
-            text_left_move=text_left_move,
-            y_limit=y_limit,
-            text_color=text_color,
-            output=os.path.join(output, f"cell_{trait_}_enrichment_bar.pdf") if output is not None else None,
-            show=show,
-            close=close,
-            **kwargs
-        )
-
-    trait_list = list(set(trait_df[trait_column_name]))
-
-    # judge trait
-    if trait_name != "All" and trait_name not in trait_list:
-        log.error(
-            f"The {trait_name} trait/disease is not in the trait/disease list {trait_list}, "
-            f"Suggest modifying the {trait_column_name} parameter information"
-        )
-        raise ValueError(
-            f"The {trait_name} trait/disease is not in the trait/disease list {trait_list}, "
-            f"Suggest modifying the {trait_column_name} parameter information"
-        )
-
-    # plot
-    if trait_name == "All":
-
-        for trait in trait_list:
-            trait_plot(trait_=trait, cell_df_=trait_df)
-
-    else:
-        trait_plot(trait_name, trait_df)
 
 
 def bar_significance(
@@ -703,12 +568,13 @@ def bar_significance(
     return fig, ax
 
 
-def rate_bar_plot(
+def bar_rate_plot(
     adata: AnnData,
     layer: str = None,
-    trait_name: str = "All",
+    element_name: str = "All",
+    element_column: str = "id",
     dir_name: str = "feature",
-    column: str = "value",
+    value: str = "value",
     groupby: str = "clusters",
     color: Tuple = ("#2e6fb7", "#f7f7f7"),
     legend: Tuple = ("Enrichment", "Conservative"),
@@ -738,11 +604,13 @@ def rate_bar_plot(
         Input AnnData object containing the data to be visualized.
     layer : str, optional
         Specify the layer of the matrix to be processed. If None, uses the main matrix.
-    trait_name : str, default "All"
+    element_name : str, default "All"
         The name of the trait being analyzed, used for filtering data.
+    element_column : str, default "id"
+        Column name in trait_df that contains trait identifiers.
     dir_name : str, default "feature"
         Folder name for generating and saving bar plot outputs.
-    column : str, default "value"
+    value : str, default "value"
         The column name containing the binary enrichment values.
     groupby : str, default "clusters"
         The column name in adata.obs that defines the cell clusters.
@@ -781,36 +649,47 @@ def rate_bar_plot(
         This function does not return any value. Outputs are saved to files or displayed.
     """
 
-    if dir_name is not None:
-        # create path
-        new_path = os.path.join(plot_output, f"{dir_name}_{layer}") if plot_output is not None else None
-        # create path
-        if plot_output is not None:
-            ul.file_method(__name__).makedirs(new_path)
+    if dir_name is not None and plot_output is not None:
+        new_path = os.path.join(plot_output, f"{dir_name}_{layer}")
+        ul.file_method(__name__).makedirs(new_path)
+    elif plot_output is not None:
+        new_path = plot_output
+        ul.file_method(__name__).makedirs(new_path)
     else:
-        plot_output = None
         new_path = None
 
     # create data
-    new_value_group = complete_ratio(adata=adata, layer=layer, column=column, groupby=groupby)
+    new_value_group = complete_ratio(adata=adata, layer=layer, value=value, index_column=element_column, groupby=groupby)
 
-    bar_trait(
-        trait_df=new_value_group,
-        value="rate",
-        groupby=groupby,
-        title=title,
-        x_name=x_name,
-        y_name=y_name,
-        groupby_sort=groupby_sort,
-        trait_name=trait_name,
-        color=color,
-        legend=legend,
-        text_color=text_color,
-        rotation=rotation,
-        text_left_move=text_left_move,
-        y_limit=y_limit,
-        output=new_path if plot_output is not None else None,
-        show=show,
-        close=close,
-        **kwargs
-    )
+    element_list = new_value_group[element_column].unique().tolist()
+
+    for _element_ in element_list:
+
+        if element_name.lower() != 'all':
+            _element_ = element_name
+
+        # get gene score
+        element_score = new_value_group[new_value_group[element_column] == _element_]
+        # Sort gene scores from small to large
+        bar_class(
+            df=element_score,
+            value=value,
+            groupby=groupby,
+            title=f"{title} {_element_}" if title is not None else _element_,
+            color=color,
+            legend=legend,
+            x_name=x_name,
+            y_name=y_name,
+            groupby_sort=groupby_sort,
+            rotation=rotation,
+            text_left_move=text_left_move,
+            y_limit=y_limit,
+            text_color=text_color,
+            output=os.path.join(new_path, f"{_element_}_enrichment_bar.pdf") if new_path is not None else None,
+            show=show,
+            close=close,
+            **kwargs
+        )
+
+        if element_name.lower() != 'all':
+            break

@@ -15,11 +15,9 @@ __name__: str = "plot_pie"
 log = ul.log(__name__, "ERROR")
 
 
-def base_pie(
+def pie(
     values: list,
     labels: list,
-    x_name: str = None,
-    y_name: str = None,
     title: str = None,
     pct_distance: float = 0.6,
     label_distance: float = 1.1,
@@ -42,10 +40,6 @@ def base_pie(
         The values to be plotted in the pie chart.
     labels : list
         The labels corresponding to each value in the pie chart.
-    x_name : str, optional
-        The label for the x-axis. Default is None.
-    y_name : str, optional
-        The label for the y-axis. Default is None.
     title : str, optional
         The title of the pie chart. Default is None.
     pct_distance : float, optional
@@ -93,7 +87,7 @@ def base_pie(
 
     ax.axis('off')
 
-    plot_end(fig, title, x_name, y_name, output, show, close)
+    plot_end(fig, title, output=output, show=show, close=close)
 
     return fig, ax
 
@@ -103,8 +97,6 @@ def pie_label(
     map_groupby: Union[str, collection],
     value: str = "value",
     groupby: str = "clusters",
-    x_name: str = None,
-    y_name: str = None,
     title: str = None,
     radius: float = 0.6,
     fontsize: float = 17,
@@ -133,10 +125,6 @@ def pie_label(
         The column name for values in the DataFrame. Default is "value".
     groupby : str, optional
         The column name for cluster labels in the DataFrame. Default is "clusters".
-    x_name : str, optional
-        The label for the x-axis. Default is None.
-    y_name : str, optional
-        The label for the y-axis. Default is None.
     title : str, optional
         The title of the pie chart. Default is None.
     radius : float, optional
@@ -213,7 +201,7 @@ def pie_label(
 
     ax.axis('off')
 
-    plot_end(fig, title, x_name, y_name, output, show, close)
+    plot_end(fig, title, output=output, show=show, close=close)
 
     return fig, ax
 
@@ -225,8 +213,6 @@ def pie_trait(
     groupby: str = "clusters",
     trait_column_name: str = "id",
     value: str = "value",
-    x_name: str = None,
-    y_name: str = None,
     title: str = None,
     radius: float = 0.6,
     fontsize: float = 17,
@@ -261,10 +247,6 @@ def pie_trait(
         The column name for trait identifiers in the DataFrame. Default is "id".
     value : str, optional
         The column name for values/scores in the DataFrame. Default is "value".
-    x_name : str, optional
-        The label for the x-axis. Default is None.
-    y_name : str, optional
-        The label for the y-axis. Default is None.
     title : str, optional
         The base title for the pie charts. Trait name will be appended if provided.
         Default is None.
@@ -323,8 +305,6 @@ def pie_trait(
             map_groupby=trait_groupby_map[trait_],
             value=value,
             groupby=groupby,
-            x_name=x_name,
-            y_name=y_name,
             radius=radius,
             fontsize=fontsize,
             pct_distance=pct_distance,

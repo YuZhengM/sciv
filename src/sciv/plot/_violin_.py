@@ -17,7 +17,7 @@ _Kind = Literal["strip", "swarm", "box", "violin", "boxen", "point", "bar", "cou
 log = ul.log(__name__, "ERROR")
 
 
-def violin_base(
+def violin(
     df: DataFrame,
     value: str = "value",
     x_name: str = None,
@@ -259,7 +259,7 @@ def violin_trait(
         _filename_: str = _trait_
         trait_score = _cell_df_[_cell_df_[trait_column_name] == _trait_]
         # Sort gene scores from small to large
-        violin_base(
+        violin(
             df=trait_score,
             value=value,
             x_name=x_name,

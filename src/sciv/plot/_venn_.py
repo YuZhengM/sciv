@@ -13,7 +13,7 @@ __name__: str = "plot_venn"
 log = ul.log(__name__, "ERROR")
 
 
-def three_venn(
+def venn_three(
     set1: collection,
     set2: collection,
     set3: collection,
@@ -97,7 +97,7 @@ def three_venn(
     return fig, ax
 
 
-def two_venn(
+def venn_two(
     set1: collection,
     set2: collection,
     name1: str = "Set1",

@@ -12,9 +12,10 @@ from ..util import collection
 def complete_ratio(
     adata: AnnData,
     layer: str = None,
-    column: str = "value",
-    extra_columns: collection = None,
-    groupby: str = "clusters"
+    value: str = "value",
+    index_column: str = "id",
+    groupby: str = "clusters",
+    extra_columns: collection = None
 ) -> DataFrame:
     """
     Calculate the completion ratio for enrichment analysis.
@@ -29,7 +30,7 @@ def complete_ratio(
         Input AnnData object containing the data to be analyzed.
     layer : str, optional
         Specify the layer of the matrix to be processed. If None, uses the main matrix.
-    column : str, default "value"
+    value : str, default "value"
         The column name containing the binary enrichment values (1.0 for enriched, 0.0 for non-enriched).
     extra_columns : collection, optional
         Additional columns to include in the output DataFrame.
@@ -44,29 +45,30 @@ def complete_ratio(
         The 'rate' column represents the ratio of enriched cells (value=1.0) to total cells.
     """
     # create data
-    adata_df: DataFrame = adata_map_df(adata, column=column, layer=layer)
+    adata_df: DataFrame = adata_map_df(adata, column=value, layer=layer)
 
-    groupby_group = adata_df.groupby(["id", groupby], as_index=False).size()
-    value_group = adata_df.groupby(["id", groupby, column], as_index=False).size()
-    new_value_group = value_group.merge(groupby_group, on=["id", groupby], how="left")
+    groupby_group = adata_df.groupby([index_column, groupby], as_index=False).size()
+    value_group = adata_df.groupby([index_column, groupby, value], as_index=False).size()
+    new_value_group = value_group.merge(groupby_group, on=[index_column, groupby], how="left")
 
     if extra_columns is not None:
         extra_columns = list(extra_columns)
-        extra_columns.extend(["id", groupby])
-        new_value_group = new_value_group.merge(adata_df[extra_columns].drop_duplicates(), on=["id", groupby],
-                                                how="left")
+        extra_columns.extend([index_column, groupby])
+        new_value_group = new_value_group.merge(
+            adata_df[extra_columns].drop_duplicates(), on=[index_column, groupby], how="left"
+        )
 
     # Completion
-    id_list = list(set(new_value_group["id"]))
+    id_list = list(set(new_value_group[index_column]))
     groupby_list = list(set(new_value_group[groupby]))
     value_list = [1.0, 0.0]
     total_size = len(id_list) * len(groupby_list) * len(value_list)
 
     if total_size != new_value_group.shape[0]:
         new_value_group_index = (
-            new_value_group["id"].astype(str) + "_"
+            new_value_group[index_column].astype(str) + "_"
             + new_value_group[groupby].astype(str) + "_"
-            + new_value_group[column].astype(int).astype(str)
+            + new_value_group[value].astype(int).astype(str)
         )
         new_value_group.index = new_value_group_index
         new_value_group_index = list(new_value_group_index)
@@ -86,7 +88,7 @@ def complete_ratio(
                         exit_value = 0 if int(_value_) == 1 else 1
                         exit_index = _id_ + "_" + _groupby_ + "_" + str(exit_value)
                         exit_data = new_value_group[new_value_group.index == exit_index]
-                        exit_data.loc[exit_index, column] = _value_
+                        exit_data.loc[exit_index, value] = _value_
                         exit_data.loc[exit_index, "size_x"] = 0
                         exit_data.index = [_id_ + "_" + _groupby_ + "_" + str(int(_value_))]
                         trait_df = pd.concat((trait_df, exit_data), axis=0)
