@@ -331,7 +331,7 @@ def bar_significance(
     start_color_index: int = 0,
     color_step_size: int = 0,
     cmap: str = "set",
-    test: str = "t-test_ind",
+    test: str = "Wilcoxon",
     ci: Union[str, float] = "sd",
     x_rotation: float = 0,
     x_deviation: float = 0.02,
@@ -511,12 +511,12 @@ def bar_significance(
 
         for p in ax.patches:
             y_value = p.get_height()
-            height = p.get_height() / 2 - y_deviation
+            height = y_value / 2 - y_deviation
             height = 0.03 if height < 0.03 else height
-            x = p.get_x() + p.get_width() / 2 + x_deviation
+            x_pos = p.get_x() + p.get_width() / 2 + x_deviation
             ax.annotate(
                 f'{y_value:.2f}',
-                (x, height),
+                (x_pos, height),
                 textcoords="offset points",
                 ha='center',
                 va='bottom',
@@ -525,23 +525,24 @@ def bar_significance(
             )
 
     if anchor is not None:
-
-        # Add p value
         box_pairs: list = []
 
-        x_list = new_data[x].unique().tolist()
-        class_list = new_data[legend].unique().tolist()
+        x_list = [tick.get_text() for tick in ax.get_xticklabels() if tick.get_text()]
+
+        handles, class_list = ax.get_legend_handles_labels()
 
         if anchor not in class_list:
-            log.error(f"`anchor` ({anchor}) is not in the `df[hue]` ({class_list})")
-            raise ValueError(f"`anchor` ({anchor}) is not in the `df[hue]` ({class_list})")
+            log.error(f"`anchor` ({anchor}) is not in the plot legend ({class_list})")
+            raise ValueError(f"`anchor` ({anchor}) is not in the plot legend ({class_list})")
 
-        class_list.remove(anchor)
+        class_list = [c for c in class_list if c != anchor]
 
         for x_ele in x_list:
 
             for class_ele in class_list:
                 box_pairs.append(((x_ele, anchor), (x_ele, class_ele)))
+
+        log.info(f"box_pairs: {box_pairs}")
 
         annotator = Annotator(ax=ax, data=new_data, x=x, y=y, hue=legend, hue_order=hue_order, pairs=box_pairs)
         annotator.configure(

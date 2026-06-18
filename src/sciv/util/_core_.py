@@ -819,7 +819,7 @@ def plot_end(
     None
     """
     if title is not None:
-        plt.title(title)
+        plt.title(title, fontsize=9)
 
     if x_name is not None:
         plt.xlabel(x_name, rotation=0)
@@ -838,8 +838,6 @@ def plot_end(
 
     if show:
         plt.show()
-    else:
-        fig.clear()
 
     if close:
         plt.close('all')

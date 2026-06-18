@@ -81,7 +81,7 @@ def barcode(
     if colors is None:
         colors = type_20_colors if len(class_list) <= 20 else type_50_colors
 
-    groupby_list = df_sort["groupby"].unique().tolist()
+    groupby_list = df_sort[groupby].unique().tolist()
 
     for i in class_list:
 

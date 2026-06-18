@@ -1,11 +1,13 @@
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
 [project]
 name = "sciv"
-version = "0.0.157"
+version = "0.0.158"
 authors = [
     { name = "Zheng-Min Yu", email = "yuzmbio@163.com" },
+    { name = "Zheng-Min Yu", email = "3236170161@qq.com" }
 ]
 keywords = [
     "SCIV",
@@ -59,5 +61,6 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent"
 ]
+
 [project.urls]
 github = "https://github.com/YuZhengM/sciv"
