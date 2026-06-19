@@ -31,7 +31,7 @@ Model (.ml)
 The core interface of the model provides functions for cell type association analysis and causal variation recognition.
 
 .. automodule:: sciv.ml
-   :members: core, association_score, knock
+   :members: trs, association_score, knock, vrs
    :undoc-members:
    :show-inheritance:
 
@@ -66,7 +66,7 @@ Scatter
 Scatter chart visualization function.
 
 .. automodule:: sciv.pl
-   :members: scatter_base, scatter_3d, scatter_atac, scatter_trait, volcano_base, manhattan_causal_variant, pseudo_time_score
+   :members: scatter, scatter_3d, scatter_element, volcano, manhattan_causal_variant, pseudo_time_score
    :undoc-members:
    :show-inheritance:
 
@@ -76,7 +76,7 @@ Violin
 Violin chart visualization function.
 
 .. automodule:: sciv.pl
-   :members: violin_base, violin_trait
+   :members: violin
    :undoc-members:
    :show-inheritance:
 
@@ -86,7 +86,7 @@ Box
 Visualization function of box diagram.
 
 .. automodule:: sciv.pl
-   :members: box_base, box_trait
+   :members: box
    :undoc-members:
    :show-inheritance:
 
@@ -106,7 +106,7 @@ Line
 Line chart visualization function.
 
 .. automodule:: sciv.pl
-   :members: base_line
+   :members: line
    :undoc-members:
    :show-inheritance:
 
@@ -116,7 +116,7 @@ Bar
 Bar chart visualization function.
 
 .. automodule:: sciv.pl
-   :members: bar, bar_trait, class_bar, two_bar, bar_significance, rate_bar_plot
+   :members: bar_class, bar, bar_two, bar_significance
    :undoc-members:
    :show-inheritance:
 
@@ -126,7 +126,7 @@ Barcode
 Barcode visualization function.
 
 .. automodule:: sciv.pl
-   :members: barcode_base, barcode_trait
+   :members: barcode
    :undoc-members:
    :show-inheritance:
 
@@ -136,7 +136,7 @@ Pie
 Pie chart visualization function.
 
 .. automodule:: sciv.pl
-   :members: base_pie, pie_label, pie_trait
+   :members: pie_label, pie
    :undoc-members:
    :show-inheritance:
 
@@ -156,7 +156,7 @@ Radar
 Radar visualization function.
 
 .. automodule:: sciv.pl
-   :members: radar, base_radar, radar_trait, rate_circular_bar_plot
+   :members: radar, radar_base
    :undoc-members:
    :show-inheritance:
 
@@ -166,7 +166,7 @@ Venn
 Wayne diagram visualization function.
 
 .. automodule:: sciv.pl
-   :members: two_venn, three_venn
+   :members: venn_three, venn_two
    :undoc-members:
    :show-inheritance:
 

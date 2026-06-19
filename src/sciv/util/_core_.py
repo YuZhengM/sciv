@@ -19,6 +19,7 @@ from numpy import asarray
 from anndata import AnnData
 from pandas import DataFrame
 from scipy import sparse
+from tqdm import tqdm
 
 from yzm_file import StaticMethod
 from yzm_log import Logger
@@ -875,3 +876,64 @@ def generate_hex_colors(num_colors: int) -> list:
         colors.append(color)
 
     return colors
+
+
+def complete_ratio(
+    df: DataFrame,
+    value: str = "value",
+    index_column: str = "id",
+    groupby: str = "clusters",
+    extra_columns: collection = None
+) -> DataFrame:
+
+    groupby_group = df.groupby([index_column, groupby], as_index=False).size()
+    value_group = df.groupby([index_column, groupby, value], as_index=False).size()
+    new_value_group = value_group.merge(groupby_group, on=[index_column, groupby], how="left")
+
+    if extra_columns is not None:
+        extra_columns = list(extra_columns)
+        extra_columns.extend([index_column, groupby])
+        new_value_group = new_value_group.merge(
+            df[extra_columns].drop_duplicates(), on=[index_column, groupby], how="left"
+        )
+
+    # Completion
+    id_list = list(set(new_value_group[index_column]))
+    groupby_list = list(set(new_value_group[groupby]))
+    value_list = [1.0, 0.0]
+    total_size = len(id_list) * len(groupby_list) * len(value_list)
+
+    if total_size != new_value_group.shape[0]:
+        new_value_group_index = (
+            new_value_group[index_column].astype(str) + "_"
+            + new_value_group[groupby].astype(str) + "_"
+            + new_value_group[value].astype(int).astype(str)
+        )
+        new_value_group.index = new_value_group_index
+        new_value_group_index = list(new_value_group_index)
+
+        trait_df: DataFrame = pd.DataFrame(columns=new_value_group.columns)
+
+        # [id clusters  `column`  size_x size_y `extra_columns`]
+        for _id_ in tqdm(id_list):
+
+            for _groupby_ in groupby_list:
+
+                for _value_ in value_list:
+
+                    # At this point, it means that the enrichment effect is 1, while the non enrichment effect is 0,
+                    # so it does not exist during grouping and needs to be added here
+                    if (_id_ + "_" + _groupby_ + "_" + str(int(_value_))) not in new_value_group_index:
+                        exit_value = 0 if int(_value_) == 1 else 1
+                        exit_index = _id_ + "_" + _groupby_ + "_" + str(exit_value)
+                        exit_data = new_value_group[new_value_group.index == exit_index]
+                        exit_data.loc[exit_index, value] = _value_
+                        exit_data.loc[exit_index, "size_x"] = 0
+                        exit_data.index = [_id_ + "_" + _groupby_ + "_" + str(int(_value_))]
+                        trait_df = pd.concat((trait_df, exit_data), axis=0)
+
+        new_value_group = pd.concat((trait_df, new_value_group), axis=0)
+
+    new_value_group["rate"] = new_value_group["size_x"] / new_value_group["size_y"]
+
+    return new_value_group

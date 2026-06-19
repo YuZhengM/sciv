@@ -12,15 +12,15 @@ from ._scatter_ import (
     pseudo_time_score
 )
 
-from ._violin_ import violin, violin_trait
+from ._violin_ import violin
 from ._box_ import box
 from ._kde_ import kde
 from ._line_ import line
-from ._bar_ import bar_class, bar, bar_two, bar_significance, bar_rate_plot
+from ._bar_ import bar_class, bar, bar_two, bar_significance
 from ._barcode_ import barcode
 from ._pie_ import pie_label, pie
 from ._bubble_ import bubble
-from ._radar_ import radar, base_radar, radar_trait, rate_circular_bar_plot
+from ._radar_ import radar, radar_base
 from ._venn_ import venn_three, venn_two
 
 __all__ = [
@@ -33,7 +33,6 @@ __all__ = [
     "scatter",
     "scatter_element",
     "violin",
-    "violin_trait",
     "manhattan_causal_variant",
     "pseudo_time_score",
     "barcode",
@@ -46,11 +45,8 @@ __all__ = [
     "line",
     "bar_class",
     "bubble",
-    "bar_rate_plot",
-    "rate_circular_bar_plot",
     "radar",
-    "base_radar",
-    "radar_trait",
+    "radar_base",
     "venn_three",
     "venn_two"
 ]

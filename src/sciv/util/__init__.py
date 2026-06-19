@@ -49,7 +49,8 @@ from ._core_ import (
     check_adata_get,
     add_cluster_info,
     generate_hex_colors,
-    check_gpu_availability
+    check_gpu_availability,
+    complete_ratio
 )
 
 __all__ = [
@@ -98,5 +99,6 @@ __all__ = [
     "check_adata_get",
     "get_index",
     "generate_hex_colors",
+    "complete_ratio",
     "check_gpu_availability"
 ]
