@@ -736,9 +736,10 @@ def pseudo_time_score(
     y_name: str = None,
     title: str = None,
     alpha: float = 0.65,
-    line_width: float = 1.5,
+    line_width: float = 1.0,
     step_length: int = 5,
-    polyorder: int = 1,
+    polyorder: int = 2,
+    line_color: str = "black",
     size: Union[float, collection] = 1.0,
     output: path = None,
     show: bool = False,
@@ -770,6 +771,7 @@ def pseudo_time_score(
         Step length for determining Savitzky-Golay filter window size
     polyorder : int, default 1
         Polynomial order for Savitzky-Golay filter
+    line_color : str, default black
     size : Union[float, collection], default 1.0
         Size of scatter points
     output : path, optional
@@ -782,6 +784,8 @@ def pseudo_time_score(
         Additional arguments passed to ax.scatter
     """
     from scipy.signal import savgol_filter
+
+    df = df.sort_values(by=x)
 
     fig, ax = plot_start()
 
@@ -801,9 +805,14 @@ def pseudo_time_score(
         **kwargs
     )
 
-    smoothed_scores = savgol_filter(scores, window_length=int(x_len / step_length), polyorder=polyorder)
+    window_length = max(3, int(x_len / step_length))
 
-    ax.plot(pseudo_times, smoothed_scores, color='black', linewidth=line_width)
+    if window_length % 2 == 0:
+        window_length += 1
+
+    smoothed_scores = savgol_filter(scores, window_length=window_length, polyorder=polyorder)
+
+    ax.plot(pseudo_times, smoothed_scores, color=line_color, linewidth=line_width)
 
     plt.tight_layout()
 

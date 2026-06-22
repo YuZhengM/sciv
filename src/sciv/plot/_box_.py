@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
 
-from typing import Tuple, Union, Any
+from typing import Tuple, Union, Any, Literal
 
 from matplotlib.figure import Figure
 from pandas import DataFrame
@@ -24,7 +24,7 @@ def box(
     line_width: float = 0.3,
     marker_size: float = 0.2,
     rotation: float = 65,
-    orient: str = None,
+    orient: Literal["v", "h"] = "v",
     title: str = None,
     whis: float = 1.5,
     show_fliers: bool = True,
@@ -131,15 +131,19 @@ def box(
 
     props = {'linestyle': '-', 'linewidth': line_width}
 
+    if orient == 'h':
+        x_col, y_col = y, x
+    else:
+        x_col, y_col = x, y
+
     # scatter
     sns.boxplot(
         data=df,
-        x=x,
-        y=y,
+        x=x_col,
+        y=y_col,
         order=y_names,
         showfliers=show_fliers,
         fliersize=marker_size,
-        orient=orient,
         whis=whis,
         ax=ax,
         flierprops={'marker': 'o', 'markersize': marker_size},
@@ -156,14 +160,20 @@ def box(
         line.set_linewidth(line_width)
 
     # set coordinate
-    ax.set_xticks(range(len(y_names)))
-    ax.set_xticklabels(labels=y_names, rotation=rotation)
+    if orient == 'v':
+        ax.set_xticks(range(len(y_names)))
+        ax.set_xticklabels(labels=y_names, rotation=rotation)
+        ax.yaxis.grid(True, linestyle='--', linewidth=line_width)
+    else:
+        ax.set_yticks(range(len(y_names)))
+        ax.set_yticklabels(labels=y_names)
+        ax.xaxis.grid(True, linestyle='--', linewidth=line_width)
+
     ax.spines['top'].set_linewidth(line_width)
     ax.spines['bottom'].set_linewidth(line_width)
     ax.spines['left'].set_linewidth(line_width)
     ax.spines['right'].set_linewidth(line_width)
 
-    ax.yaxis.grid(True, linestyle='-', linewidth=line_width)
 
     plot_end(fig, title, x_name, y_name, output, show, close)
 
