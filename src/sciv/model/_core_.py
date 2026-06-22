@@ -741,15 +741,15 @@ def association_score(
 
     if axis == 0:
         adata.var[score_name] = np.array(relevance_value).flatten() * adata.shape[1]
-        ul.log(__name__).info(f"View this related result `adata.var[{score_name}]`.")
+        ul.log(__name__).info(f"View this related result `adata.var[\"{score_name}\"]`.")
     elif axis == 1:
         adata.obs[score_name] = np.array(relevance_value).flatten() * adata.shape[0]
-        ul.log(__name__).info(f"View this related result `adata.obs[{score_name}]`.")
+        ul.log(__name__).info(f"View this related result `adata.obs[\"{score_name}\"]`.")
     else:
         ul.log(__name__).error("The `axis` parameter supports only 0 and 1.")
         raise ValueError("The `axis` parameter supports only 0 and 1.")
 
-    sorted_indices = np.argsort(relevance_value)[::, ]
+    sorted_indices = np.argsort(relevance_value)[::-1]
     ranks = np.zeros_like(relevance_value).tolist()
 
     for rank, index in enumerate(sorted_indices, start=1):
