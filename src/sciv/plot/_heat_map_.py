@@ -64,7 +64,7 @@ def heatmap_annotation(
     category_height: Optional[float] = 2.5,
     x_name: Optional[str] = None,
     y_name: Optional[str] = None,
-    row_score_name: str = "association_score",
+    row_score_name: Optional[str] = None,
     cmap: str = "Oranges",
     is_sort: bool = True,
     show: bool = False,
