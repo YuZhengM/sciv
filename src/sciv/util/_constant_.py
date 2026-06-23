@@ -57,7 +57,7 @@ sparse_matrix = Union[coo_matrix, csr_matrix, csc_matrix, dok_matrix, lil_matrix
 # Sparse data type
 sparse_data = Union[sparse_array, sparse_matrix]
 # Dense data type
-dense_data = Union[ndarray, matrix, list]
+dense_data = Union[ndarray, matrix]
 # Matrix data type
 matrix_data = Union[sparse_data, dense_data]
 # Enrichment optional

@@ -1,11 +1,9 @@
 # -*- coding: UTF-8 -*-
 
-import os
 from typing import Tuple, Union, Optional, Any, Literal
 
 import numpy as np
 import pandas as pd
-from anndata import AnnData
 from matplotlib.figure import Figure
 from pandas import DataFrame
 
@@ -27,7 +25,8 @@ def bar(
     x_name: str = None,
     y_name: str = None,
     title: str = None,
-    color: str = "#70b5de",
+    is_text: bool = False,
+    rotation: float = 65,
     text_color: str = "#000205",
     text_left_move: float = 0.1,
     direction: Literal['vertical', 'horizontal'] = "vertical",
@@ -54,8 +53,9 @@ def bar(
         Label for the y-axis. Default is None.
     title : str, optional
         Title of the plot. Default is None.
-    color : str, default "#70b5de"
-        Color of the bars.
+    rotation : float, default 65
+        Rotation angle for x-axis tick labels in degrees.
+    is_text : bool, default False
     text_color : str, default "#000205"
         Color of the value labels on bars.
     text_left_move : float, default 0.1
@@ -81,24 +81,25 @@ def bar(
     ax_x = np.array(ax_x).astype(str)
 
     if direction == 'vertical':
-        ax.bar(ax_x, ax_y, color=color, **kwargs)
+        ax.bar(ax_x, ax_y, **kwargs)
     elif direction == 'horizontal':
-        ax.barh(ax_x, ax_y, color=color, **kwargs)
+        ax.barh(ax_x, ax_y, **kwargs)
     else:
         log.error("The `direction` must be 'vertical' or 'horizontal'.")
         raise ValueError("The `direction` must be 'vertical' or 'horizontal'.")
 
-    ax.set_xticklabels(labels=list(ax_x), rotation=65)
+    ax.set_xticklabels(labels=list(ax_x), rotation=rotation)
 
-    # Draw numerical values
-    for i, v in enumerate(list(ax_y)):
-        plt.text(
-            x=i - text_left_move,
-            y=0.03 if v < 0.03 else v / 2,
-            s=str(round(v, 3)),
-            rotation=90,
-            color=text_color
-        )
+    if is_text:
+        # Draw numerical values
+        for i, v in enumerate(list(ax_y)):
+            plt.text(
+                x=i - text_left_move,
+                y=0.03 if v < 0.03 else v / 2,
+                s=str(round(v, 3)),
+                rotation=90,
+                color=text_color
+            )
 
     plot_end(fig, title, x_name, y_name, output, show, close)
 

@@ -6,6 +6,7 @@ from collections.abc import Collection
 from typing import Union, Tuple, Literal, Optional, Dict
 
 from scipy import sparse
+from scipy import stats
 from scipy.stats import norm
 from tqdm import tqdm
 from joblib import Parallel, delayed
@@ -503,6 +504,38 @@ def jaccard_similarity(data: matrix_data, n_jobs: int = -1, is_to_dense: bool = 
     jaccard_data = 1 - pairwise_distances(data_x, metric='jaccard', n_jobs=n_jobs)
     ul.log(__name__).info("End Jaccard Similarity")
     return jaccard_data
+
+
+def pearsonr(
+    x: Union[list, np.ndarray],
+    y: matrix_data,
+    axis: Literal[0, 1] = 0,
+) -> np.ndarray:
+
+    x = np.asarray(x).ravel()
+    y = np.asarray(y)
+
+    if axis == 0:
+
+        if x.size != y.shape[0]:
+            ul.log(__name__).info(f"When axis=0, the length of x ({x.size}) must equal the number of rows of y ({y.shape[0]})")
+            raise ValueError(f"When axis=0, the length of x ({x.size}) must equal the number of rows of y ({y.shape[0]})")
+
+        x = np.zeros(y.shape) + x[:, np.newaxis]
+
+    elif axis == 1:
+
+        if x.size != y.shape[1]:
+            ul.log(__name__).info(f"When axis=1, the length of x ({x.size}) must equal the number of columns of y ({y.shape[1]})")
+            raise ValueError(f"When axis=1, the length of x ({x.size}) must equal the number of columns of y ({y.shape[1]})")
+        x = np.zeros(y.shape) + x
+
+    else:
+        ul.log(__name__).info("axis must be 0 or 1")
+        raise ValueError("axis must be 0 or 1")
+
+    corr, p = stats.pearsonr(x, y, axis=axis)
+    return corr
 
 
 def spectral_eigenmaps(
