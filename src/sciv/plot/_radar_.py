@@ -1,18 +1,15 @@
 # -*- coding: UTF-8 -*-
 
-import os
-from typing import Optional, Union, Tuple, Any
+from typing import Tuple, Any
 
 import numpy as np
-import pandas as pd
-from anndata import AnnData
 
 from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 from pandas import DataFrame
 
 from .. import util as ul
-from ..util import path, collection, plot_end, type_20_colors, type_50_colors, plot_start, complete_ratio
+from ..util import path, collection, plot_end, type_20_colors, type_50_colors, plot_start
 
 __name__: str = "plot_radar"
 

@@ -1,6 +1,5 @@
 # -*- coding: UTF-8 -*-
 
-import os
 from typing import Union, Any
 
 import numpy as np

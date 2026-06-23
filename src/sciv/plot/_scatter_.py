@@ -3,7 +3,6 @@
 import os.path
 from typing import Union, Tuple, Optional, Any
 
-import matplotlib
 import numpy as np
 import pandas as pd
 from anndata import AnnData

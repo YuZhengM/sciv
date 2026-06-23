@@ -1,6 +1,5 @@
 # -*- coding: UTF-8 -*-
 
-import os
 from typing import Tuple, Union, Literal, Any
 
 from matplotlib.figure import Figure
