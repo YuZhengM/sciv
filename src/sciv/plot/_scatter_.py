@@ -738,7 +738,8 @@ def pseudo_time_score(
     alpha: float = 0.65,
     line_width: float = 1.0,
     step_length: int = 5,
-    polyorder: int = 2,
+    polyorder: int = 1,
+    colors = None,
     line_color: str = "black",
     size: Union[float, collection] = 1.0,
     output: path = None,
@@ -769,6 +770,7 @@ def pseudo_time_score(
         Width of the smoothed trend line
     step_length : int, default 5
         Step length for determining Savitzky-Golay filter window size
+    colors : default None
     polyorder : int, default 1
         Polynomial order for Savitzky-Golay filter
     line_color : str, default black
@@ -794,7 +796,8 @@ def pseudo_time_score(
 
     x_len = len(pseudo_times)
 
-    colors = plt.cm.viridis(np.linspace(0, 1, x_len))
+    if colors is None:
+        colors = plt.cm.viridis(np.linspace(0, 1, x_len))
 
     ax.scatter(
         pseudo_times,

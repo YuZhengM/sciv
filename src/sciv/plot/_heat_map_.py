@@ -336,7 +336,7 @@ def heatmap_annotation(
         **kwargs
     )
 
-    plot_end(fig, title, x_name, y_name, output, show, close)
+    plot_end(fig, title, None, None, output, show, close)
 
     return fig, ax
 
