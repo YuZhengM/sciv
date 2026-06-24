@@ -193,6 +193,7 @@ def roc_prc(
     height: float = 2.5,
     line_width: float = 1,
     frame_alpha: float = 0.5,
+    element_title: str = 'Elements',
     legend_font_size: float = 5,
     marker_size: float = 3,
     marker_count: Union[int, float] = 10,
@@ -217,7 +218,7 @@ def roc_prc(
         Nested dictionary containing ROC and PRC data. Structure: 
         {element: {method: {"roc": {"fpr": array, "tpr": array}, 
                             "prc": {"precision": array, "recall": array}}}}
-    title : str, default None
+    title : Optional[str], default None
         Overall title for the figure.
     width : float, default 5.5
         Width of the figure in inches.
@@ -229,6 +230,8 @@ def roc_prc(
         Transparency of the legend frame.
     legend_font_size : float, default 5
         Font size for legend text.
+    element_title : str, default 'Elements'
+        Title for the element legend.
     marker_size : float, default 3
         Size of the markers on the curves.
     marker_count : Union[int, float], default 10
@@ -388,7 +391,7 @@ def roc_prc(
     ax_prc.legend(
         handles=element_legend,
         loc='lower left',
-        title='Elements',
+        title=element_title,
         framealpha=frame_alpha,
         fontsize=legend_font_size
     )
