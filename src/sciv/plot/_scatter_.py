@@ -24,17 +24,17 @@ def scatter(
     df: DataFrame,
     x: str,
     y: str,
-    hue: str = None,
+    hue: str,
     hue_order: list = None,
     x_name: str = None,
     y_name: str = None,
     title: str = None,
-    bar_label: str = None,
     cmap: str = "Oranges",
     text_fontsize: float = 7,
     start_color_index: int = 0,
     color_step_size: int = 0,
     type_colors: collection = None,
+    bar_title: str = None,
     edge_color: str = None,
     size: Union[float, collection] = 1.0,
     legend: dict = None,
@@ -66,8 +66,6 @@ def scatter(
         Label for y-axis
     title : str, optional
         Plot title
-    bar_label : str, optional
-        Label for colorbar when number=True
     cmap : str, default "Oranges"
         Colormap for continuous coloring
     text_fontsize : float, default 7
@@ -76,6 +74,8 @@ def scatter(
         Starting index in color palette
     color_step_size : int, default 0
         Step size for color selection
+    bar_title : str, optional
+        Label for colorbar when number=True
     type_colors : collection, optional
         Custom color palette
     edge_color : str, optional
@@ -101,10 +101,6 @@ def scatter(
 
     # scatter
     if number:
-        # Create continuous color scale for numerical hue values
-        norm = plt.Normalize(df[hue].min(), df[hue].max())
-        sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
-        sm.set_array([])
         sns.scatterplot(
             data=df,
             x=x,
@@ -117,7 +113,16 @@ def scatter(
             edgecolor=edge_color,
             **kwargs
         )
-        plt.colorbar(sm, label=bar_label, ax=ax)
+
+        # Create continuous color scale for numerical hue values
+        norm = plt.Normalize(df[hue].min(), df[hue].max())
+        sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+        sm.set_array([])
+
+        cbar = plt.colorbar(sm, ax=ax)
+
+        if bar_title is not None:
+            cbar.set_label(bar_title, ha='center', va='top')
     else:
         # Get unique hue categories and sort them
         __hue_order__ = list(np.sort(list(set(df[hue]))))
@@ -134,6 +139,7 @@ def scatter(
 
         # Assign colors to each category
         i = 0
+
         for elem in __hue_order__:
             if legend is not None:
                 # Rename categories according to legend mapping
@@ -196,11 +202,8 @@ def scatter(
     ax.set_xticks([])
     ax.set_yticks([])
 
-    # Remove the bounding box of the coordinate axis
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    ax.spines['bottom'].set_visible(False)
-    ax.spines['left'].set_visible(False)
+    for spine in ax.spines.values():
+        spine.set_linewidth(0.5)
 
     plot_end(fig, title, x_name, y_name, output, show, close)
 
@@ -362,7 +365,6 @@ def scatter_3d(
 def scatter_element(
     adata: AnnData,
     title: str = None,
-    bar_label: str = None,
     element_name: str = "All",
     layers: Union[None, collection] = None,
     coordinates: Tuple[str, str] = ("UMAP1", "UMAP2"),
@@ -371,6 +373,7 @@ def scatter_element(
     y_name: str = None,
     number: bool = True,
     edge_color: str = None,
+    bar_title: str = None,
     size: Union[float, collection] = 1.0,
     text_fontsize: float = 7,
     start_color_index: int = 0,
@@ -392,7 +395,7 @@ def scatter_element(
         AnnData object containing trait/disease scores and cell metadata
     title : str, optional
         Title prefix for the plot
-    bar_label : str, optional
+    bar_title : str, optional
         Label for colorbar when number=True
     element_name : str, default "All"
         Name of trait/disease to plot, or "All" to plot all traits
@@ -472,13 +475,13 @@ def scatter_element(
             y=coordinates[1],
             hue=element_,
             title=f"{title} {element_}" if title is not None else title,
-            bar_label=bar_label,
             legend=legend,
             cmap=cmap,
             number=number,
             size=size,
             x_name=x_name,
             y_name=y_name,
+            bar_title=bar_title,
             type_colors=type_colors,
             text_fontsize=text_fontsize,
             start_color_index=start_color_index,
