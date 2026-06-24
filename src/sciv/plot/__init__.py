@@ -15,7 +15,7 @@ from ._scatter_ import (
 from ._violin_ import violin
 from ._box_ import box
 from ._kde_ import kde
-from ._line_ import line
+from ._line_ import line, roc_prc
 from ._bar_ import bar_class, bar, bar_two, bar_significance
 from ._barcode_ import barcode
 from ._pie_ import pie_label, pie
@@ -43,6 +43,7 @@ __all__ = [
     "bar_two",
     "kde",
     "line",
+    "roc_prc",
     "bar_class",
     "bubble",
     "radar",

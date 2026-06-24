@@ -538,6 +538,38 @@ def pearsonr(
     return corr
 
 
+def spearmanr(
+    x: Union[list, np.ndarray],
+    y: matrix_data,
+    axis: Literal[0, 1] = 0,
+) -> np.ndarray:
+
+    x = np.asarray(x).ravel()
+    y = np.asarray(y)
+
+    if axis == 0:
+
+        if x.size != y.shape[0]:
+            ul.log(__name__).info(f"When axis=0, the length of x ({x.size}) must equal the number of rows of y ({y.shape[0]})")
+            raise ValueError(f"When axis=0, the length of x ({x.size}) must equal the number of rows of y ({y.shape[0]})")
+
+        x = np.zeros(y.shape) + x[:, np.newaxis]
+
+    elif axis == 1:
+
+        if x.size != y.shape[1]:
+            ul.log(__name__).info(f"When axis=1, the length of x ({x.size}) must equal the number of columns of y ({y.shape[1]})")
+            raise ValueError(f"When axis=1, the length of x ({x.size}) must equal the number of columns of y ({y.shape[1]})")
+        x = np.zeros(y.shape) + x
+
+    else:
+        ul.log(__name__).info("axis must be 0 or 1")
+        raise ValueError("axis must be 0 or 1")
+
+    corr, p = stats.spearmanr(x, y, axis=axis)
+    return corr
+
+
 def spectral_eigenmaps(
     data: matrix_data,
     n_components: int = 30,
@@ -1919,53 +1951,3 @@ def add_bernoulli_fluctuation_noise(
     ).astype(counts_matrix.dtype)
 
     return counts_matrix + noise
-
-
-def add_noise_perturb(data: matrix_data, rate: float) -> matrix_data:
-    """
-    Add peak percentage noise to each cell
-
-    Parameters
-    ----------
-    data : matrix_data
-        Input counts matrix
-    rate : float
-        Noise level, i.e., the probability of randomly adding 1 (range: 0.0 - 1.0)
-
-    Returns
-    -------
-    matrix_data
-        Matrix after adding noise
-    """
-
-    if rate <= 0 or rate >= 1:
-        raise ValueError("The value of the `rate` parameter must be greater than 0 and less than 1.")
-
-    shape = data.shape
-    noise = to_dense(data.copy())
-
-    for i in tqdm(range(shape[0])):
-        count_i = np.array(noise[i, :]).flatten()
-        # Add noise to the accessibility of unopened chromatin
-        count0_i = count_i[count_i == 0]
-        max_i = np.max(count_i)
-        count0 = int(count0_i.size * rate)
-        noise0_i = np.random.randint(low=1, high=2 if max_i < 2 else max_i, size=count0)
-        random_index0 = np.random.choice(np.arange(0, count0_i.size), size=count0, replace=False)
-        count0_i[random_index0] = noise0_i
-        count_i_value = count_i.copy()
-        count_i_value[count_i_value == 0] = count0_i
-        noise[i, :] = count_i_value
-
-        # Close open chromatin accessibility
-        count1_i = count_i[count_i == 1]
-        count1 = int(count1_i.size * rate)
-        random_index1 = np.random.choice(np.arange(0, count1_i.size), size=count1, replace=False)
-        count1_i[random_index1] = 0
-        count_i[count_i == 1] = count1_i
-        noise[i, :] = count_i
-
-        # disturbance
-        noise[i, :] = perturb_data(noise[i, :], rate)
-
-    return noise

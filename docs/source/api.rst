@@ -191,7 +191,7 @@ Algorithm
 Algorithm related functions.
 
 .. automodule:: sciv.tl
-   :members: sigmoid, tf_idf, z_score_normalize, z_score_marginal, marginal_normalize, min_max_norm, symmetric_scale, mean_symmetric_scale, coefficient_of_variation, is_asc_sort, lsi, pca, jaccard_similarity, spectral_eigenmaps, semi_mutual_knn_weight, k_means, spectral_clustering, tsne, umap, kl_divergence, safe_kl_divergence, calinski_harabasz, silhouette, davies_bouldin, ari, ami, binary_indicator, z_score_to_p_value, euclidean_distances, overlap, overlap_sum, calculate_fragment_weighted_accessibility, calculate_init_score_weight, obtain_cell_cell_network, perturb_data, add_bernoulli_fluctuation_noise, add_noise_perturb
+   :members: sigmoid, tf_idf, z_score_normalize, z_score_marginal, marginal_normalize, min_max_norm, symmetric_scale, mean_symmetric_scale, coefficient_of_variation, is_asc_sort, lsi, pca, jaccard_similarity, spectral_eigenmaps, semi_mutual_knn_weight, k_means, spectral_clustering, tsne, umap, kl_divergence, safe_kl_divergence, calinski_harabasz, silhouette, davies_bouldin, ari, ami, binary_indicator, z_score_to_p_value, euclidean_distances, overlap, overlap_sum, calculate_fragment_weighted_accessibility, calculate_init_score_weight, obtain_cell_cell_network, perturb_data, add_bernoulli_fluctuation_noise
    :undoc-members:
    :show-inheritance:
 
