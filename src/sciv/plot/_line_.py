@@ -189,24 +189,79 @@ def line(
 def roc_prc(
     data: dict[str, dict[str, dict[str, dict[str, np.ndarray]]]],
     title: str = None,
-    width: float = 7,
-    height: float = 3,
-    line_width: float = 1.5,
-    marker_size: float = 4,
-    marker_count: Union[int, float] = 20,
+    width: float = 5.5,
+    height: float = 2.5,
+    line_width: float = 1,
+    frame_alpha: float = 0.5,
+    legend_font_size: float = 5,
+    marker_size: float = 3,
+    marker_count: Union[int, float] = 10,
     method_colors: Optional[dict] = None,
     element_styles: Optional[dict] = None,
     output: Optional[path] = None,
     show: bool = False,
     close: bool = True,
     **kwargs: Any
-):
-    # 颜色 & 线型自动分配
+) -> tuple[Figure, Any, dict[Tuple[str, str], dict[str, float]]]:
+    """
+    Plot ROC and PRC curves for multiple methods and elements.
+
+    This function creates side-by-side ROC (Receiver Operating Characteristic) and 
+    PRC (Precision-Recall Curve) plots to compare the performance of different 
+    methods across multiple elements. Each method is represented by a distinct color, 
+    and each element is represented by a distinct linestyle and marker.
+
+    Parameters
+    ----------
+    data : dict[str, dict[str, dict[str, dict[str, np.ndarray]]]]
+        Nested dictionary containing ROC and PRC data. Structure: 
+        {element: {method: {"roc": {"fpr": array, "tpr": array}, 
+                            "prc": {"precision": array, "recall": array}}}}
+    title : str, default None
+        Overall title for the figure.
+    width : float, default 5.5
+        Width of the figure in inches.
+    height : float, default 2.5
+        Height of the figure in inches.
+    line_width : float, default 1
+        Width of the lines in the plot.
+    frame_alpha : float, default 0.5
+        Transparency of the legend frame.
+    legend_font_size : float, default 5
+        Font size for legend text.
+    marker_size : float, default 3
+        Size of the markers on the curves.
+    marker_count : Union[int, float], default 10
+        Number of markers to display on each curve. If > 1, specifies exact count; 
+        if <= 1, specifies fraction of total points.
+    method_colors : Optional[dict], default None
+        Dictionary mapping method names to colors. If None, uses default color palette.
+    element_styles : Optional[dict], default None
+        Dictionary mapping element names to (linestyle, marker) tuples. If None, 
+        uses default styles.
+    output : Optional[path], default None
+        File path to save the figure. If None, figure is not saved.
+    show : bool, default False
+        Whether to display the plot.
+    close : bool, default True
+        Whether to close the figure after display.
+    **kwargs : Any
+        Additional keyword arguments passed to plotting functions.
+
+    Returns
+    -------
+    tuple[Figure, Any, dict[Tuple[str, str], dict[str, float]]]
+        A tuple containing:
+        - fig: The matplotlib Figure object
+        - axes: Array of matplotlib Axes objects (ROC and PRC subplots)
+        - results: Dictionary mapping (element, method) tuples to their auPRC and auROC scores
+    """
+
     default_colors = plot_color_types["set"]
     default_linestyles = ['-', '--', '-.', ':']
     default_markers = ['o', 's', '^', 'D', 'v', 'P', 'X', '*']
 
-    # 从外层提取性状，从内层提取方法
+    # Extract elements and methods from the outer dictionary
     elements = list(data.keys())
     methods = set()
 
@@ -220,8 +275,8 @@ def roc_prc(
 
     if element_styles is None:
         element_styles = {
-            t: (default_linestyles[i % len(default_linestyles)], default_markers[i % len(default_markers)])
-            for i, t in enumerate(elements)
+            e: (default_linestyles[i % len(default_linestyles)], default_markers[i % len(default_markers)])
+            for i, e in enumerate(elements)
         }
 
     results = {}
@@ -229,16 +284,16 @@ def roc_prc(
     fig, axes = plt.subplots(1, 2, figsize=(width, height))
     ax_roc, ax_prc = axes[0], axes[1]
 
-    # 绘制曲线
+    # Draw curves
     for element in elements:
-        # 当前性状的线型和标记
+        # Current element style and marker
         ls, marker = element_styles[element]
 
         for method in methods:
             if method not in data[element]:
                 continue
 
-            # 方法决定颜色
+            # Method color
             color = method_colors[method]
 
             score = data[element][method]
@@ -247,13 +302,13 @@ def roc_prc(
             fpr = np.asarray(score["roc"]["fpr"])
             tpr = np.asarray(score["roc"]["tpr"])
 
-            # 计算 AUC
+            # Calculate AUC
             order = np.argsort(recall)
             auprc = float(np.trapz(precision[order], recall[order]))
             auroc = float(np.trapz(tpr, fpr))
             results[(element, method)] = {"auPRC": auprc, "auROC": auroc}
 
-            # ROC 曲线
+            # ROC curve
             ax_roc.step(fpr, tpr, where='post', color=color, linestyle=ls, linewidth=line_width, **kwargs)
             n_roc = len(fpr)
             num_markers = int(marker_count) if marker_count > 1 else max(1, int(n_roc * marker_count))
@@ -267,7 +322,7 @@ def roc_prc(
                 markersize=marker_size
             )
 
-            # PRC 曲线
+            # PRC curve
             ax_prc.plot(recall, precision, color=color, linestyle=ls, linewidth=line_width, **kwargs)
             n_prc = len(recall)
             num_markers = int(marker_count) if marker_count > 1 else max(1, int(n_prc * marker_count))
@@ -281,15 +336,15 @@ def roc_prc(
                 markersize=marker_size
             )
 
-    # ============ 计算平均 AUC 并构建图例 ============
-    # 1. 汇总每个方法的 AUC
+    # Calculate average AUC and build legend
+    # 1. Collect AUC for each method
     method_avg = {m: {"prc": [], "roc": []} for m in methods}
 
     for (element, method), auc in results.items():
         method_avg[method]["prc"].append(auc["auPRC"])
         method_avg[method]["roc"].append(auc["auROC"])
 
-    # 2. 生成方法图例（附带平均AUC）
+    # 2. Generate method legend (with average AUC)
     method_legend = [
         Line2D(
             [0], [0], color=method_colors[m], linewidth=3,
@@ -298,7 +353,7 @@ def roc_prc(
         for m in methods
     ]
 
-    # 3. 元素图例
+    # 3. Element legend
     element_legend = [
         Line2D(
             [0], [0], color='black', linestyle=element_styles[e][0],
@@ -306,28 +361,37 @@ def roc_prc(
         ) for e in elements
     ]
 
-    # --- ROC 子图 ---
+    # ROC subplot
     ax_roc.plot([0, 1], [0, 1], '--', color='gray', linewidth=line_width, alpha=0.5)
     ax_roc.set_xlabel('False Positive Rate (FPR)')
     ax_roc.set_ylabel('True Positive Rate (TPR)')
-    ax_roc.set_title('ROC Comparison', fontweight='bold')
-    ax_roc.set_xlim(-0.02, 1.02)
-    ax_roc.set_ylim(-0.02, 1.02)
-    ax_roc.grid(True, alpha=0.3)
-    leg1r = ax_roc.legend(handles=method_legend, loc='lower right', title='Methods', framealpha=0.9)
+    ax_roc.set_title('ROC Comparison')
+    ax_roc.set_xlim(-0.03, 1.03)
+    ax_roc.set_ylim(-0.03, 1.03)
+    ax_roc.grid(True, alpha=0.1)
+    leg1r = ax_roc.legend(
+        handles=method_legend,
+        loc='lower right',
+        title='Methods',
+        framealpha=frame_alpha,
+        fontsize=legend_font_size
+    )
     ax_roc.add_artist(leg1r)
-    ax_roc.legend(handles=element_legend, loc='center right', title='elements', framealpha=0.9)
 
-    # --- PRC 子图 ---
+    # PRC subplot
     ax_prc.set_xlabel('Recall')
     ax_prc.set_ylabel('Precision')
-    ax_prc.set_title('PRC Comparison', fontweight='bold')
-    ax_prc.set_xlim(-0.02, 1.02)
-    ax_prc.set_ylim(-0.02, 1.05)
-    ax_prc.grid(True, alpha=0.3)
-    leg1p = ax_prc.legend(handles=method_legend, loc='upper right', title='Methods', framealpha=0.9)
-    ax_prc.add_artist(leg1p)
-    ax_prc.legend(handles=element_legend, loc='lower left', title='elements', framealpha=0.9)
+    ax_prc.set_title('PRC Comparison')
+    ax_prc.set_xlim(-0.03, 1.03)
+    ax_prc.set_ylim(-0.03, 1.03)
+    ax_prc.grid(True, alpha=0.1)
+    ax_prc.legend(
+        handles=element_legend,
+        loc='lower left',
+        title='Elements',
+        framealpha=frame_alpha,
+        fontsize=legend_font_size
+    )
 
     plt.tight_layout()
 
