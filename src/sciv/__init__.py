@@ -4,7 +4,9 @@ import os
 import sys
 import hdf5plugin
 
-os.environ['OPENBLAS_NUM_THREADS'] = '1'
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
 sys.setrecursionlimit(1000)
 
 if hdf5plugin.version > '6.0.0':

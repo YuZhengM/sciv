@@ -1234,14 +1234,6 @@ class RandomWalk:
             return "Removed cell cluster type weights in initial scores.", "trs_ncw"
         elif label == "run_ablation_m_knn" or label == "run_en_ablation_m_knn":
             return "Using the M-KNN method during the execution of weighted random walks.", "trs_m_knn"
-        elif label == "run_knock (positive)":
-            return "Run knockout or knockdown by random walk with weight. (positive)", "knock_effect_positive"
-        elif label == "run_knock (negative)":
-            return "Run knockout or knockdown by random walk with weight. (negative)", "knock_effect_negative"
-        elif label == "run_knock_control (control & positive)":
-            return "Run knockout or knockdown by random walk with weight. (control & positive)", "knock_effect_positive_control"
-        elif label == "run_knock_control (control & negative)":
-            return "Run knockout or knockdown by random walk with weight. (control & negative)", "knock_effect_negative_control"
         else:
             raise ValueError(f"{label} is not a valid information.")
 

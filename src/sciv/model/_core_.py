@@ -768,6 +768,7 @@ def knock(
     sc_atac: AnnData,
     da_peaks: AnnData,
     cc_data: AnnData,
+    knock_variant: AnnData,
     knock_trait: str,
     knock_info: dict[str, Union[str, collection]],
     knock_value: float = 0
@@ -789,6 +790,7 @@ def knock(
         Differential accessibility peaks data from the original analysis.
     cc_data : AnnData
         Cell-cell similarity network data from the original analysis.
+    knock_variant : AnnData
     knock_trait : str
         The trait ID to perform knockdown/knockout on.
     knock_info : dict[str, Union[str, collection]]
@@ -811,18 +813,6 @@ def knock(
         raise ValueError("`params` is not in `trs.uns`, please execute function `ml.core` first to obtain the result "
                          "as input for the `trs` parameter.")
 
-    if "variants" not in adata.uns:
-        ul.log(__name__).error("`variants` is not in `trs.uns`, please execute function `ml.core` first to obtain the "
-                               "result as input for the `trs` parameter.")
-        raise ValueError("`variants` is not in `trs.uns`, please execute function `ml.core` first to obtain the result "
-                         "as input for the `trs` parameter.")
-
-    if "trait_info" not in adata.uns:
-        ul.log(__name__).error("`trait_info` is not in `trs.uns`, please execute function `ml.core` first to obtain "
-                               "the result as input for the `trs` parameter.")
-        raise ValueError("`trait_info` is not in `trs.uns`, please execute function `ml.core` first to obtain the "
-                         "result as input for the `trs` parameter.")
-
     if "trs_source" not in adata.layers:
         ul.log(__name__).error("`trs_source` is not in `trs.layers`, please execute function `ml.core` first to obtain "
                                "the result as input for the `trs` parameter.")
@@ -840,19 +830,11 @@ def knock(
     # param information
     params = adata.uns["params"]
 
-    # variant information
-    variants = adata.uns["variants"]
-    trait_info = adata.uns["trait_info"]
-
     knock_variants: dict = {}
     knock_variants_bg: dict = {}
 
-    knock_variant: AnnData = variants[knock_trait].copy()
     knock_variant_value = to_dense(knock_variant.X)
     trait_obs = knock_variant.obs
-
-    _trait_info_ = trait_info[trait_info["id"] == knock_trait].values[0]
-    knock_trait_info = pd.DataFrame(columns=trait_info.columns)
 
     ul.log(__name__).info(f"Knockdown or knockout settings for `{knock_trait}` trait or disease.")
 
@@ -885,9 +867,7 @@ def knock(
         knock_variants_bg[k] = knock_variant_key_bg
         del knock_variant_key_bg
 
-        _trait_info_[0] = k
-        knock_trait_info.loc[knock_trait_info.shape[0], :] = _trait_info_
-
+    knock_trait_info = pd.DataFrame({"id": knock_info.keys(), "trait": knock_trait})
     knock_trait_info.index = knock_trait_info["id"].astype(str)
 
     def _get_trs_(_knock_variants_: dict):
@@ -942,6 +922,7 @@ def vrs(
     sc_atac: AnnData,
     da_peaks: AnnData,
     cc_data: AnnData,
+    knock_variant: AnnData,
     trait: str
 ) -> AnnData:
 
@@ -950,18 +931,6 @@ def vrs(
                                "result as input for the `trs` parameter.")
         raise ValueError("`params` is not in `trs.uns`, please execute function `ml.core` first to obtain the result "
                          "as input for the `trs` parameter.")
-
-    if "variants" not in adata.uns:
-        ul.log(__name__).error("`variants` is not in `trs.uns`, please execute function `ml.core` first to obtain the "
-                               "result as input for the `trs` parameter.")
-        raise ValueError("`variants` is not in `trs.uns`, please execute function `ml.core` first to obtain the result "
-                         "as input for the `trs` parameter.")
-
-    if "trait_info" not in adata.uns:
-        ul.log(__name__).error("`trait_info` is not in `trs.uns`, please execute function `ml.core` first to obtain "
-                               "the result as input for the `trs` parameter.")
-        raise ValueError("`trait_info` is not in `trs.uns`, please execute function `ml.core` first to obtain the "
-                         "result as input for the `trs` parameter.")
 
     if "trs_source" not in adata.layers:
         ul.log(__name__).error("`trs_source` is not in `trs.layers`, please execute function `ml.core` first to obtain "
@@ -973,10 +942,6 @@ def vrs(
         ul.log(__name__).error(f"`{trait}` trait or disease does not exist.")
         raise ValueError(f"`{trait}` trait or disease does not exist.")
 
-    # variant information
-    variants = adata.uns["variants"]
-    knock_variant: AnnData = variants[trait].copy()
-
     rs_id_list = knock_variant.obs["rsId"].tolist()
 
     knock_info: dict[str, str] = dict(zip(rs_id_list, rs_id_list))
@@ -986,6 +951,7 @@ def vrs(
         sc_atac=sc_atac,
         da_peaks=da_peaks,
         cc_data=cc_data,
+        knock_variant=knock_variant,
         knock_trait=trait,
         knock_info=knock_info,
         knock_value=0
