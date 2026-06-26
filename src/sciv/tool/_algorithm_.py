@@ -1558,7 +1558,14 @@ def calculate_fragment_weighted_accessibility(input_data: dict, block_size: int 
     overlap_matrix = to_dense(overlap_matrix)
     global_scale_data = global_scale_data.dot(overlap_matrix)
 
-    global_scale_data[global_scale_data == 0] = global_scale_data[global_scale_data != 0].min() / 2
+    non_zero_vals = global_scale_data[global_scale_data != 0]
+
+    if non_zero_vals.size > 0:
+        global_scale_data[global_scale_data == 0] = non_zero_vals.min() / 2
+    else:
+        global_scale_data[global_scale_data == 0] = np.finfo(float).eps
+
+    del non_zero_vals
 
     ul.log(__name__).info("Calculate fragment weighted accessibility.")
     init_score = to_dense(init_score)
@@ -1696,7 +1703,14 @@ def calculate_init_score_weight(
         global_scale_data = global_scale_data.dot(overlap_matrix)
         del overlap_matrix
 
-        global_scale_data[global_scale_data == 0] = global_scale_data[global_scale_data != 0].min() / 2
+        non_zero_vals = global_scale_data[global_scale_data != 0]
+        
+        if non_zero_vals.size > 0:
+            global_scale_data[global_scale_data == 0] = non_zero_vals.min() / 2
+        else:
+            global_scale_data[global_scale_data == 0] = np.finfo(float).eps
+
+        del non_zero_vals
 
         ul.log(__name__).info("Calculate fragment weighted accessibility.")
         _init_trs_ncw_ = to_dense(_init_trs_ncw_)

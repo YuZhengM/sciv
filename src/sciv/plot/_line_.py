@@ -360,7 +360,7 @@ def roc_prc(
     element_legend = [
         Line2D(
             [0], [0], color='black', linestyle=element_styles[e][0],
-            marker=element_styles[e][1], markersize=marker_size, linewidth=2, label=e
+            marker=element_styles[e][1], markersize=3, linewidth=2, label=e
         ) for e in elements
     ]
 
@@ -372,14 +372,13 @@ def roc_prc(
     ax_roc.set_xlim(-0.03, 1.03)
     ax_roc.set_ylim(-0.03, 1.03)
     ax_roc.grid(True, alpha=0.1)
-    leg1r = ax_roc.legend(
+    ax_roc.legend(
         handles=method_legend,
         loc='lower right',
         title='Methods',
         framealpha=frame_alpha,
         fontsize=legend_font_size
     )
-    ax_roc.add_artist(leg1r)
 
     # PRC subplot
     ax_prc.set_xlabel('Recall')
