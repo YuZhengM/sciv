@@ -902,9 +902,11 @@ def knock(
 
     ul.log(__name__).info(f"Run the process after knocking down or knocking out.")
     knock_trs = _get_trs_(knock_variants)
-    knock_trs_bg_score = _get_trs_(knock_variants_bg).layers["trs_source"]
+    knock_trs_bg_score = to_dense(_get_trs_(knock_variants_bg).layers["trs_source"], is_array=True)
 
-    knock_trs.layers["effect_trs_source"] = knock_trs.layers["trs_source"] + (adata.layers["trs_source"] - knock_trs_bg_score)
+    source_trs = to_dense(adata[:, knock_trait].layers["trs_source"], is_array=True)
+    knock_trs_source = to_dense(knock_trs.layers["trs_source"], is_array=True)
+    knock_trs.layers["effect_trs_source"] = knock_trs_source + (source_trs - knock_trs_bg_score)
     knock_trs.X = scale_normalize(knock_trs.layers["effect_trs_source"], axis=0)
 
     knock_trs.uns["params"] = {

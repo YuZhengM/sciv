@@ -1527,6 +1527,9 @@ def calculate_fragment_weighted_accessibility(input_data: dict, block_size: int 
     else:
         overlap_matrix = to_sparse(overlap_matrix)
 
+    if overlap_matrix.data.size == 0:
+        return np.zeros((matrix.shape[0], overlap_matrix.shape[1]))
+
     matrix.data = matrix.data.astype(np.float32)
     overlap_matrix.data = overlap_matrix.data.astype(np.float32)
 
@@ -1665,58 +1668,66 @@ def calculate_init_score_weight(
 
     overlap_matrix = to_sparse(overlap_matrix.astype(np.float32))
 
-    row_sum = np.asarray(fragments.sum(axis=1)).ravel()
-    col_sum = np.asarray(fragments.sum(axis=0)).ravel()
-    all_sum = row_sum.sum()
+    if overlap_matrix.data.size != 0:
 
-    ul.log(__name__).info("Calculate fragment weighted accessibility ===> (numerator)")
-    _init_trs_ncw_ = fragments.dot(overlap_matrix)
+        row_sum = np.asarray(fragments.sum(axis=1)).ravel()
+        col_sum = np.asarray(fragments.sum(axis=0)).ravel()
+        all_sum = row_sum.sum()
 
-    del fragments
+        ul.log(__name__).info("Calculate fragment weighted accessibility ===> (numerator)")
+        _init_trs_ncw_ = fragments.dot(overlap_matrix)
 
-    ul.log(__name__).info("Calculate expected counts matrix ===> (numerator)")
-    global_scale_data = vector_multiply_block_storage(row_sum, col_sum, block_size=block_size)
+        del fragments
 
-    if block_size <= 0:
-        global_scale_data = global_scale_data.astype(np.float32)
+        ul.log(__name__).info("Calculate expected counts matrix ===> (numerator)")
+        global_scale_data = vector_multiply_block_storage(row_sum, col_sum, block_size=block_size)
 
-    del row_sum, col_sum
+        if block_size <= 0:
+            global_scale_data = global_scale_data.astype(np.float32)
 
-    global_scale_data /= all_sum * 1.0
+        del row_sum, col_sum
 
-    del all_sum
+        global_scale_data /= all_sum * 1.0
 
-    ul.log(__name__).info("Calculate fragment weighted accessibility ===> (denominator)")
-    overlap_matrix = to_dense(overlap_matrix)
-    global_scale_data = global_scale_data.dot(overlap_matrix)
-    del overlap_matrix
+        del all_sum
 
-    global_scale_data[global_scale_data == 0] = global_scale_data[global_scale_data != 0].min() / 2
+        ul.log(__name__).info("Calculate fragment weighted accessibility ===> (denominator)")
+        overlap_matrix = to_dense(overlap_matrix)
+        global_scale_data = global_scale_data.dot(overlap_matrix)
+        del overlap_matrix
 
-    ul.log(__name__).info("Calculate fragment weighted accessibility.")
-    _init_trs_ncw_ = to_dense(_init_trs_ncw_)
-    _init_trs_ncw_ /= global_scale_data
+        global_scale_data[global_scale_data == 0] = global_scale_data[global_scale_data != 0].min() / 2
 
-    del global_scale_data
+        ul.log(__name__).info("Calculate fragment weighted accessibility.")
+        _init_trs_ncw_ = to_dense(_init_trs_ncw_)
+        _init_trs_ncw_ /= global_scale_data
 
-    da_peaks_adata.obsm["cluster_weight"] = to_dense(_cluster_weight_, is_array=True)
-    del _cluster_weight_
+        del global_scale_data
 
-    ul.log(__name__).info("Broadcasting the weight factor to the cellular level")
-    _cell_type_weight_ = np.zeros((cell_anno.shape[0], da_peaks_adata.obsm["cluster_weight"].shape[1]),
-                                  dtype=np.float32)
+        da_peaks_adata.obsm["cluster_weight"] = to_dense(_cluster_weight_, is_array=True)
+        del _cluster_weight_
 
-    cluster_series = cell_anno["clusters"]
+        ul.log(__name__).info("Broadcasting the weight factor to the cellular level")
+        _cell_type_weight_ = np.zeros(
+            (cell_anno.shape[0], da_peaks_adata.obsm["cluster_weight"].shape[1]), dtype=np.float32
+        )
 
-    for cluster in da_peaks_adata.obs_names:
-        mask = cluster_series == cluster
-        _cell_type_weight_[mask, :] = da_peaks_adata[cluster, :].obsm["cluster_weight"].flatten().astype(np.float32)
+        cluster_series = cell_anno["clusters"]
 
-    ul.log(__name__).info("Calculate initial trait relevance scores")
-    _init_trs_weight_ = np.multiply(_init_trs_ncw_, _cell_type_weight_)
+        for cluster in da_peaks_adata.obs_names:
+            mask = cluster_series == cluster
+            _cell_type_weight_[mask, :] = da_peaks_adata[cluster, :].obsm["cluster_weight"].flatten().astype(np.float32)
 
-    if hasattr(_init_trs_weight_, "A"):
-        _init_trs_weight_ = _init_trs_weight_.A
+        ul.log(__name__).info("Calculate initial trait relevance scores")
+        _init_trs_weight_ = np.multiply(_init_trs_ncw_, _cell_type_weight_)
+
+        if hasattr(_init_trs_weight_, "A"):
+            _init_trs_weight_ = _init_trs_weight_.A
+
+    else:
+        _init_trs_weight_ = np.zeros((fragments.shape[0], overlap_matrix.shape[1]), dtype=np.int8)
+        _init_trs_ncw_ = np.zeros((fragments.shape[0], overlap_matrix.shape[1]), dtype=np.int8)
+        _cell_type_weight_ = np.zeros((fragments.shape[0], overlap_matrix.shape[1]), dtype=np.int8)
 
     init_trs_adata = AnnData(_init_trs_weight_, obs=cell_anno, var=trait_anno)
     del _init_trs_weight_
