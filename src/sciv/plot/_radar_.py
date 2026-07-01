@@ -24,6 +24,7 @@ def radar(
     title: str = None,
     colors: collection = None,
     center_text: str = None,
+    text_fontsize: float = 9,
     rotation: float = 25,
     value_top: float = 0.1,
     text_top: float = 1.2,
@@ -53,6 +54,7 @@ def radar(
         Title of the chart.
     colors : collection, optional
         Colors for the radar chart.
+    text_fontsize : str, optional
     center_text : str, optional
         Center text for the chart.
     rotation : float, optional
@@ -125,7 +127,7 @@ def radar(
     ax.fill(theta, ax_y, color='#DDDDDD', alpha=0.1, zorder=2)
 
     if center_text is not None:
-        ax.text(0, y_limit[0], center_text, ha='center', va='center', fontsize=14, color='black', zorder=11)
+        ax.text(0, y_limit[0], center_text, ha='center', va='center', fontsize=text_fontsize, color='black', zorder=11)
 
     # Set the y-axis scale line color to light gray
     ax.tick_params('y', colors='#DDDDDD', grid_alpha=0.6, zorder=8)

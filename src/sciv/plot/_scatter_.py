@@ -31,6 +31,7 @@ def scatter(
     title: str = None,
     cmap: str = "Oranges",
     text_fontsize: float = 7,
+    text_lw: float = 1,
     start_color_index: int = 0,
     color_step_size: int = 0,
     type_colors: collection = None,
@@ -68,6 +69,7 @@ def scatter(
         Plot title
     cmap : str, default "Oranges"
         Colormap for continuous coloring
+    text_lw : float, default 1
     text_fontsize : float, default 7
         Font size for annotation text
     start_color_index : int, default 0
@@ -192,7 +194,7 @@ def scatter(
                         boxstyle="round,pad=0.2",
                         fc="white",
                         ec="k",
-                        lw=1,
+                        lw=text_lw,
                         alpha=0.8
                     ),
                     fontsize=text_fontsize

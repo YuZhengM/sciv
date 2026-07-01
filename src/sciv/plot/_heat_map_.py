@@ -47,7 +47,7 @@ def heatmap_annotation(
     fontsize: float = 9,
     level_bar_height: float = None,
     anno_specific_labels: list = None,
-    x_label_rotation: float = 245,
+    x_label_rotation: float = 65,
     y_label_rotation: float = 0,
     row_color_start_index: int = 0,
     col_color_start_index: int = 10,
