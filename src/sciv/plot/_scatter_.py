@@ -448,8 +448,8 @@ def scatter_element(
         for layer in layers:
 
             if layer not in adata_layers:
-                log.error("The `layers` parameter needs to include in `adata.layers`")
-                raise ValueError("The `layers` parameter needs to include in `adata.layers`")
+                log.error(f"The `layers` parameter ({layer}) needs to include in `adata.layers`")
+                raise ValueError(f"The `layers` parameter ({layer}) needs to include in `adata.layers`")
 
     def element_plot(element_: str, df_: DataFrame, layer_: str = None, new_data_: AnnData = None) -> None:
         """

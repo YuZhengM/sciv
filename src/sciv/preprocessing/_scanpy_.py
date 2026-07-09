@@ -194,6 +194,7 @@ def get_difference_genes(
     diff_p_value_matrix: matrix_data = np.zeros(_shape_)
     diff_ad_p_value_matrix: matrix_data = np.zeros(_shape_)
     diff_log2_fc_matrix: matrix_data = np.zeros(_shape_)
+    diff_rank_index: matrix_data = np.zeros(_shape_)
     del _shape_
 
     # cluster
@@ -202,6 +203,8 @@ def get_difference_genes(
         # obtain cluster difference gene data
         _cluster_data_: DataFrame = sc.get.rank_genes_groups_df(adata, group=_cluster_)
         _cluster_index_: int = cluster_list.index(_cluster_)
+
+        _rank_index_: int = 0
 
         # Add data value
         for _gene_name_, _score_, _p_value_, _ad_p_value_, _log2_fc_ in zip(
@@ -216,8 +219,11 @@ def get_difference_genes(
             diff_p_value_matrix[_gene_index_, _cluster_index_] = 1 if np.isnan(_p_value_) else _p_value_
             diff_ad_p_value_matrix[_gene_index_, _cluster_index_] = 1 if np.isnan(_ad_p_value_) else _ad_p_value_
             diff_log2_fc_matrix[_gene_index_, _cluster_index_] = 0 if np.isnan(_log2_fc_) else _log2_fc_
+            diff_rank_index[_gene_index_, _cluster_index_] = _rank_index_
 
-        del _cluster_data_, _cluster_index_
+            _rank_index_ += 1
+
+        del _cluster_data_, _cluster_index_, _rank_index_
 
     set_inf_value(diff_score_matrix)
     set_inf_value(diff_p_value_matrix)
@@ -232,6 +238,7 @@ def get_difference_genes(
     diff_genes_adata.layers["p_value"] = diff_p_value_matrix
     diff_genes_adata.layers["adjusted_p_value"] = diff_ad_p_value_matrix
     diff_genes_adata.layers["log2_fold_change"] = diff_log2_fc_matrix
+    diff_genes_adata.layers["rank_index"] = diff_rank_index
 
     # Add diff_genes
     diff_genes_adata.uns["diff_genes"] = diff_genes

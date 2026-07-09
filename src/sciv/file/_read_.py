@@ -95,7 +95,6 @@ def read_pkl(file: path, is_verbose: bool = True):
 
 def handle_file_data_cell(
     file: path,
-    clusters: str = "clusters",
     barcode_split_character: str = '-',
     on_barcode_split_character: str = None,
     is_transpose: bool = True,
@@ -108,10 +107,6 @@ def handle_file_data_cell(
     ----------
     file : path
         Path to the table file with cell or peak column and column indexes, and the content is the number of fragments.
-    clusters : str, optional
-        The column name for cell clusters or cell types. (In most cases, this column can be ignored.)
-        It is worth noting that only the values in this column are judged to determine whether they contain NA values;
-        If they do, they are assigned the value `unknown`, and if not, no operation is performed;
     barcode_split_character : str, default='-'
         A barcode separated character symbol. (meta)
     on_barcode_split_character : str, optional
@@ -156,13 +151,13 @@ def handle_file_data_cell(
 
     # add annotation file
     if cluster_anno_file is not None:
-        cell_annot = barcodes_add_anno(cluster_anno_file, cell_annot, clusters=clusters)
+        cell_annot = barcodes_add_anno(cluster_anno_file, cell_annot)
 
     cell_annot.index = cell_annot["barcode"].astype(str)
     return cell_annot, data
 
 
-def barcodes_add_anno(annotation_file: path, cell_anno: DataFrame, clusters: str = None) -> DataFrame:
+def barcodes_add_anno(annotation_file: path, cell_anno: DataFrame) -> DataFrame:
     """
     Add user inputted cell information to the cell annotation data.
 
@@ -172,10 +167,6 @@ def barcodes_add_anno(annotation_file: path, cell_anno: DataFrame, clusters: str
         The file that adds information about cells must contain the column name `barcodes`, the file input by the user.
     cell_anno : DataFrame
         Read the cell description in the scATAC-seq data generated from the file.
-    clusters : str, optional
-        The column name for cell clusters or cell types. (In most cases, this column can be ignored.)
-        It is worth noting that only the values in this column are judged to determine whether they contain NA values.
-        If they do, they are assigned the value `unknown`, and if not, no operation is performed.
     
     Returns
     -------
@@ -201,25 +192,6 @@ def barcodes_add_anno(annotation_file: path, cell_anno: DataFrame, clusters: str
 
     cell_anno = cell_anno.merge(cell_annotation_file, on="barcodes", how="inner")
 
-    if clusters is not None:
-        if clusters not in list(cell_annotation_file.columns):
-            ul.log(__name__).error(
-                f"The comment file must contain a column name with `{clusters}`, Try changing the `clusters` parameter"
-            )
-            raise ValueError(
-                f"The comment file must contain a column name with `{clusters}`, Try changing the `clusters` parameter"
-            )
-
-        if clusters not in list(cell_anno.columns):
-            cell_anno = cell_anno.rename(columns={f"{clusters}_y": clusters})
-
-        # nan set unknown
-        if cell_anno[cell_anno[clusters].isna()].shape[0] > 0:
-            ul.log(__name__).warning(
-                f"Due to the presence of `NA` in the `{clusters}`, it is forcibly assigned as `unknown`."
-            )
-            cell_anno.loc[cell_anno[clusters].isna(), clusters] = "unknown"
-
     if "barcode" not in list(cell_anno.columns):
         cell_anno = cell_anno.rename(columns={"barcode_x": "barcode"})
 
@@ -229,7 +201,6 @@ def barcodes_add_anno(annotation_file: path, cell_anno: DataFrame, clusters: str
 
 def read_barcodes_file(
     barcodes_file: path,
-    clusters: str = None,
     barcode_split_character: str = '-',
     annotation_file: path = None,
 ) -> DataFrame:
@@ -240,10 +211,6 @@ def read_barcodes_file(
     ----------
     barcodes_file : path
         Barcodes file.
-    clusters : str, optional
-        The column name for cell clusters or cell types. (In most cases, this column can be ignored.)
-        It is worth noting that only the values in this column are judged to determine whether they contain NA values.
-        If they do, they are assigned the value `unknown`, and if not, no operation is performed.
     barcode_split_character : str, default='-'
         A barcode separated character symbol. (meta)
     annotation_file : path, optional
@@ -296,7 +263,7 @@ def read_barcodes_file(
 
     # add annotation file
     if annotation_file is not None:
-        cell_anno = barcodes_add_anno(annotation_file, cell_anno, clusters=clusters)
+        cell_anno = barcodes_add_anno(annotation_file, cell_anno)
 
     cell_anno.set_index("barcode", inplace=True, drop=False)
     cell_anno.index = cell_anno.index.astype(str)
@@ -307,7 +274,6 @@ def _read_info_by_metadata_(
     base_path: path,
     feature_file_name: str,
     is_transpose: bool = True,
-    clusters: str = None,
     barcode_split_character: str = '-',
     annotation_file: path = None,
 ) -> AnnData:
@@ -322,10 +288,6 @@ def _read_info_by_metadata_(
         feature file name;
     is_transpose : bool, default=True
         Whether transpose is required to read the matrix file, default to True;
-    clusters : str, optional
-        The column name for cell clusters or cell types. (In most cases, this column can be ignored.)
-        It is worth noting that only the values in this column are judged to determine whether they contain NA values;
-        If they do, they are assigned the value `unknown`, and if not, no operation is performed;
     barcode_split_character : str, default='-'
         A barcode separated character symbol. (meta)
     annotation_file : path, optional
@@ -349,7 +311,6 @@ def _read_info_by_metadata_(
     # read barcodes file
     cell_annot = read_barcodes_file(
         os.path.join(base_path, "barcodes.tsv"),
-        clusters=clusters,
         barcode_split_character=barcode_split_character,
         annotation_file=annotation_file
     )
@@ -401,7 +362,6 @@ def _process_peaks_(
         character_ = peak_split_character[0]
 
         for col in list(data):
-            col: str
             split: list = col.split(character_)
             chr_list.append(split[0])
             start_list.append(int(split[1]))
@@ -409,7 +369,6 @@ def _process_peaks_(
     else:
 
         for col in list(data):
-            col: str
             split: list = col.split(peak_split_character[0])
             chr_list.append(split[0])
             split2: list = split[1].split(peak_split_character[1])
@@ -501,7 +460,6 @@ def read_v3_10x_h5(filename: path) -> AnnData:
 
 def read_sc_atac_10x_h5(
     file: path,
-    clusters: str = None,
     barcode_split_character: str = '-',
     annotation_file: path = None,
     peak_split_character: Tuple = (":", "-")
@@ -513,10 +471,6 @@ def read_sc_atac_10x_h5(
     ----------
     file : path
         A comprehensive h5 file. (It can be obtained through cell-ranger)
-    clusters : str, optional
-        The column name for cell clusters or cell types. (In most cases, this column can be ignored.)
-        It is worth noting that only the values in this column are judged to determine whether they contain NA values.
-        If they do, they are assigned the value `unknown`, and if not, no operation is performed.
     barcode_split_character : str, default='-'
         A barcode separated character symbol (meta)
     annotation_file : path, optional
@@ -553,7 +507,7 @@ def read_sc_atac_10x_h5(
 
     # add annotation file
     if annotation_file is not None:
-        cells = barcodes_add_anno(annotation_file, cells, clusters=clusters)
+        cells = barcodes_add_anno(annotation_file, cells)
 
     sc_atac.obs = cells
 
@@ -575,7 +529,6 @@ def read_sc_atac(
     barcode_split_character: str = '-',
     on_barcode_split_character: str = None,
     annotation_file: path = None,
-    clusters: str = None,
     peak_split_character: Tuple = (":", "-")
 ) -> AnnData:
     """
@@ -600,9 +553,6 @@ def read_sc_atac(
     annotation_file : path, optional
         File containing additional cell information. Must contain a 'barcodes' column.
         Default is None.
-    clusters : str, optional
-        Column name for cell clusters or cell types. If NA values exist in this column,
-        they will be assigned as 'unknown'. Default is None.
     peak_split_character : Tuple, default=(":", "-")
         Characters used to split peak information (chromosome, start, end).
         First element splits chromosome from start, second splits start from end.
@@ -614,6 +564,18 @@ def read_sc_atac(
     """
     ul.log(__name__).info("Read scATAC-seq data")
 
+    if len(peak_split_character) != 2:
+        ul.log(__name__).error(
+            "The peak feature is used to obtain the segmentation character of `chr` `start` `end`, "
+            "which requires two characters. The first character is used to segment `chr` and `start`, "
+            "and the second character is used to segment `start` and `end`"
+        )
+        raise ValueError(
+            "The peak feature is used to obtain the segmentation character of `chr` `start` `end`, "
+            "which requires two characters. The first character is used to segment `chr` and `start`, "
+            "and the second character is used to segment `start` and `end`"
+        )
+
     is_metadata: bool = os.path.isdir(str(resource))
 
     if is_metadata:
@@ -622,7 +584,6 @@ def read_sc_atac(
             base_path=resource,
             feature_file_name="peaks.bed",
             is_transpose=is_transpose,
-            clusters=clusters,
             barcode_split_character=barcode_split_character,
             annotation_file=annotation_file
         )
@@ -639,7 +600,7 @@ def read_sc_atac(
             # add annotation file
             if annotation_file is not None:
                 cell_annot = sc_atac.obs.copy()
-                cell_annot = barcodes_add_anno(annotation_file, cell_annot, clusters=clusters)
+                cell_annot = barcodes_add_anno(annotation_file, cell_annot)
                 sc_atac.obs = cell_annot
 
         elif str(resource).endswith(".h5ad"):
@@ -650,18 +611,6 @@ def read_sc_atac(
 
             if "chr" not in peak_col or "start" not in peak_col or "end" not in peak_col:
                 _, chr_list, start_list, end_list = _process_peaks_(list(sc_atac.var_names), peak_split_character)
-
-                if len(peak_split_character) != 2:
-                    ul.log(__name__).error(
-                        "The peak feature is used to obtain the segmentation character of `chr` `start` `end`, "
-                        "which requires two characters. The first character is used to segment `chr` and `start`, "
-                        "and the second character is used to segment `start` and `end`"
-                    )
-                    raise ValueError(
-                        "The peak feature is used to obtain the segmentation character of `chr` `start` `end`, "
-                        "which requires two characters. The first character is used to segment `chr` and `start`, "
-                        "and the second character is used to segment `start` and `end`"
-                    )
 
                 sc_atac.var["chr"] = chr_list
                 sc_atac.var["start"] = start_list
@@ -678,25 +627,13 @@ def read_sc_atac(
             # add annotation file
             if annotation_file is not None:
                 cell_annot = sc_atac.obs.copy()
-                cell_annot = barcodes_add_anno(annotation_file, cell_annot, clusters=clusters)
+                cell_annot = barcodes_add_anno(annotation_file, cell_annot)
                 sc_atac.obs = cell_annot
 
         else:
-            if len(peak_split_character) != 2:
-                ul.log(__name__).error(
-                    "The peak feature is used to obtain the segmentation character of `chr` `start` `end`, "
-                    "which requires two characters. The first character is used to segment `chr` and `start`, "
-                    "and the second character is used to segment `start` and `end`"
-                )
-                raise ValueError(
-                    "The peak feature is used to obtain the segmentation character of `chr` `start` `end`, "
-                    "which requires two characters. The first character is used to segment `chr` and `start`, "
-                    "and the second character is used to segment `start` and `end`"
-                )
 
             cell_annot, data = handle_file_data_cell(
                 file=resource,
-                clusters=clusters,
                 barcode_split_character=barcode_split_character,
                 on_barcode_split_character=on_barcode_split_character,
                 is_transpose=is_transpose,
@@ -714,7 +651,6 @@ def read_sc_atac(
     sc_atac.uns["params"] = {
         "resource": resource,
         "is_transpose": is_transpose,
-        "clusters": clusters,
         "barcode_split_character": barcode_split_character,
         "on_barcode_split_character": on_barcode_split_character,
         "annotation_file": annotation_file,
