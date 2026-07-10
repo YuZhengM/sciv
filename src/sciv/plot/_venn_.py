@@ -2,7 +2,6 @@
 
 from typing import Any
 
-from matplotlib.figure import Figure
 from matplotlib_venn import venn3, venn3_circles, venn2, venn2_circles
 
 from .. import util as ul
@@ -28,7 +27,7 @@ def venn_three(
     show: bool = False,
     close: bool = True,
     **kwargs: Any
-) -> tuple[Figure, Any]:
+):
     """
     Plot three Venn diagram.
 
@@ -92,9 +91,9 @@ def venn_three(
 
     ax.axis('off')
 
-    plot_end(fig, title, x_name, y_name, output, show, close)
+    plot_end(title, x_name, y_name, output, show, close)
 
-    return fig, ax
+    return ax
 
 
 def venn_two(
@@ -110,7 +109,7 @@ def venn_two(
     show: bool = False,
     close: bool = True,
     **kwargs: Any
-) -> tuple[Figure, Any]:
+):
     """
     Plot two Venn diagram.
 
@@ -167,6 +166,6 @@ def venn_two(
 
     ax.axis('off')
 
-    plot_end(fig, title, x_name, y_name, output, show, close)
+    plot_end(title, x_name, y_name, output, show, close)
 
-    return fig, ax
+    return ax

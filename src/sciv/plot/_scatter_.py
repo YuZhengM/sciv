@@ -8,7 +8,6 @@ import pandas as pd
 from anndata import AnnData
 from matplotlib import pyplot as plt
 from matplotlib.colors import ListedColormap
-from matplotlib.figure import Figure
 from pandas import DataFrame
 import seaborn as sns
 
@@ -45,7 +44,7 @@ def scatter(
     show: bool = False,
     close: bool = True,
     **kwargs: Any
-) -> tuple[Figure, Any]:
+):
     """
     Create a base scatter plot with customizable aesthetics.
     
@@ -207,9 +206,9 @@ def scatter(
     for spine in ax.spines.values():
         spine.set_linewidth(0.5)
 
-    plot_end(fig, title, x_name, y_name, output, show, close)
+    plot_end(title, x_name, y_name, output, show, close)
 
-    return fig, ax
+    return ax
 
 
 def scatter_3d(
@@ -238,7 +237,7 @@ def scatter_3d(
     show: bool = False,
     close: bool = True,
     **kwargs: Any
-) -> tuple[Figure, Any]:
+):
     """
     Create a 3D scatter plot with customizable aesthetics.
     
@@ -359,9 +358,9 @@ def scatter_3d(
             ha='left'
         )
 
-    plot_end(fig, None, None, None, output, show, close)
+    plot_end(None, None, None, output, show, close)
 
-    return fig, ax
+    return ax
 
 
 def scatter_element(
@@ -544,7 +543,7 @@ def volcano(
     show: bool = False,
     close: bool = True,
     **kwargs: Any
-) -> tuple[Figure, Any]:
+):
     """
     Plot volcano plot.
 
@@ -604,9 +603,9 @@ def volcano(
     plt.axvline(axv_left_value, color='grey', linestyle='--')
     plt.axvline(axv_right_value, color='grey', linestyle='--')
 
-    plot_end(fig, title, x_name, y_name, output, show, close)
+    plot_end(title, x_name, y_name, output, show, close)
 
-    return fig, ax
+    return ax
 
 
 def manhattan_causal_variant(
@@ -628,7 +627,7 @@ def manhattan_causal_variant(
     show: bool = False,
     close: bool = True,
     **kwargs: Any
-) -> tuple[Figure, Any]:
+):
     """
     Create a Manhattan plot for causal variant visualization across chromosomes.
     
@@ -680,8 +679,8 @@ def manhattan_causal_variant(
     df_grouped = df.groupby(chr_name)
 
     if colors is None:
-        colors = type_20_colors.copy()
-        colors.extend(type_set_colors)
+        colors = type_set_colors.copy()
+        colors.extend(list(type_20_colors))
 
     fig, ax = plot_start()
 
@@ -727,9 +726,9 @@ def manhattan_causal_variant(
     ax.set_xlim([0, len(df)])
     ax.set_ylim(y_limit)
 
-    plot_end(fig, title, x_name, y_name, output, show, close)
+    plot_end(title, x_name, y_name, output, show, close)
 
-    return fig, ax
+    return ax
 
 
 def pseudo_time_score(
@@ -750,7 +749,7 @@ def pseudo_time_score(
     show: bool = False,
     close: bool = True,
     **kwargs: Any
-) -> tuple[Figure, Any]:
+):
     """
     Create a scatter plot showing pseudo-time scores with a smoothed trend line.
     
@@ -823,6 +822,6 @@ def pseudo_time_score(
 
     plt.tight_layout()
 
-    plot_end(fig, title, x_name, y_name, output, show, close)
+    plot_end(title, x_name, y_name, output, show, close)
 
-    return fig, ax
+    return ax

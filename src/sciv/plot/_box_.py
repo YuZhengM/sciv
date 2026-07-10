@@ -2,7 +2,6 @@
 
 from typing import Tuple, Union, Any, Literal
 
-from matplotlib.figure import Figure
 from pandas import DataFrame
 import seaborn as sns
 
@@ -34,7 +33,7 @@ def box(
     show: bool = False,
     close: bool = True,
     **kwargs: Any
-) -> tuple[Figure, Any]:
+):
     """
     Create a box plot with customizable styling options.
 
@@ -175,6 +174,6 @@ def box(
     ax.spines['right'].set_linewidth(line_width)
 
 
-    plot_end(fig, title, x_name, y_name, output, show, close)
+    plot_end(title, x_name, y_name, output, show, close)
 
-    return fig, ax
+    return ax

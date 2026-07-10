@@ -5,7 +5,6 @@ from typing import Literal, Any
 import numpy as np
 from anndata import AnnData
 import seaborn as sns
-from matplotlib.figure import Figure
 from tqdm import tqdm
 
 from .. import util as ul
@@ -30,7 +29,7 @@ def kde(
     show: bool = False,
     close: bool = True,
     **kwargs: Any
-) -> tuple[Figure, Any]:
+):
     """
     Plot Kernel Density Estimation (KDE) for single-cell data.
 
@@ -107,6 +106,6 @@ def kde(
         if is_legend:
             ax.legend(list(adata.obs.index))
 
-    plot_end(fig, title, x_name, y_name, output, show, close)
+    plot_end(title, x_name, y_name, output, show, close)
 
-    return fig, ax
+    return ax

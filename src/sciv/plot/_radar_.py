@@ -5,7 +5,6 @@ from typing import Tuple, Any
 import numpy as np
 
 from matplotlib import pyplot as plt
-from matplotlib.figure import Figure
 from pandas import DataFrame
 
 from .. import util as ul
@@ -36,7 +35,7 @@ def radar(
     show: bool = False,
     close: bool = True,
     **kwargs: Any
-) -> tuple[Figure, Any]:
+):
     """
     Plot a radar chart.
 
@@ -148,9 +147,9 @@ def radar(
     # Adjust the layout to prevent label overlap
     plt.tight_layout()
 
-    plot_end(fig, title, x_name, y_name, output, show, close)
+    plot_end(title, x_name, y_name, output, show, close)
 
-    return fig, ax
+    return ax
 
 
 def radar_base(
@@ -171,7 +170,7 @@ def radar_base(
     show: bool = False,
     close: bool = True,
     **kwargs: Any
-) -> tuple[Figure, Any]:
+):
     """
     Plot a radar chart with multiple groups.
 
@@ -253,6 +252,6 @@ def radar_base(
 
     plt.tight_layout()
 
-    plot_end(fig, title, x_name, y_name, output, show, close)
+    plot_end(title, x_name, y_name, output, show, close)
 
-    return fig, ax
+    return ax

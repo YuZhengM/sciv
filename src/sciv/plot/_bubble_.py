@@ -4,7 +4,6 @@ from typing import Any
 
 import numpy as np
 import seaborn as sns
-from matplotlib.figure import Figure
 from pandas import DataFrame
 
 from ..util import path, plot_end, plot_start
@@ -25,7 +24,7 @@ def bubble(
     show: bool = False,
     close: bool = True,
     **kwargs: Any
-) -> tuple[Figure, Any]:
+):
     """
     Create a bubble plot using seaborn's relplot.
 
@@ -77,6 +76,6 @@ def bubble(
         **kwargs
     )
 
-    plot_end(fig, title, x_name, y_name, output, show, close)
+    plot_end(title, x_name, y_name, output, show, close)
 
-    return fig, ax
+    return ax

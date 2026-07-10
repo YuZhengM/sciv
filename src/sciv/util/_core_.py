@@ -758,7 +758,7 @@ def check_gpu_availability(verbose: bool = False) -> bool:
     return available
 
 
-def plot_start() -> tuple[Figure, Any]:
+def plot_start():
     """
     Start a plot.
 
@@ -780,11 +780,10 @@ def plot_start() -> tuple[Figure, Any]:
 
     plt.rcParams.update(ul.plot_rc_config)
 
-    return fig, ax
+    return ax
 
 
 def plot_end(
-    fig,
     title: str = None,
     x_name: str = None,
     y_name: str = None,
@@ -798,8 +797,6 @@ def plot_end(
     
     Parameters
     ----------
-    fig : Figure
-        Figure object.
     title : str, optional
         Title of the plot. Default is None.
     x_name : str, optional

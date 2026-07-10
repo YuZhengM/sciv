@@ -44,7 +44,7 @@ def line(
     show: bool = False,
     close: bool = True,
     **kwargs: Any
-) -> tuple[Figure, Any]:
+):
     """
     Base line plot function for visualizing data trends over time or categories.
 
@@ -181,9 +181,9 @@ def line(
     else:
         plt.xticks(x_ticks, rotation=x_name_rotation)
 
-    plot_end(fig, title, x_name, y_name, output, show, close)
+    plot_end(title, x_name, y_name, output, show, close)
 
-    return fig, ax
+    return ax
 
 
 def roc_prc(
@@ -203,7 +203,7 @@ def roc_prc(
     show: bool = False,
     close: bool = True,
     **kwargs: Any
-) -> tuple[Figure, Any, dict[Tuple[str, str], dict[str, float]]]:
+) -> tuple[Any, dict[Tuple[str, str], dict[str, float]]]:
     """
     Plot ROC and PRC curves for multiple methods and elements.
 
@@ -397,6 +397,6 @@ def roc_prc(
 
     plt.tight_layout()
 
-    plot_end(fig, title, None, None, output, show, close)
+    plot_end(title, None, None, output, show, close)
 
-    return fig, axes, results
+    return axes, results

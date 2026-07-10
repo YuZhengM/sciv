@@ -5,7 +5,6 @@ from typing import Any
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.colors import ListedColormap
-from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec
 from pandas import DataFrame
 
@@ -33,7 +32,7 @@ def barcode(
     output: path = None,
     show: bool = False,
     close: bool = True
-) -> tuple[Figure, Any, Any]:
+) -> tuple[Any, Any]:
     """
     Plot barcode plot.
     
@@ -129,6 +128,6 @@ def barcode(
     ticks = np.linspace(round(df_sort[sort_column].min(), 2), round(df_sort[sort_column].max() - 0.05, 2), 3)
     color_bar.set_ticks(ticks if is_ticks else [])
 
-    plot_end(fig, title, output=output, show=show, close=close)
+    plot_end(title, output=output, show=show, close=close)
 
-    return fig, ax1, ax2
+    return ax1, ax2

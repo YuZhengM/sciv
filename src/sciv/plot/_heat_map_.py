@@ -8,7 +8,6 @@ from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from PyComplexHeatmap import HeatmapAnnotation, anno_simple, ClusterMapPlotter, anno_label, anno_barplot
 from matplotlib.colors import ListedColormap
-from matplotlib.figure import Figure
 from pandas import DataFrame
 import seaborn as sns
 
@@ -71,7 +70,7 @@ def heatmap_annotation(
     close: bool = True,
     output: path = None,
     **kwargs
-) -> tuple[Figure, Any]:
+):
     """
     Generate a heatmap with row and column annotations.
 
@@ -336,9 +335,9 @@ def heatmap_annotation(
         **kwargs
     )
 
-    plot_end(fig, title, None, None, output, show, close)
+    plot_end(title, None, None, output, show, close)
 
-    return fig, ax
+    return ax
 
 
 def heatmap(
@@ -358,7 +357,7 @@ def heatmap(
     show: bool = False,
     close: bool = True,
     **kwargs: Any
-) -> tuple[Figure, Any]:
+):
     """
     Generate a simple heatmap using seaborn.
 
@@ -429,6 +428,6 @@ def heatmap(
         # noinspection PyUnresolvedReferences
         plt.setp(heat_map.ax_heatmap.get_xticklabels(), rotation=rotation)
 
-    plot_end(fig, title, x_name, y_name, output, show, close)
+    plot_end(title, x_name, y_name, output, show, close)
 
-    return fig, ax
+    return ax

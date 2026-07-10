@@ -2,7 +2,6 @@
 
 from typing import Tuple, Union, Literal, Any
 
-from matplotlib.figure import Figure
 from pandas import DataFrame
 import seaborn as sns
 
@@ -35,7 +34,7 @@ def violin(
     show: bool = False,
     close: bool = True,
     **kwargs: Any
-) -> tuple[Figure, Any]:
+):
     """
     Plot violin plot.
 
@@ -159,6 +158,6 @@ def violin(
         # Set the rotation angle of the x-axis labels
         _ax_.tick_params(axis='x', rotation=rotation)
 
-    plot_end(fig, title, x_name, y_name, output, show, close)
+    plot_end(title, x_name, y_name, output, show, close)
 
-    return fig, g
+    return g

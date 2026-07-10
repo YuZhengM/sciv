@@ -4,7 +4,6 @@ from typing import Tuple, Union, Optional, Any, Literal
 
 import numpy as np
 import pandas as pd
-from matplotlib.figure import Figure
 from pandas import DataFrame
 
 import seaborn as sns
@@ -12,7 +11,7 @@ from matplotlib import pyplot as plt
 from statannotations.Annotator import Annotator
 
 from .. import util as ul
-from ..util import path, collection, plot_color_types, plot_start, plot_end, complete_ratio
+from ..util import path, collection, plot_color_types, plot_start, plot_end
 
 __name__: str = "plot_bar"
 
@@ -34,7 +33,7 @@ def bar(
     show: bool = False,
     close: bool = True,
     **kwargs: Any
-) -> tuple[Figure, Any]:
+):
     """
     Create a simple bar chart with optional value labels.
 
@@ -101,9 +100,9 @@ def bar(
                 color=text_color
             )
 
-    plot_end(fig, title, x_name, y_name, output, show, close)
+    plot_end(title, x_name, y_name, output, show, close)
 
-    return fig, ax
+    return ax
 
 
 def bar_two(
@@ -122,7 +121,7 @@ def bar_two(
     show: bool = False,
     close: bool = True,
     **kwargs: Any
-) -> tuple[Figure, Any]:
+):
     """
     Create a stacked bar chart with two categories.
 
@@ -199,9 +198,9 @@ def bar_two(
     ax.grid(axis='y', ls='--', c='gray')
     ax.set_axisbelow(True)
 
-    plot_end(fig, title, x_name, y_name, output, show, close)
+    plot_end(title, x_name, y_name, output, show, close)
 
-    return fig, ax
+    return ax
 
 
 def bar_class(
@@ -223,7 +222,7 @@ def bar_class(
     show: bool = False,
     close: bool = True,
     **kwargs: Any
-) -> tuple[Figure, Any]:
+):
     """
     Create a stacked bar chart for enrichment analysis with two categories.
 
@@ -347,7 +346,7 @@ def bar_significance(
     show: bool = False,
     close: bool = True,
     **kwargs: Any
-) -> tuple[Figure, Any]:
+):
     """
     Create a bar chart with statistical significance annotations relative to an anchor group.
 
@@ -564,6 +563,6 @@ def bar_significance(
 
     plt.legend(loc='upper left', bbox_to_anchor=(0.0, legend_gap), ncol=2)
 
-    plot_end(fig, title, x_name, y_name, output, show, close)
+    plot_end(title, x_name, y_name, output, show, close)
 
-    return fig, ax
+    return ax

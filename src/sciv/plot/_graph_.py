@@ -2,14 +2,13 @@
 
 import math
 import random
-from typing import Optional, Literal, Union, Any
+from typing import Optional, Literal, Union
 
 import matplotlib
 import networkx as nx
 import numpy as np
 from anndata import AnnData
 from matplotlib import pyplot as plt, gridspec
-from matplotlib.figure import Figure
 
 from .. import util as ul
 from ..util import (
@@ -45,7 +44,7 @@ def graph(
     output: path = None,
     show: bool = False,
     close: bool = True
-) -> tuple[Figure, Any]:
+):
     """
     Plot a graph from an adjacency matrix.
 
@@ -120,9 +119,9 @@ def graph(
     else:
         nx.draw(gr, pos=pos, labels={}, **options)
 
-    plot_end(fig, title, x_name, y_name, output, show, close)
+    plot_end(title, x_name, y_name, output, show, close)
 
-    return fig, ax
+    return ax
 
 
 def communities_graph(
@@ -140,7 +139,7 @@ def communities_graph(
     output: path = None,
     show: bool = False,
     close: bool = True
-) -> tuple[Figure, Any]:
+):
     """
     Plot a cell-cell network diagram with community detection coloring.
 
@@ -238,9 +237,9 @@ def communities_graph(
         width=line_widths
     )
 
-    plot_end(fig, title, x_name, y_name, output, show, close)
+    plot_end(title, x_name, y_name, output, show, close)
 
-    return fig, ax
+    return ax
 
 
 def network_two_types(
@@ -532,4 +531,4 @@ def network_two_types(
 
     plt.axis('off')
 
-    plot_end(fig, output=output, show=show, close=close)
+    plot_end(output=output, show=show, close=close)

@@ -3,7 +3,6 @@
 from typing import Union, Any
 
 import numpy as np
-from matplotlib.figure import Figure
 from pandas import DataFrame
 
 from .. import util as ul
@@ -26,7 +25,7 @@ def pie(
     show: bool = False,
     close: bool = True,
     **kwargs: Any
-) -> tuple[Figure, Any]:
+):
     """
     Create a basic pie chart with customizable parameters.
 
@@ -86,9 +85,9 @@ def pie(
 
     ax.axis('off')
 
-    plot_end(fig, title, output=output, show=show, close=close)
+    plot_end(title, output=output, show=show, close=close)
 
-    return fig, ax
+    return ax
 
 
 def pie_label(
@@ -106,7 +105,7 @@ def pie_label(
     show: bool = False,
     close: bool = True,
     **kwargs: Any
-) -> tuple[Figure, Any]:
+):
     """
     Create a donut-style pie chart showing cluster label distribution.
 
@@ -200,6 +199,6 @@ def pie_label(
 
     ax.axis('off')
 
-    plot_end(fig, title, output=output, show=show, close=close)
+    plot_end(title, output=output, show=show, close=close)
 
-    return fig, ax
+    return ax
