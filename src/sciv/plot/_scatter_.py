@@ -303,7 +303,7 @@ def scatter_3d(
     if hue is not None:
         hue_cat = pd.Categorical(df[hue])
 
-    scatter = ax.scatter(
+    scatter_ = ax.scatter(
         df[x],
         df[y],
         df[z],
@@ -334,12 +334,12 @@ def scatter_3d(
         legend_elements = [
             plt.Line2D(
                 [0], [0], marker='o', color='w', label=type_,
-                markerfacecolor=scatter.cmap(scatter.norm(i))
+                markerfacecolor=scatter_.cmap(scatter_.norm(i))
             )
             for i, type_ in enumerate(unique_types)
         ]
 
-        ax.legend(handles=legend_elements, title=legend_name, loc='upper left')
+        ax.legend(handles=legend_elements, title=legend_name, bbox_to_anchor=(1.1, 1))
 
     if is_add_max_label:
         max_idx = df[z].idxmax()

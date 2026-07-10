@@ -7,7 +7,7 @@ import string
 import threading
 import time
 from functools import wraps
-from typing import Tuple, Union, Literal, Callable, Any
+from typing import Tuple, Union, Literal, Callable
 import psutil
 
 import numpy as np
@@ -780,7 +780,7 @@ def plot_start():
 
     plt.rcParams.update(ul.plot_rc_config)
 
-    return ax
+    return fig, ax
 
 
 def plot_end(
@@ -830,9 +830,9 @@ def plot_end(
         if output.endswith(".pdf"):
             plt.savefig(output, bbox_inches='tight', pad_inches=0.1)
         elif output.endswith(".png") or output.endswith(".jpg") or output.endswith(".svg"):
-            plt.savefig(output, dpi=dpi)
+            plt.savefig(output, dpi=dpi, bbox_inches='tight', pad_inches=0.1)
         else:
-            plt.savefig(f"{output}.png", dpi=dpi)
+            plt.savefig(f"{output}.png", dpi=dpi, bbox_inches='tight', pad_inches=0.1)
 
     if show:
         plt.show()
