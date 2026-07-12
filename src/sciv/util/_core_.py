@@ -395,7 +395,7 @@ def split_matrix(data: matrix_data, axis: Literal[0, 1] = 0, chunk_number: int =
     return split_data_list
 
 
-def merge_matrix(datas: list, axis: Literal[0, 1] = 0) -> list:
+def merge_matrix(datas: list, axis: Literal[0, 1] = 0) -> matrix_data:
     """
     Merge multiple matrices into one matrix.
     
@@ -742,6 +742,8 @@ def check_gpu_availability(verbose: bool = False) -> bool:
 
     Examples
     --------
+    >>> import sciv
+    >>>
     >>> availability = sciv.ul.check_gpu_availability()
     """
     available = torch.cuda.is_available()
@@ -857,6 +859,8 @@ def generate_hex_colors(num_colors: int) -> list:
 
     Examples
     --------
+    >>> import sciv
+    >>>
     >>> colors3 = sciv.ul.generate_hex_colors(3)
     >>> colors5 = sciv.ul.generate_hex_colors(5)
     >>> print(f"Generate three colors: {colors3}")
