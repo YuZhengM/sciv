@@ -78,9 +78,6 @@ def radar(
         Whether to close.
     kwargs : Any, optional
         Keyword arguments.
-    Returns
-    -------
-    None
     """
 
     fig, ax = plot_start()
@@ -210,10 +207,6 @@ def radar_base(
         Whether to close the figure after display.
     kwargs : Any, optional
         Additional keyword arguments for plotting.
-
-    Returns
-    -------
-    None
     """
 
     fig, ax = plot_start()

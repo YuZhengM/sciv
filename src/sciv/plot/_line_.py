@@ -99,11 +99,6 @@ def line(
         Whether to close the figure after display.
     **kwargs : Any
         Additional keyword arguments passed to seaborn.lineplot.
-
-    Returns
-    -------
-    None
-        The function displays and/or saves the plot but does not return any value.
     """
     fig, ax = plot_start()
 
@@ -253,9 +248,8 @@ def roc_prc(
 
     Returns
     -------
-    tuple[Figure, Any, dict[Tuple[str, str], dict[str, float]]]
+    tuple[Any, dict[Tuple[str, str], dict[str, float]]]
         A tuple containing:
-        - fig: The matplotlib Figure object
         - axes: Array of matplotlib Axes objects (ROC and PRC subplots)
         - results: Dictionary mapping (element, method) tuples to their auPRC and auROC scores
     """

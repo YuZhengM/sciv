@@ -69,11 +69,6 @@ def bar(
         Whether to close the figure after saving.
     **kwargs : Any
         Additional keyword arguments passed to matplotlib's bar/barh function.
-
-    Returns
-    -------
-    None
-        The function displays and/or saves the plot but does not return any value.
     """
     fig, ax = plot_start()
 
@@ -162,11 +157,6 @@ def bar_two(
         Whether to close the figure after saving.
     **kwargs : Any
         Additional keyword arguments passed to matplotlib's bar function.
-
-    Returns
-    -------
-    None
-        The function displays and/or saves the plot but does not return any value.
     """
     fig, ax = plot_start()
 
@@ -270,11 +260,6 @@ def bar_class(
         Whether to close the figure after saving.
     **kwargs : Any
         Additional keyword arguments passed to the two_bar function.
-
-    Returns
-    -------
-    None
-        The function displays and/or saves the plot but does not return any value.
     """
     df1 = df[df[by] == 1]
     df2 = df[df[by] == 0]
@@ -429,11 +414,6 @@ def bar_significance(
         Whether to close the figure after saving.
     **kwargs : Any
         Additional keyword arguments passed to seaborn's barplot function.
-
-    Returns
-    -------
-    None
-        The function displays and/or saves the plot but does not return any value.
     """
     fig, ax = plot_start()
 

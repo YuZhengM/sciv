@@ -76,9 +76,6 @@ def violin(
         Whether to close.
     kwargs : Any, optional
         Keyword arguments.
-    Returns
-    -------
-    None
     """
     # judge
     df_columns = list(df.columns)

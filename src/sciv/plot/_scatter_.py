@@ -583,10 +583,6 @@ def volcano(
         Close to close the figure after saving.
     kwargs : Any, optional
         Additional keyword arguments passed to sns.scatterplot.
-
-    Returns
-    -------
-    None
     """
 
     fig, ax = plot_start()

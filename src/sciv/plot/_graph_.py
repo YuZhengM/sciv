@@ -177,11 +177,6 @@ def communities_graph(
         Whether to display the figure.
     close : bool, default=False
         Whether to close the figure after display.
-
-    Returns
-    -------
-    None
-        The function displays and/or saves the network plot.
     """
 
     log.info("Start cell-cell network diagram")
@@ -329,11 +324,6 @@ def network_two_types(
         Whether to display the figure.
     close : bool, default=False
         Whether to close the figure after display.
-
-    Returns
-    -------
-    None
-        The function displays and/or saves the network plot.
     """
 
     # Create a node list of genes and variations

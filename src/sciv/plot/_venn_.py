@@ -61,9 +61,6 @@ def venn_three(
         Whether to close.
     kwargs : Any, optional
         Keyword arguments.
-    Returns
-    -------
-    None
     """
     fig, ax = plot_start()
 
@@ -139,9 +136,6 @@ def venn_two(
         Whether to close.
     kwargs : Any, optional
         Keyword arguments.
-    Returns
-    -------
-    None
     """
     fig, ax = plot_start()
 

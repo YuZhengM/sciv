@@ -176,11 +176,6 @@ def heatmap_annotation(
         File path to save the figure. If None, figure is not saved.
     **kwargs
         Additional keyword arguments passed to ClusterMapPlotter.
-
-    Returns
-    -------
-    None
-        Displays or saves the heatmap figure.
     """
     log.info("Start plotting the heatmap")
     fig, ax = plot_start()
@@ -395,11 +390,6 @@ def heatmap(
         Whether to close the figure after saving.
     **kwargs : Any
         Additional keyword arguments passed to seaborn heatmap or clustermap.
-
-    Returns
-    -------
-    None
-        Displays or saves the heatmap figure.
     """
     fig, ax = plot_start()
 
