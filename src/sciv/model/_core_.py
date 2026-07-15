@@ -909,6 +909,13 @@ def knock(
     knock_trs.layers["effect_trs_source"] = knock_trs_source + (source_trs - knock_trs_bg_score)
     knock_trs.X = scale_normalize(knock_trs.layers["effect_trs_source"], axis=0)
 
+    variant_anno: DataFrame = knock_trs.var.copy()
+    variant_anno.rename_axis("index", inplace=True)
+    variant_anno = pd.merge(variant_anno, trait_obs, left_on="id", right_on="rsId", how="left")
+    variant_anno.index = variant_anno["id"].astype(str)
+    variant_anno.rename_axis("index", inplace=True)
+    knock_trs.var = variant_anno
+
     knock_trs.uns["params"] = {
         "knock_trait": knock_trait,
         "knock_info": knock_info,
