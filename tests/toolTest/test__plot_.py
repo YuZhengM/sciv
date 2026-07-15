@@ -124,18 +124,7 @@ class Test(TestCase):
 
     def test_violin_significance(self):
         np.random.seed(42)
-        n = 30
-
-        # 模拟三组数据，均值和方差不同
-        data = {
-            'clusters': ['Control'] * n + ['Drug_A'] * n + ['Drug_B'] * n,
-            'value': np.concatenate([
-                np.random.normal(50, 5, n),
-                np.random.normal(55, 6, n),
-                np.random.normal(62, 8, n)
-            ])
-        }
-        df_test = pd.DataFrame(data)
+        df_test = generate_test_data()
 
         print("开始测试 violin_significance 函数...")
 
@@ -144,15 +133,14 @@ class Test(TestCase):
         violin_significance(
             df=df_test,
             value="value",
+            hue="hue_col",
             groupby="clusters",
-            hue="clusters",  # 明确指定 hue
-            legend=False,  # 隐藏图例（因为 x 和 hue 相同）
+            test="Mann-Whitney",  # 非参数检验
             palette="Set2",  # 使用调色板
             title="Analysis of Differences in Three Data Groups",
             x_name="Processing Group",
             y_name="measured value",
-            output="violin_t_test.png",  # 保存图片
-            show=False
+            output="violin_t_test.png"
         )
         print("场景 1 (t-test_ind) 完成，图片已保存。")
 
@@ -162,13 +150,7 @@ class Test(TestCase):
             df=df_test,
             value="value",
             groupby="clusters",
-            hue="clusters",
-            legend=False,
             test="Mann-Whitney",  # 非参数检验
-            palette=["#3498db", "#e74c3c", "#2ecc71"],  # 自定义颜色
-            pairs=[("Control", "Drug_B")],  # 只对比 Control 和 Drug_B
-            title="Control vs Drug_B (Mann-Whitney)",
-            output="violin_mann_whitney.png",
-            show=False
+            output="violin_mann_whitney.png"
         )
         print("场景 2 (Mann-Whitney) 完成，图片已保存。")

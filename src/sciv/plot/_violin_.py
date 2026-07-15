@@ -174,9 +174,10 @@ def violin_significance(
     hue: str = None,
     order_names: list = None,
     pairs: List[tuple] = None,
-    test: test_method_type = "Wilcoxon",
+    test: test_method_type = "Mann-Whitney",
     rotation: float = 65,
-    line_width: float = 0.8,
+    marker_size: float = 2,
+    line_width: float = 0.5,
     title: str = None,
     output: path = None,
     show: bool = False,
@@ -215,6 +216,8 @@ def violin_significance(
          "Mann-Whitney-ls", "Levene", "Wilcoxon", "Kruskal", "Brunner-Munzel"}.
     rotation : float, optional
         Rotation.
+    marker_size : float, optional
+        Line width.
     line_width : float, optional
         Line width.
     title : str, optional
@@ -255,12 +258,15 @@ def violin_significance(
     if order_names is None:
         new_df.sort_values([value], ascending=False, inplace=True)
         y_names: list = list(new_df[groupby])
+
         if "color" in df_columns:
             colors = list(new_df["color"])
     else:
         y_names = order_names
+
         if "color" in df_columns:
             new_df.index = new_df[groupby]
+
             for i in order_names:
                 if i in new_df.index:
                     c_val = new_df.loc[i, "color"]
@@ -291,14 +297,14 @@ def violin_significance(
         y=value,
         hue=hue,
         order=y_names,
-        width=0.15,
+        # width=0.15,
         boxprops={'zorder': 2, 'facecolor': 'white', 'linewidth': line_width},
         whiskerprops={'linewidth': line_width},
         capprops={'linewidth': line_width},
         medianprops={'color': 'black', 'linewidth': line_width},
-        flierprops={'marker': 'o', 'markerfacecolor': 'none', 'markersize': 3, 'markeredgecolor': 'black'},
+        flierprops={'marker': 'o', 'markerfacecolor': 'none', 'markersize': marker_size, 'markeredgecolor': 'black'},
         ax=ax,
-        dodge=False
+        dodge=True if hue else False
     )
 
     # Layer 3: Stripplot (Raw Data)
@@ -309,60 +315,70 @@ def violin_significance(
         hue=hue,
         order=y_names,
         palette=final_palette,
-        size=4,
+        size=marker_size,
         edgecolor='black',
-        linewidth=0.3,
+        linewidth=line_width,
         alpha=0.6,
         jitter=True,
         ax=ax,
-        dodge=False
+        dodge=True if hue else False
     )
 
     # --- 5. Significance Annotation ---
-    if pairs is None:
-        pairs = [(y_names[i], y_names[i + 1]) for i in range(len(y_names) - 1)]
+    if hue:
+        if pairs is None:
+            hue_values = df[hue].unique()
+            pairs = [(hue_values[i], hue_values[i + 1]) for i in range(len(hue_values) - 1)]
 
-    y_max = df[value].max()
-    y_range = df[value].max() - df[value].min()
-    # Start annotation slightly above the max data point
-    h = y_max + 0.05 * y_range
+        y_max = df[value].max()
+        y_range = df[value].max() - df[value].min()
+        # Start annotation slightly above the max data point
+        h = y_max + 0.05 * y_range
 
-    x_tick_map = {name: i for i, name in enumerate(y_names)}
+        # x_tick_map = {name: i for i, name in enumerate(y_names)}  # 不再需要这个
 
-    for i, (group1, group2) in enumerate(pairs):
-        if group1 not in x_tick_map or group2 not in x_tick_map:
-            log.warning(f"Pair ({group1}, {group2}) not found in order_names, skipping.")
-            continue
+        # 只定义一次 hue_values 和 hue_positions
+        hue_values = df[hue].unique()
+        hue_positions = {hue_val: i for i, hue_val in enumerate(hue_values)}
 
-        data1 = df[df[groupby] == group1][value]
-        data2 = df[df[groupby] == group2][value]
+        for i, (hue_val1, hue_val2) in enumerate(pairs):
 
-        # Calculate P-value
-        p_val = get_stat_result(data1, data2, test).pvalue
+            for group_name in y_names:
+                data1 = df[(df[groupby] == group_name) & (df[hue] == hue_val1)][value]
+                data2 = df[(df[groupby] == group_name) & (df[hue] == hue_val2)][value]
 
-        # Draw connectors
-        x1 = x_tick_map[group1]
-        x2 = x_tick_map[group2]
+                if len(data1) == 0 or len(data2) == 0:
+                    continue
 
-        level = i + 1
-        curr_h = h + (0.1 * y_range * (level - 1))
+                # Calculate P-value
+                p_val = get_stat_result(data1, data2, test).pvalue
 
-        ax.plot([x1, x1, x2, x2],
-                [curr_h, curr_h + 0.02 * y_range, curr_h + 0.02 * y_range, curr_h],
-                lw=1.5, color='black')
+                # Draw connectors - 现在在同一个 group 内部比较
+                x_pos = y_names.index(group_name)  # 获取 group 的位置
 
-        # Format P-value text
-        if np.isnan(p_val):
-            p_text = "NaN"
-        elif p_val < 0.001:
-            p_text = f'P={p_val:.2e}'
-        elif p_val < 0.05:
-            p_text = f'P={p_val:.3f}'
-        else:
-            p_text = f'P={p_val:.2f}'
+                # 计算 hue 在 group 内部的相对位置
+                x_pos1 = x_pos + (hue_positions[hue_val1] - (len(hue_values) - 1) / 2) / (len(hue_values) + 1)
+                x_pos2 = x_pos + (hue_positions[hue_val2] - (len(hue_values) - 1) / 2) / (len(hue_values) + 1)
 
-        ax.text((x1 + x2) * 0.5, curr_h + 0.025 * y_range, p_text,
-                ha='center', va='bottom', fontsize=10, fontweight='bold')
+                level = i + 1
+                curr_h = h + (0.1 * y_range * (level - 1))
+
+                ax.plot([x_pos1, x_pos1, x_pos2, x_pos2],
+                        [curr_h, curr_h + 0.02 * y_range, curr_h + 0.02 * y_range, curr_h],
+                        lw=1.5, color='black')
+
+                # Format P-value text
+                if np.isnan(p_val):
+                    p_text = "NaN"
+                elif p_val < 0.001:
+                    p_text = f'P={p_val:.2e}'
+                elif p_val < 0.05:
+                    p_text = f'P={p_val:.3f}'
+                else:
+                    p_text = f'P={p_val:.2f}'
+
+                ax.text((x_pos1 + x_pos2) * 0.5, curr_h + 0.025 * y_range, p_text,
+                        ha='center', va='bottom')
 
     # --- 6. Aesthetics Adjustments ---
     ax.spines['top'].set_linewidth(line_width)
@@ -370,6 +386,11 @@ def violin_significance(
     ax.spines['bottom'].set_linewidth(line_width)
     ax.spines['left'].set_linewidth(line_width)
     ax.tick_params(axis='x', rotation=rotation)
+
+    if hue:
+        handles, labels = ax.get_legend_handles_labels()
+        n_hues = len(df[hue].unique())
+        ax.legend(handles[:n_hues], labels[:n_hues], title=hue)
 
     plot_end(title, x_name, y_name, output, show, close)
 
