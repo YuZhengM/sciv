@@ -3,7 +3,6 @@
 from typing import Optional, Tuple, Union, Any
 
 import numpy as np
-from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
 from pandas import DataFrame
 from anndata import AnnData

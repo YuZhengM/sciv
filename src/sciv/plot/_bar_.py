@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 from statannotations.Annotator import Annotator
 
 from .. import util as ul
-from ..util import path, collection, plot_color_types, plot_start, plot_end
+from ..util import path, collection, plot_color_types, plot_start, plot_end, test_method_type
 
 __name__: str = "plot_bar"
 
@@ -315,7 +315,7 @@ def bar_significance(
     start_color_index: int = 0,
     color_step_size: int = 0,
     cmap: str = "set",
-    test: str = "Wilcoxon",
+    test: test_method_type = "Wilcoxon",
     ci: Union[str, float] = "sd",
     x_rotation: float = 0,
     x_deviation: float = 0.02,
@@ -378,7 +378,7 @@ def bar_significance(
         Step size when cycling through the color palette for subsequent hue categories.
     cmap : str, default "set"
         Name of the seaborn color palette to use. Must be a key in plot_color_types.
-    test : str, default "t-test_ind"
+    test : str, default "Wilcoxon"
         Statistical test for pairwise comparisons. Options include:
         {"t-test_ind", "t-test_welch", "t-test_paired", "Mann-Whitney", "Mann-Whitney-gt",
          "Mann-Whitney-ls", "Levene", "Wilcoxon", "Kruskal", "Brunner-Munzel"}.

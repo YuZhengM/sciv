@@ -3,7 +3,7 @@ from unittest import TestCase
 import numpy as np
 from scipy import stats
 
-from sciv.tool import evaluate_probability_metrics, pearsonr
+from sciv.tool import evaluate_probability_metrics, pearsonr, get_stat_result
 
 
 class Test(TestCase):
@@ -113,3 +113,21 @@ class Test(TestCase):
             print("✅ 自定义函数计算结果与 Scipy 完全一致，代码正确！")
         else:
             print("❌ 存在差异，需要检查代码。")
+
+    def test_get_stat_result(self):
+        # 1. 构造测试数据
+        np.random.seed(42)  # 设置随机种子保证结果可复现
+        group_A = np.random.normal(loc=5.0, scale=1.5, size=30)
+        group_B = np.random.normal(loc=5.8, scale=1.5, size=30)
+
+        # 1. 获取完整的返回对象
+        result = get_stat_result(group_A, group_B, "Wilcoxon")
+        print("返回的完整对象:", result)
+
+        # 2. 你可以从对象中提取你需要的数据
+        print(f"统计量 (statistic): {result.statistic:.4f}")
+        print(f"P 值 (pvalue): {result.pvalue:.4f}")
+
+        # 3. 获取 Mann-Whitney 检验结果
+        mw_result = get_stat_result(group_A, group_B, "Mann-Whitney")
+        print(f"\nMann-Whitney P 值: {mw_result.pvalue:.4f}")

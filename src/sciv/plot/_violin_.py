@@ -1,12 +1,15 @@
 # -*- coding: UTF-8 -*-
 
-from typing import Tuple, Union, Literal, Any
+from typing import Tuple, Union, Literal, Any, List
 
+import numpy as np
+import pandas as pd
 from pandas import DataFrame
 import seaborn as sns
 
 from .. import util as ul
-from ..util import path, plot_end, plot_start
+from ..tool import get_stat_result
+from ..util import path, plot_start, plot_end, test_method_type
 
 __name__: str = "plot_violin"
 
@@ -36,48 +39,48 @@ def violin(
     **kwargs: Any
 ):
     """
-    Plot violin plot.
+    Plot violin plot (or other categorical plots).
 
     Parameters
     ----------
     df : DataFrame
         Input data.
     value : str, optional
-        Value column.
+        Value column (Y-axis).
     x_name : str, optional
-        X name.
+        Label for X-axis.
     y_name : str, optional
-        Y name.
+        Label for Y-axis.
     kind : _Kind, optional
-        Kind of plot.
+        Kind of plot (e.g., "violin", "box", "bar").
     groupby : str, optional
-        Clusters column.
+        Column name for grouping (X-axis).
     palette : Union[Tuple, list], optional
-        Palette.
+        Color palette.
     hue : str, optional
-        Hue column.
+        Column name for hue grouping.
     rotation : float, optional
-        Rotation.
+        Rotation angle for x-axis labels.
     line_width : float, optional
-        Line width.
+        Line width for axes and plot elements.
     title : str, optional
-        Title.
+        Plot title.
     split : bool, optional
-        Whether to split.
+        Whether to split violins (only works when kind='violin').
     is_sort : bool, optional
-        Whether to sort.
+        Whether to sort groups by median value.
     order_names : list, optional
-        Order names.
+        Specific order for groups.
     output : path, optional
-        Output path.
+        Output file path.
     show : bool, optional
-        Whether to show.
+        Whether to display the plot.
     close : bool, optional
-        Whether to close.
+        Whether to close the plot figure.
     kwargs : Any, optional
-        Keyword arguments.
+        Additional keyword arguments for sns.catplot.
     """
-    # judge
+    # judge columns
     df_columns = list(df.columns)
 
     if value not in df_columns:
@@ -90,49 +93,51 @@ def violin(
         log.error(f"The `hue` ({hue}) parameter must be in the `df` parameter data column name ({df_columns})")
         raise ValueError(f"The `hue` ({hue}) parameter must be in the `df` parameter data column name ({df_columns})")
 
-    fig, ax = plot_start()
+    if groupby not in df_columns:
+        log.error(f"The `groupby` ({groupby}) parameter must be in the `df` parameter data column name ({df_columns})")
+        raise ValueError(
+            f"The `groupby` ({groupby}) parameter must be in the `df` parameter data column name ({df_columns})"
+        )
 
+    # Prepare sorting and colors
     group_columns = [groupby]
 
-    new_df: DataFrame = df.groupby(group_columns, as_index=False)[value].median()
+    if order_names is not None:
+        # 优先使用用户指定的顺序
+        y_names = order_names
+    elif is_sort:
+        # 按中位数排序
+        # 注意：这里只聚合数值列计算中位数，不涉及 color
+        median_df = df.groupby(group_columns, observed=True, as_index=False)[value].median()
+        median_df.sort_values([value], ascending=False, inplace=True)
+        y_names = list(median_df[groupby])
+    else:
+        # 默认顺序：按原始数据中的出现顺序
+        y_names = list(df[groupby].unique())
+
+    # 2. 独立提取颜色映射
+    # 无论 groupby 如何操作，我们直接从原始 df 中获取每个 group 对应的第一个颜色
+    colors = []
 
     if "color" in df_columns:
-        new_df_color: DataFrame = df.groupby(group_columns, as_index=False)["color"].first()
-        new_df = new_df.merge(new_df_color, how="left", on=groupby)
+        # 获取去重后的 Group-Color 对应关系 (保留首次出现的颜色)
+        unique_color_df = df.drop_duplicates(subset=[groupby], keep='first')
+        # 构建映射字典: Group Name -> Color Hex
+        color_map = dict(zip(unique_color_df[groupby], unique_color_df["color"]))
 
-    colors: list = []
+        # 根据 y_names 的顺序构建 colors 列表
+        # 使用 get 方法，如果找不到对应颜色则填充 None (或默认色)
+        colors = [color_map.get(name) for name in y_names]
 
-    # sort
-    if is_sort:
-        new_df.sort_values([value], ascending=False, inplace=True)
-        y_names: Union[list, None] = list(new_df[groupby])
+    # Construct kwargs for catplot
+    plot_kwargs = kwargs.copy()
 
-        if "color" in df_columns:
-            colors = list(new_df["color"])
+    if kind == "violin":
+        plot_kwargs['split'] = split
 
-    else:
-        new_df.index = new_df[groupby]
+    effective_palette = palette if palette is not None else (colors if "color" in df_columns else None)
 
-        if order_names is not None:
-            y_names: list = order_names
-
-            if "color" in df_columns:
-
-                for i in order_names:
-
-                    for j, c in zip(new_df[groupby], new_df["color"]):
-
-                        if i == j:
-                            colors.append(c)
-                            break
-
-        else:
-            y_names = list(new_df[groupby])
-
-            if "color" in df_columns:
-                colors = list(new_df["color"])
-
-    # scatter
+    # scatter (categorical plot)
     g = sns.catplot(
         data=df,
         x=groupby,
@@ -140,13 +145,12 @@ def violin(
         kind=kind,
         hue=hue,
         order=y_names,
-        split=split,
         linewidth=line_width,
-        palette=palette if palette is not None else (colors if "color" in df_columns else None),
-        **kwargs
+        palette=effective_palette,
+        **plot_kwargs
     )
 
-    # set coordinate
+    # set coordinate style
     for _ax_ in g.axes.flat:
         _ax_.spines['top'].set_linewidth(line_width)
         _ax_.spines['right'].set_linewidth(line_width)
@@ -158,3 +162,215 @@ def violin(
     plot_end(title, x_name, y_name, output, show, close)
 
     return g
+
+
+def violin_significance(
+    df: DataFrame,
+    value: str = "value",
+    x_name: str = None,
+    y_name: str = "value",
+    groupby: str = "clusters",
+    palette: Union[Tuple, list, str] = None,
+    hue: str = None,
+    order_names: list = None,
+    pairs: List[tuple] = None,
+    test: test_method_type = "Wilcoxon",
+    rotation: float = 65,
+    line_width: float = 0.8,
+    title: str = None,
+    output: path = None,
+    show: bool = False,
+    close: bool = True,
+    **kwargs: Any
+):
+    """
+    Plot violin plot with scatter overlay and significance bars.
+
+    Combines violin (distribution), boxplot (quartiles), and stripplot (raw data).
+    Performs statistical test and annotates p-values.
+
+    Parameters
+    ----------
+    df : DataFrame
+        Input data.
+    value : str, optional
+        Value column.
+    x_name : str, optional
+        X name.
+    y_name : str, optional
+        Y name.
+    groupby : str, optional
+        Clusters column.
+    palette : Union[Tuple, list], optional
+        Palette.
+    hue : str, optional
+        Hue column.
+    order_names : list, optional
+        Order names.
+    pairs : List[tuple], optional
+        List of tuple pairs to compare. If None, compares all sequential pairs.
+    test : str, default "t-test_ind"
+        Statistical test for pairwise comparisons. Options include:
+        {"t-test_ind", "t-test_welch", "t-test_paired", "Mann-Whitney", "Mann-Whitney-gt",
+         "Mann-Whitney-ls", "Levene", "Wilcoxon", "Kruskal", "Brunner-Munzel"}.
+    rotation : float, optional
+        Rotation.
+    line_width : float, optional
+        Line width.
+    title : str, optional
+        Title.
+    output : path, optional
+        Output path.
+    show : bool, optional
+        Whether to show.
+    close : bool, optional
+        Whether to close.
+    kwargs : Any, optional
+        Keyword arguments passed to sns.violinplot.
+    """
+
+    # --- 1. Parameter Validation ---
+    df_columns = list(df.columns)
+
+    if value not in df_columns:
+        log.error(f"The `value` ({value}) parameter must be in `df` columns ({df_columns})")
+        raise ValueError(f"The `value` ({value}) parameter must be in `df` columns ({df_columns})")
+
+    if hue is not None and hue not in df_columns:
+        log.error(f"The `hue` ({hue}) parameter must be in `df` columns ({df_columns})")
+        raise ValueError(f"The `hue` ({hue}) parameter must be in `df` columns ({df_columns})")
+
+    # --- 2. Initialize Canvas ---
+    fig, ax = plot_start()
+
+    # --- 3. Handling Order and Colors ---
+    group_columns = [groupby]
+    new_df: DataFrame = df.groupby(group_columns, as_index=False)[value].median()
+
+    colors: list = []
+    if "color" in df_columns:
+        new_df_color: DataFrame = df.groupby(group_columns, as_index=False)["color"].first()
+        new_df = new_df.merge(new_df_color, how="left", on=groupby)
+
+    if order_names is None:
+        new_df.sort_values([value], ascending=False, inplace=True)
+        y_names: list = list(new_df[groupby])
+        if "color" in df_columns:
+            colors = list(new_df["color"])
+    else:
+        y_names = order_names
+        if "color" in df_columns:
+            new_df.index = new_df[groupby]
+            for i in order_names:
+                if i in new_df.index:
+                    c_val = new_df.loc[i, "color"]
+                    colors.append(c_val.iloc[0] if isinstance(c_val, (list, np.ndarray, pd.Series)) else c_val)
+
+    final_palette = palette if palette is not None else (colors if len(colors) > 0 else None)
+
+    # --- 4. Plotting Layers ---
+
+    # Layer 1: Violin (Distribution)
+    sns.violinplot(
+        data=df,
+        x=groupby,
+        y=value,
+        hue=hue,
+        order=y_names,
+        palette=final_palette,
+        linewidth=line_width,
+        inner=None,
+        ax=ax,
+        **kwargs
+    )
+
+    # Layer 2: Boxplot (Quartiles)
+    sns.boxplot(
+        data=df,
+        x=groupby,
+        y=value,
+        hue=hue,
+        order=y_names,
+        width=0.15,
+        boxprops={'zorder': 2, 'facecolor': 'white', 'linewidth': line_width},
+        whiskerprops={'linewidth': line_width},
+        capprops={'linewidth': line_width},
+        medianprops={'color': 'black', 'linewidth': line_width},
+        flierprops={'marker': 'o', 'markerfacecolor': 'none', 'markersize': 3, 'markeredgecolor': 'black'},
+        ax=ax,
+        dodge=False
+    )
+
+    # Layer 3: Stripplot (Raw Data)
+    sns.stripplot(
+        data=df,
+        x=groupby,
+        y=value,
+        hue=hue,
+        order=y_names,
+        palette=final_palette,
+        size=4,
+        edgecolor='black',
+        linewidth=0.3,
+        alpha=0.6,
+        jitter=True,
+        ax=ax,
+        dodge=False
+    )
+
+    # --- 5. Significance Annotation ---
+    if pairs is None:
+        pairs = [(y_names[i], y_names[i + 1]) for i in range(len(y_names) - 1)]
+
+    y_max = df[value].max()
+    y_range = df[value].max() - df[value].min()
+    # Start annotation slightly above the max data point
+    h = y_max + 0.05 * y_range
+
+    x_tick_map = {name: i for i, name in enumerate(y_names)}
+
+    for i, (group1, group2) in enumerate(pairs):
+        if group1 not in x_tick_map or group2 not in x_tick_map:
+            log.warning(f"Pair ({group1}, {group2}) not found in order_names, skipping.")
+            continue
+
+        data1 = df[df[groupby] == group1][value]
+        data2 = df[df[groupby] == group2][value]
+
+        # Calculate P-value
+        p_val = get_stat_result(data1, data2, test).pvalue
+
+        # Draw connectors
+        x1 = x_tick_map[group1]
+        x2 = x_tick_map[group2]
+
+        level = i + 1
+        curr_h = h + (0.1 * y_range * (level - 1))
+
+        ax.plot([x1, x1, x2, x2],
+                [curr_h, curr_h + 0.02 * y_range, curr_h + 0.02 * y_range, curr_h],
+                lw=1.5, color='black')
+
+        # Format P-value text
+        if np.isnan(p_val):
+            p_text = "NaN"
+        elif p_val < 0.001:
+            p_text = f'P={p_val:.2e}'
+        elif p_val < 0.05:
+            p_text = f'P={p_val:.3f}'
+        else:
+            p_text = f'P={p_val:.2f}'
+
+        ax.text((x1 + x2) * 0.5, curr_h + 0.025 * y_range, p_text,
+                ha='center', va='bottom', fontsize=10, fontweight='bold')
+
+    # --- 6. Aesthetics Adjustments ---
+    ax.spines['top'].set_linewidth(line_width)
+    ax.spines['right'].set_linewidth(line_width)
+    ax.spines['bottom'].set_linewidth(line_width)
+    ax.spines['left'].set_linewidth(line_width)
+    ax.tick_params(axis='x', rotation=rotation)
+
+    plot_end(title, x_name, y_name, output, show, close)
+
+    return ax

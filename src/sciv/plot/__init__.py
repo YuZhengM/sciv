@@ -12,7 +12,7 @@ from ._scatter_ import (
     pseudo_time_score
 )
 
-from ._violin_ import violin
+from ._violin_ import violin, violin_significance
 from ._box_ import box
 from ._kde_ import kde
 from ._line_ import line, roc_prc
@@ -33,6 +33,7 @@ __all__ = [
     "scatter",
     "scatter_element",
     "violin",
+    "violin_significance",
     "manhattan_causal_variant",
     "pseudo_time_score",
     "barcode",

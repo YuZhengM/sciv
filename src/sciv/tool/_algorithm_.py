@@ -31,7 +31,8 @@ from ..util import (
     number,
     collection,
     get_index,
-    diff_peak_optional
+    diff_peak_optional,
+    test_method_type
 )
 
 __name__: str = "tool_algorithm"
@@ -1976,3 +1977,41 @@ def add_bernoulli_fluctuation_noise(
     ).astype(counts_matrix.dtype)
 
     return counts_matrix + noise
+
+
+def get_stat_result(data1, data2, test_method: test_method_type):
+    """
+    根据指定的统计检验方法计算并返回完整的 scipy 统计检验结果对象。
+
+    参数:
+    data1 (array_like): 第一组数据。
+    data2 (array_like): 第二组数据。
+    test_method (str): 统计检验方法的名称。
+
+    返回:
+    scipy stats result object: 包含统计量和 p 值等信息的原始对象。
+                               如果方法未知，默认返回独立 t 检验结果。
+    """
+    data1 = np.asarray(data1)
+    data2 = np.asarray(data2)
+
+    # 使用字典映射测试方法，简化分支逻辑
+    # 格式: "方法名": (函数引用, 传入参数字典)
+    test_mapping = {
+        "t-test_ind": (stats.ttest_ind, {"equal_var": True}),
+        "t-test_welch": (stats.ttest_ind, {"equal_var": False}),
+        "t-test_paired": (stats.ttest_rel, {}),
+        "Mann-Whitney": (stats.mannwhitneyu, {"alternative": 'two-sided'}),
+        "Mann-Whitney-gt": (stats.mannwhitneyu, {"alternative": 'greater'}),
+        "Mann-Whitney-ls": (stats.mannwhitneyu, {"alternative": 'less'}),
+        "Levene": (stats.levene, {}),
+        "Wilcoxon": (stats.wilcoxon, {}),
+        "Kruskal": (stats.kruskal, {}),
+        "Brunner-Munzel": (stats.brunnermunzel, {})
+    }
+
+    # 获取对应的函数和参数，如果未找到则默认使用 t-test_ind
+    func, kwargs = test_mapping.get(test_method, (stats.ttest_ind, {"equal_var": True}))
+
+    # 执行检验并返回完整的原始结果对象 (包含 statistic 和 pvalue 等属性)
+    return func(data1, data2, **kwargs)

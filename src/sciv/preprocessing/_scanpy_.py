@@ -2,7 +2,7 @@
 
 import time
 import warnings
-from typing import Optional, Literal
+from typing import Optional
 
 import numpy as np
 from anndata import AnnData

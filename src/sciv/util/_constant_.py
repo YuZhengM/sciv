@@ -67,6 +67,11 @@ diff_peak_optional = Literal['emp_effect', 'bayes_factor', 'emp_prob1', 'all']
 
 diff_method = Optional[Literal['logreg', 't-test', 'wilcoxon', 't-test_overestim_var']]
 
+test_method_type = Literal[
+    "t-test_ind", "t-test_welch", "t-test_paired", "Mann-Whitney", "Mann-Whitney-gt", "Mann-Whitney-ls", "Levene",
+    "Wilcoxon", "Kruskal", "Brunner-Munzel"
+]
+
 # set matplotlib log level to error
 matplotlib.set_loglevel("error")
 
