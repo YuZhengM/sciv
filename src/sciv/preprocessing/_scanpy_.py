@@ -194,7 +194,7 @@ def get_difference_genes(
     diff_p_value_matrix: matrix_data = np.zeros(_shape_)
     diff_ad_p_value_matrix: matrix_data = np.zeros(_shape_)
     diff_log2_fc_matrix: matrix_data = np.zeros(_shape_)
-    diff_rank_index: matrix_data = np.zeros(_shape_)
+    diff_rank_index: matrix_data = np.zeros(_shape_).astype(int)
     del _shape_
 
     # cluster
