@@ -283,28 +283,12 @@ def violin_significance(
         y=value,
         hue=hue,
         order=y_names,
+        inner='box',
         palette=final_palette,
         linewidth=line_width,
-        inner=None,
         ax=ax,
+        dodge=True if hue else False,
         **kwargs
-    )
-
-    # Layer 2: Boxplot (Quartiles)
-    sns.boxplot(
-        data=df,
-        x=groupby,
-        y=value,
-        hue=hue,
-        order=y_names,
-        # width=0.15,
-        boxprops={'zorder': 2, 'facecolor': 'white', 'linewidth': line_width},
-        whiskerprops={'linewidth': line_width},
-        capprops={'linewidth': line_width},
-        medianprops={'color': 'black', 'linewidth': line_width},
-        flierprops={'marker': 'o', 'markerfacecolor': 'none', 'markersize': marker_size, 'markeredgecolor': 'black'},
-        ax=ax,
-        dodge=True if hue else False
     )
 
     # Layer 3: Stripplot (Raw Data)
