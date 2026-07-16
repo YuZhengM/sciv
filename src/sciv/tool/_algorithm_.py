@@ -519,16 +519,24 @@ def pearsonr(
     if axis == 0:
 
         if x.size != y.shape[0]:
-            ul.log(__name__).info(f"When axis=0, the length of x ({x.size}) must equal the number of rows of y ({y.shape[0]})")
-            raise ValueError(f"When axis=0, the length of x ({x.size}) must equal the number of rows of y ({y.shape[0]})")
+            ul.log(__name__).info(
+                f"When axis=0, the length of x ({x.size}) must equal the number of rows of y ({y.shape[0]})"
+            )
+            raise ValueError(
+                f"When axis=0, the length of x ({x.size}) must equal the number of rows of y ({y.shape[0]})"
+            )
 
         x = np.zeros(y.shape) + x[:, np.newaxis]
 
     elif axis == 1:
 
         if x.size != y.shape[1]:
-            ul.log(__name__).info(f"When axis=1, the length of x ({x.size}) must equal the number of columns of y ({y.shape[1]})")
-            raise ValueError(f"When axis=1, the length of x ({x.size}) must equal the number of columns of y ({y.shape[1]})")
+            ul.log(__name__).info(
+                f"When axis=1, the length of x ({x.size}) must equal the number of columns of y ({y.shape[1]})"
+            )
+            raise ValueError(
+                f"When axis=1, the length of x ({x.size}) must equal the number of columns of y ({y.shape[1]})"
+            )
         x = np.zeros(y.shape) + x
 
     else:
@@ -551,16 +559,24 @@ def spearmanr(
     if axis == 0:
 
         if x.size != y.shape[0]:
-            ul.log(__name__).info(f"When axis=0, the length of x ({x.size}) must equal the number of rows of y ({y.shape[0]})")
-            raise ValueError(f"When axis=0, the length of x ({x.size}) must equal the number of rows of y ({y.shape[0]})")
+            ul.log(__name__).info(
+                f"When axis=0, the length of x ({x.size}) must equal the number of rows of y ({y.shape[0]})"
+            )
+            raise ValueError(
+                f"When axis=0, the length of x ({x.size}) must equal the number of rows of y ({y.shape[0]})"
+            )
 
         x = np.zeros(y.shape) + x[:, np.newaxis]
 
     elif axis == 1:
 
         if x.size != y.shape[1]:
-            ul.log(__name__).info(f"When axis=1, the length of x ({x.size}) must equal the number of columns of y ({y.shape[1]})")
-            raise ValueError(f"When axis=1, the length of x ({x.size}) must equal the number of columns of y ({y.shape[1]})")
+            ul.log(__name__).info(
+                f"When axis=1, the length of x ({x.size}) must equal the number of columns of y ({y.shape[1]})"
+            )
+            raise ValueError(
+                f"When axis=1, the length of x ({x.size}) must equal the number of columns of y ({y.shape[1]})"
+            )
         x = np.zeros(y.shape) + x
 
     else:
@@ -1391,6 +1407,11 @@ def overlap_sum(regions: AnnData, variants: dict, trait_info: DataFrame, n_jobs:
             f"and `end`. (It is recommended to use the `read_sc_atac` method.)"
         )
 
+    if "index" in regions.var.columns:
+        regions.rename(columns={"index": "index_x"}, inplace=True)
+
+    regions.var.rename_axis("index", inplace=True)
+
     regions_df = (
         regions.var
         .reset_index()
@@ -1705,7 +1726,7 @@ def calculate_init_score_weight(
         del overlap_matrix
 
         non_zero_vals = global_scale_data[global_scale_data != 0]
-        
+
         if non_zero_vals.size > 0:
             global_scale_data[global_scale_data == 0] = non_zero_vals.min() / 2
         else:

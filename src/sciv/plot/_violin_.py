@@ -176,8 +176,12 @@ def violin_significance(
     pairs: List[tuple] = None,
     test: test_method_type = "Mann-Whitney",
     rotation: float = 65,
-    marker_size: float = 2,
+    marker_size: float = 1,
+    strip_alpha: float = 0.8,
     line_width: float = 0.5,
+    strip_line_width: float = 0.2,
+    text_line_width: float = 0.5,
+    text_font_size: float = 6,
     title: str = None,
     output: path = None,
     show: bool = False,
@@ -187,7 +191,7 @@ def violin_significance(
     """
     Plot violin plot with scatter overlay and significance bars.
 
-    Combines violin (distribution), boxplot (quartiles), and stripplot (raw data).
+    Combines violin (distribution), and stripplot (raw data).
     Performs statistical test and annotates p-values.
 
     Parameters
@@ -217,9 +221,13 @@ def violin_significance(
     rotation : float, optional
         Rotation.
     marker_size : float, optional
-        Line width.
+        marker size.
+    strip_alpha : float, optional
     line_width : float, optional
         Line width.
+    text_font_size : float, optional
+    text_line_width : float, optional
+    strip_line_width : float, optional
     title : str, optional
         Title.
     output : path, optional
@@ -301,8 +309,8 @@ def violin_significance(
         palette=final_palette,
         size=marker_size,
         edgecolor='black',
-        linewidth=line_width,
-        alpha=0.6,
+        linewidth=strip_line_width,
+        alpha=strip_alpha,
         jitter=True,
         ax=ax,
         dodge=True if hue else False
@@ -349,20 +357,18 @@ def violin_significance(
 
                 ax.plot([x_pos1, x_pos1, x_pos2, x_pos2],
                         [curr_h, curr_h + 0.02 * y_range, curr_h + 0.02 * y_range, curr_h],
-                        lw=1.5, color='black')
+                        lw=text_line_width, color='black')
 
                 # Format P-value text
-                if np.isnan(p_val):
-                    p_text = "NaN"
-                elif p_val < 0.001:
-                    p_text = f'P={p_val:.2e}'
+                if p_val < 0.001:
+                    p_text = f'P={p_val:.2e}'  # 科学计数法，保留两位小数
                 elif p_val < 0.05:
-                    p_text = f'P={p_val:.3f}'
+                    p_text = f'P={p_val:.3f}'  # 3 位小数
                 else:
-                    p_text = f'P={p_val:.2f}'
+                    p_text = f'P={p_val:.2f}'  # 2 位小数
 
                 ax.text((x_pos1 + x_pos2) * 0.5, curr_h + 0.025 * y_range, p_text,
-                        ha='center', va='bottom')
+                        ha='center', va='bottom', fontsize=text_font_size)
 
     # --- 6. Aesthetics Adjustments ---
     ax.spines['top'].set_linewidth(line_width)

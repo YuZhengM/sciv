@@ -128,7 +128,7 @@ class Test(TestCase):
 
         print("开始测试 violin_significance 函数...")
 
-        sciv.ul.fig, sciv.ul.ax = plt.subplots(figsize=(3, 3))
+        sciv.ul.fig, sciv.ul.ax = plt.subplots(figsize=(2, 2))
         # 场景 1: 使用默认的 t-test_ind 检验
         violin_significance(
             df=df_test,
@@ -145,7 +145,7 @@ class Test(TestCase):
         print("场景 1 (t-test_ind) 完成，图片已保存。")
 
         # 场景 2: 使用非参数检验，并指定对比组
-        sciv.ul.fig, sciv.ul.ax = plt.subplots(figsize=(3, 3))
+        sciv.ul.fig, sciv.ul.ax = plt.subplots(figsize=(2, 2))
         violin_significance(
             df=df_test,
             value="value",
