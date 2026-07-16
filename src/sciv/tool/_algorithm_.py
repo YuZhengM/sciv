@@ -1364,6 +1364,57 @@ def overlap(regions: DataFrame, variants: DataFrame) -> DataFrame:
     return _overlap_(regions_sort, variants)
 
 
+def _process_trait_(col_idx: int, variant: AnnData, regions_df: DataFrame, label2idx: dict):
+
+    local_data_vals = []
+    local_row_indices = []
+    local_col_indices = []
+
+    overlap_df: DataFrame = _overlap_(regions_df, variant.obs)
+
+    if overlap_df.empty:
+        return local_data_vals, local_row_indices, local_col_indices
+
+    # Sum at once: first group by label and collect variant_id into a list
+    label_var_ids = (
+        overlap_df
+        .groupby("index")["variant_id"]
+        .apply(list)
+        .reset_index()
+    )
+
+    # Traverse each label, sum once for each variant_id list
+    for _, row in label_var_ids.iterrows():
+        label = row["index"]
+        row_idx = label2idx[label]
+        var_ids = row["variant_id"]
+        # Sum once for all variant_ids in the list, avoiding row-by-row slicing
+        matrix_sum = variant[var_ids, :].X.sum(axis=0)
+
+        if np.isscalar(matrix_sum):
+            matrix_sum = np.asarray(matrix_sum).reshape(1)
+
+        # Collect non-zero values
+        if matrix_sum.size == 1:
+            val = float(matrix_sum)
+
+            if val != 0:
+                local_row_indices.append(row_idx)
+                local_col_indices.append(col_idx)
+                local_data_vals.append(val)
+
+        else:
+
+            for t_idx, v in enumerate(matrix_sum):
+
+                if v != 0:
+                    local_row_indices.append(row_idx)
+                    local_col_indices.append(col_idx + t_idx)
+                    local_data_vals.append(float(v))
+
+    return local_data_vals, local_row_indices, local_col_indices
+
+
 def overlap_sum(regions: AnnData, variants: dict, trait_info: DataFrame, n_jobs: int = -1) -> AnnData:
     """
     Overlap regional data and mutation data and sum the PP values of all mutations in a region as the values for that
@@ -1408,7 +1459,7 @@ def overlap_sum(regions: AnnData, variants: dict, trait_info: DataFrame, n_jobs:
         )
 
     if "index" in regions.var.columns:
-        regions.rename(columns={"index": "index_x"}, inplace=True)
+        regions.var.rename(columns={"index": "index_x"}, inplace=True)
 
     regions.var.rename_axis("index", inplace=True)
 
@@ -1421,61 +1472,14 @@ def overlap_sum(regions: AnnData, variants: dict, trait_info: DataFrame, n_jobs:
 
     ul.log(__name__).info("Obtain peak-trait/disease matrix. (overlap variant information)")
 
-    # Function to process a single trait
-    def _process_trait_(trait_name, col_idx):
-
-        local_data_vals = []
-        local_row_indices = []
-        local_col_indices = []
-
-        variant: AnnData = variants[trait_name]
-        overlap_df: DataFrame = _overlap_(regions_df, variant.obs)
-
-        if overlap_df.empty:
-            return local_data_vals, local_row_indices, local_col_indices
-
-        # Sum at once: first group by label and collect variant_id into a list
-        label_var_ids = (
-            overlap_df
-            .groupby("index")["variant_id"]
-            .apply(list)
-            .reset_index()
-        )
-
-        # Traverse each label, sum once for each variant_id list
-        for _, row in label_var_ids.iterrows():
-            label = row["index"]
-            row_idx = label2idx[label]
-            var_ids = row["variant_id"]
-            # Sum once for all variant_ids in the list, avoiding row-by-row slicing
-            matrix_sum = variant[var_ids, :].X.sum(axis=0)
-
-            if np.isscalar(matrix_sum):
-                matrix_sum = np.asarray(matrix_sum).reshape(1)
-
-            # Collect non-zero values
-            if matrix_sum.size == 1:
-                val = float(matrix_sum)
-
-                if val != 0:
-                    local_row_indices.append(row_idx)
-                    local_col_indices.append(col_idx)
-                    local_data_vals.append(val)
-
-            else:
-
-                for t_idx, v in enumerate(matrix_sum):
-
-                    if v != 0:
-                        local_row_indices.append(row_idx)
-                        local_col_indices.append(col_idx + t_idx)
-                        local_data_vals.append(float(v))
-
-        return local_data_vals, local_row_indices, local_col_indices
-
     # Use Parallel to process traits in parallel
     results = Parallel(n_jobs=n_jobs)(
-        delayed(_process_trait_)(trait_name, col_idx) for col_idx, trait_name in tqdm(enumerate(trait_names))
+        delayed(_process_trait_)(
+            col_idx,
+            variants[trait_name],
+            regions_df,
+            label2idx
+        ) for col_idx, trait_name in tqdm(enumerate(trait_names))
     )
 
     # Preallocate length to avoid list dynamic expansion
