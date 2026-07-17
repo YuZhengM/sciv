@@ -42,8 +42,8 @@ def heatmap_annotation(
     cluster_metric: str = "correlation",
     row_names_side: str = "left",
     col_names_side: str = "bottom",
-    label_size: float = 9,
-    fontsize: float = 9,
+    label_size: float = 6,
+    fontsize: float = 8,
     level_bar_height: float = None,
     anno_specific_labels: list = None,
     x_label_rotation: float = 65,
@@ -221,9 +221,7 @@ def heatmap_annotation(
             cmap=ListedColormap(row_colors),
             merge=True,
             extend=True,
-            adjust_color=True,
-            luminance=0.75,
-            frac=0.5,
+            frac=0.2,
             relpos=(0, 0.5),
             height=2.5
         ) if row_anno_label and row_name else None,
@@ -254,9 +252,7 @@ def heatmap_annotation(
             df_rows,
             merge=True,
             extend=True,
-            adjust_color=True,
-            luminance=0.75,
-            frac=0.5,
+            frac=0.2,
             relpos=(0, 0.5),
             height=2.5,
             colors=col_colors
@@ -273,12 +269,11 @@ def heatmap_annotation(
             col_anno[col_name],
             merge=True,
             extend=True,
-            adjust_color=True,
-            luminance=0.75,
-            frac=0.5,
+            frac=0.2,
             relpos=(0.5, 0),
             height=2.5,
-            colors=col_colors
+            colors=col_colors,
+            **{"rotation": 90}
         ) if col_anno_label and col_name else None,
         ColCategory=anno_simple(
             col_anno[col_name],
