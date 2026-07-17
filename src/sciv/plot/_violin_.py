@@ -182,6 +182,7 @@ def violin_significance(
     strip_line_width: float = 0.2,
     text_line_width: float = 0.5,
     text_font_size: float = 6,
+    top_offset: float = 0,
     title: str = None,
     output: path = None,
     show: bool = False,
@@ -226,6 +227,7 @@ def violin_significance(
     line_width : float, optional
         Line width.
     text_font_size : float, optional
+    top_offset : float, optional
     text_line_width : float, optional
     strip_line_width : float, optional
     title : str, optional
@@ -376,6 +378,8 @@ def violin_significance(
     ax.spines['bottom'].set_linewidth(line_width)
     ax.spines['left'].set_linewidth(line_width)
     ax.tick_params(axis='x', rotation=rotation)
+
+    ax.spines['top'].set_position(('outward', top_offset))
 
     if hue:
         handles, labels = ax.get_legend_handles_labels()

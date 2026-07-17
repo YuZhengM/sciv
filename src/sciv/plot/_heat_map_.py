@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
 
-from typing import Optional, Union, Tuple, Any
+from typing import Optional, Union, Any
 
 import pandas as pd
 from anndata import AnnData
@@ -12,7 +12,7 @@ from pandas import DataFrame
 import seaborn as sns
 
 from .. import util as ul
-from ..util import path, type_20_colors, type_50_colors, plot_end, plot_start
+from ..util import path, type_20_colors, type_50_colors, plot_end, plot_start, plot_color_types
 
 __name__: str = "plot_heat_map"
 
@@ -56,10 +56,6 @@ def heatmap_annotation(
     col_split_order: Union[list, str] = None,
     row_split_gap: float = 0.5,
     col_split_gap: float = 0.2,
-    frac: float = 0.2,
-    relpos: Tuple = (0, 1),
-    anno_label_height: Optional[float] = None,
-    selected_anno_label_height: float = 2.5,
     category_height: Optional[float] = 2.5,
     x_name: Optional[str] = None,
     y_name: Optional[str] = None,
@@ -148,14 +144,6 @@ def heatmap_annotation(
         Gap size between row splits in mm.
     col_split_gap : float, default 0.2
         Gap size between column splits in mm.
-    frac : float, default 0.2
-        Fraction parameter for annotation label positioning.
-    relpos : Tuple, default (0, 1)
-        Relative position for annotation labels.
-    anno_label_height : Optional[float], default None
-        Height of the annotation label bar.
-    selected_anno_label_height : float, default 2.5
-        Height of the selected annotation label bar.
     category_height : Optional[float], default 2.5
         Height of the category annotation bar.
     x_name : Optional[str], default None
@@ -213,13 +201,13 @@ def heatmap_annotation(
         row_colors = type_20_colors[row_color_start_index:] if len(
             list(set(row_anno[row_name]))) + row_color_start_index <= 20 else type_50_colors[row_color_start_index:]
     else:
-        row_colors = "cmap50"
+        row_colors = plot_color_types["set"]
 
     if col_name is not None:
         col_colors = type_20_colors[col_color_start_index:] if len(
             list(set(col_anno[col_name]))) + col_color_start_index <= 20 else type_50_colors[col_color_start_index:]
     else:
-        col_colors = "cmap50"
+        col_colors = plot_color_types["set"]
 
     df_rows = None
     if anno_specific_labels is not None:
@@ -229,7 +217,15 @@ def heatmap_annotation(
     # noinspection PyTypeChecker
     row_ha = HeatmapAnnotation(
         label=anno_label(
-            row_anno[row_name], cmap=ListedColormap(row_colors), merge=True, height=anno_label_height
+            row_anno[row_name],
+            cmap=ListedColormap(row_colors),
+            merge=True,
+            extend=True,
+            adjust_color=True,
+            luminance=0.75,
+            frac=0.5,
+            relpos=(0, 0.5),
+            height=2.5
         ) if row_anno_label and row_name else None,
         RowCategory=anno_simple(
             row_anno[row_name],
@@ -248,10 +244,23 @@ def heatmap_annotation(
 
     # noinspection PyTypeChecker
     row_ha_right = HeatmapAnnotation(
-        AssociationScore=anno_barplot(row_anno[[row_score_name]], legend=True, height=level_bar_height,
-                                      **dict(edgecolor='none')) if row_score_name in row_anno.columns else None,
-        selected=anno_label(df_rows, relpos=relpos, frac=frac, fontsize=label_size,
-                            height=selected_anno_label_height) if anno_specific_labels is not None else None,
+        AssociationScore=anno_barplot(
+            row_anno[[row_score_name]],
+            legend=True,
+            height=level_bar_height,
+            **dict(edgecolor='none')
+        ) if row_score_name in row_anno.columns else None,
+        selected=anno_label(
+            df_rows,
+            merge=True,
+            extend=True,
+            adjust_color=True,
+            luminance=0.75,
+            frac=0.5,
+            relpos=(0, 0.5),
+            height=2.5,
+            colors=col_colors
+        ) if anno_specific_labels is not None else None,
         axis=0,
         verbose=0,
         legend_gap=5,
@@ -259,15 +268,21 @@ def heatmap_annotation(
         label_kws=dict(color="black", rotation=90, horizontalalignment="left")
     )
 
-    col_ha_args = {"rotation": 90}
-    # noinspection PyTypeChecker
     col_ha = HeatmapAnnotation(
         label=anno_label(
-            col_anno[col_name], cmap=ListedColormap(col_colors), merge=True, height=anno_label_height, **col_ha_args
+            col_anno[col_name],
+            merge=True,
+            extend=True,
+            adjust_color=True,
+            luminance=0.75,
+            frac=0.5,
+            relpos=(0.5, 0),
+            height=2.5,
+            colors=col_colors
         ) if col_anno_label and col_name else None,
         ColCategory=anno_simple(
             col_anno[col_name],
-            cmap=ListedColormap(col_colors),
+            colors=col_colors,
             height=category_height,
             add_text=col_anno_text,
             legend=col_legend,

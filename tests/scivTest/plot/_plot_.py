@@ -1,3 +1,5 @@
+# -*- coding: UTF-8 -*-
+
 from unittest import TestCase
 
 import numpy as np
