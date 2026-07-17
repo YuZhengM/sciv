@@ -8,7 +8,7 @@ from ._scatter_ import (
     scatter_3d,
     scatter_element,
     volcano,
-    manhattan_causal_variant,
+    manhattan,
     pseudo_time_score
 )
 
@@ -34,7 +34,7 @@ __all__ = [
     "scatter_element",
     "violin",
     "violin_significance",
-    "manhattan_causal_variant",
+    "manhattan",
     "pseudo_time_score",
     "barcode",
     "box",

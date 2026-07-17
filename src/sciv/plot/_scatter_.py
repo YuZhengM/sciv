@@ -228,6 +228,7 @@ def scatter_3d(
     is_add_legend: bool = True,
     cmap: Union[str, ListedColormap] = 'tab20',
     font_size: int = 14,
+    text_font_size: int = 9,
     edge_color: str = None,
     size: Union[float, collection] = 0.1,
     legend_name: str = None,
@@ -273,6 +274,7 @@ def scatter_3d(
         Whether to add legend
     cmap : Union[str, ListedColormap], default 'tab20'
         Colormap for coloring
+    text_font_size : int, default 9
     font_size : int, default 14
         Font size for labels and title
     edge_color : str, optional
@@ -353,7 +355,7 @@ def scatter_3d(
             max_y,
             max_value,
             f'({max_x}, {max_y}): {max_value:.3f}',
-            fontsize=font_size - 2,
+            fontsize=text_font_size,
             color='red',
             ha='left'
         )
@@ -604,10 +606,10 @@ def volcano(
     return ax
 
 
-def manhattan_causal_variant(
+def manhattan(
     df: DataFrame,
     y: str = "pp",
-    chr_name: str = "chr",
+    groupby: str = "chr",
     label: str = "rsId",
     size: int = 30,
     labels: Optional[list] = None,
@@ -633,7 +635,7 @@ def manhattan_causal_variant(
         Input data containing variant information with chromosome and position data
     y : str, default "pp"
         Column name for y-axis values (typically posterior probability or p-value)
-    chr_name : str, default "chr"
+    groupby : str, default "chr"
         Column name for chromosome identifiers
     label : str, default "rsId"
         Column name for variant labels/identifiers
@@ -666,13 +668,13 @@ def manhattan_causal_variant(
     **kwargs : Any
         Additional arguments passed to ax.axvline
     """
-    df[chr_name] = df[chr_name].astype(chrtype)
+    df[groupby] = df[groupby].astype('category')
 
     if is_sort:
-        df = df.sort_values(chr_name)
+        df = df.sort_values(groupby)
 
     df['ind'] = range(len(df))
-    df_grouped = df.groupby(chr_name)
+    df_grouped = df.groupby(groupby)
 
     if colors is None:
         colors = type_set_colors.copy()
@@ -685,11 +687,11 @@ def manhattan_causal_variant(
     # Track the last index to draw lines between chromosomes
     last_ind = 0
 
-    chr_unique = df[chr_name].unique()
+    groupby_unique = df[groupby].unique()
 
     for num, (name, group) in enumerate(df_grouped):
 
-        if name not in chr_unique:
+        if name not in groupby_unique:
             continue
 
         group.plot(kind='scatter', x='ind', y=y, color=colors[num], s=size, ax=ax)

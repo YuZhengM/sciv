@@ -66,7 +66,7 @@ Scatter
 Scatter chart visualization function.
 
 .. automodule:: sciv.pl
-   :members: scatter, scatter_3d, scatter_element, volcano, manhattan_causal_variant, pseudo_time_score
+   :members: scatter, scatter_3d, scatter_element, volcano, manhattan, pseudo_time_score
    :undoc-members:
    :show-inheritance:
 
