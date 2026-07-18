@@ -12,7 +12,7 @@ from pandas import DataFrame
 import seaborn as sns
 
 from .. import util as ul
-from ..util import path, collection, type_50_colors, type_20_colors, chrtype, type_set_colors, plot_end, plot_start
+from ..util import path, collection, type_50_colors, type_20_colors, type_set_colors, plot_end, plot_start
 
 __name__: str = "plot_pie"
 
@@ -610,8 +610,8 @@ def manhattan(
     df: DataFrame,
     y: str = "pp",
     groupby: str = "chr",
-    label: str = "rsId",
-    size: int = 30,
+    size: int = 20,
+    label: Optional[str] = None,
     labels: Optional[list] = None,
     colors: Optional[list] = None,
     title: str = None,
@@ -637,7 +637,7 @@ def manhattan(
         Column name for y-axis values (typically posterior probability or p-value)
     groupby : str, default "chr"
         Column name for chromosome identifiers
-    label : str, default "rsId"
+    label : Optional[list], optional
         Column name for variant labels/identifiers
     size : int, default 30
         Size of scatter points
@@ -704,7 +704,7 @@ def manhattan(
             ax.axvline(x=last_ind + 0.5, color='gray', linestyle='--', linewidth=line_width, **kwargs)
 
         # Label specific mutations
-        if labels is not None:
+        if label and labels:
             for index, row in group.iterrows():
                 if row[label] in labels:
                     ax.text(row['ind'], row[y], row[label], ha='left', va='bottom')
@@ -713,7 +713,7 @@ def manhattan(
         last_ind = group['ind'].iloc[-1]
 
     # add grid
-    ax.grid(axis="y", linestyle="--", linewidth=line_width, color="gray")
+    ax.grid(axis="y", linestyle="--", linewidth=line_width, color="gray", zorder=0)
     ax.set_xticks(x_labels_pos)
     ax.set_xticklabels(x_labels)
 

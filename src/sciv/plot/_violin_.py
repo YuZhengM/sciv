@@ -170,7 +170,7 @@ def violin_significance(
     x_name: str = None,
     y_name: str = "value",
     groupby: str = "clusters",
-    palette: Union[Tuple, list, str] = None,
+    palette: Union[Tuple, list, str, dict] = None,
     hue: str = None,
     order_names: list = None,
     pairs: List[tuple] = None,
