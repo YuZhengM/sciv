@@ -198,14 +198,22 @@ def heatmap_annotation(
         col_anno.index = data.var[col_names].astype(str)
 
     if row_name is not None:
-        row_colors = type_20_colors[row_color_start_index:] if len(
-            list(set(row_anno[row_name]))) + row_color_start_index <= 20 else type_50_colors[row_color_start_index:]
+        _num_ = len(list(set(row_anno[row_name])))
+
+        if _num_ + row_color_start_index <= 20:
+            row_colors = type_20_colors[row_color_start_index:_num_]
+        else:
+            row_colors = type_50_colors[row_color_start_index:_num_]
     else:
         row_colors = plot_color_types["set"]
 
     if col_name is not None:
-        col_colors = type_20_colors[col_color_start_index:] if len(
-            list(set(col_anno[col_name]))) + col_color_start_index <= 20 else type_50_colors[col_color_start_index:]
+        _num_ = len(list(set(col_anno[col_name])))
+
+        if _num_ + row_color_start_index <= 20:
+            col_colors = type_20_colors[col_color_start_index:_num_]
+        else:
+            col_colors = type_50_colors[col_color_start_index:_num_]
     else:
         col_colors = plot_color_types["set"]
 
@@ -254,8 +262,7 @@ def heatmap_annotation(
             extend=True,
             frac=0.2,
             relpos=(0, 0.5),
-            height=2.5,
-            colors=col_colors
+            height=2.5
         ) if anno_specific_labels is not None else None,
         axis=0,
         verbose=0,
