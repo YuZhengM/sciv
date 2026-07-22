@@ -261,8 +261,7 @@ def heatmap_annotation(
             merge=True,
             extend=True,
             frac=0.2,
-            relpos=(0, 0.5),
-            height=2.5
+            relpos=(0, 0.5)
         ) if anno_specific_labels is not None else None,
         axis=0,
         verbose=0,
