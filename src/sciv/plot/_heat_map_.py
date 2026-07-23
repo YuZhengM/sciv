@@ -201,32 +201,31 @@ def heatmap_annotation(
         _num_ = len(list(set(row_anno[row_name])))
 
         if _num_ + row_color_start_index <= 20:
-            row_colors = type_20_colors[row_color_start_index:_num_]
+            row_colors = type_20_colors[row_color_start_index:_num_ + row_color_start_index]
         else:
-            row_colors = type_50_colors[row_color_start_index:_num_]
+            row_colors = type_50_colors[row_color_start_index:_num_ + row_color_start_index]
     else:
         row_colors = plot_color_types["set"]
 
     if col_name is not None:
         _num_ = len(list(set(col_anno[col_name])))
 
-        if _num_ + row_color_start_index <= 20:
-            col_colors = type_20_colors[col_color_start_index:_num_]
+        if _num_ + col_color_start_index <= 20:
+            col_colors = type_20_colors[col_color_start_index:_num_ + col_color_start_index]
         else:
-            col_colors = type_50_colors[col_color_start_index:_num_]
+            col_colors = type_50_colors[col_color_start_index:_num_ + col_color_start_index]
     else:
-        col_colors = plot_color_types["set"]
+        col_colors = plot_color_types["Set2"]
 
     df_rows = None
     if anno_specific_labels is not None:
         df_rows = df.apply(lambda x: x.name if x.name in anno_specific_labels else None, axis=1)
         df_rows.name = "Selected"
 
-    # noinspection PyTypeChecker
     row_ha = HeatmapAnnotation(
         label=anno_label(
             row_anno[row_name],
-            cmap=ListedColormap(row_colors),
+            colors=row_colors,
             merge=True,
             extend=True,
             frac=0.2,
@@ -235,7 +234,7 @@ def heatmap_annotation(
         ) if row_anno_label and row_name else None,
         RowCategory=anno_simple(
             row_anno[row_name],
-            cmap=ListedColormap(row_colors),
+            colors=row_colors,
             height=category_height,
             legend=row_legend,
             add_text=row_anno_text,
@@ -248,7 +247,6 @@ def heatmap_annotation(
         label_kws=dict(color="black", rotation=90, horizontalalignment="left")
     )
 
-    # noinspection PyTypeChecker
     row_ha_right = HeatmapAnnotation(
         AssociationScore=anno_barplot(
             row_anno[[row_score_name]],
@@ -273,12 +271,12 @@ def heatmap_annotation(
     col_ha = HeatmapAnnotation(
         label=anno_label(
             col_anno[col_name],
+            colors=col_colors,
             merge=True,
             extend=True,
             frac=0.2,
             relpos=(0.5, 0),
             height=2.5,
-            colors=col_colors,
             **{"rotation": 90}
         ) if col_anno_label and col_name else None,
         ColCategory=anno_simple(
@@ -301,7 +299,7 @@ def heatmap_annotation(
     It is worth noting here that, `row_cluster_metric="correlation"`, When the default parameter 
     `row_cluster_metric` in method `ClusterMapPlotter` is passed into method `distance.pdist`, 
     that is `metric='correlation'`, and this method derives from this 
-    `https://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.spatial.distance.pdist.html`,
+    `https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.pdist.html`,
     it can be inferred that there is a division formula in one step, which may result in the possibility of `NA`.
     
     For example, in this scATAC-seq data, if there are two or more traits without any intersection, 
