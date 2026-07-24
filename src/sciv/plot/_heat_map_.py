@@ -7,7 +7,6 @@ from anndata import AnnData
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from PyComplexHeatmap import HeatmapAnnotation, anno_simple, ClusterMapPlotter, anno_label, anno_barplot
-from matplotlib.colors import ListedColormap
 from pandas import DataFrame
 import seaborn as sns
 
@@ -48,6 +47,8 @@ def heatmap_annotation(
     anno_specific_labels: list = None,
     x_label_rotation: float = 65,
     y_label_rotation: float = 0,
+    row_colors: Union[list, dict] = None,
+    col_colors: Union[list, dict] = None,
     row_color_start_index: int = 0,
     col_color_start_index: int = 10,
     row_split: Union[int, pd.Series] = None,
@@ -128,6 +129,8 @@ def heatmap_annotation(
         Rotation angle for x-axis labels (column names).
     y_label_rotation : float, default 0
         Rotation angle for y-axis labels (row names).
+    row_colors
+    col_colors
     row_color_start_index : int, default 0
         Starting index in the color palette for row annotations.
     col_color_start_index : int, default 10
@@ -200,22 +203,26 @@ def heatmap_annotation(
     if row_name is not None:
         _num_ = len(list(set(row_anno[row_name])))
 
-        if _num_ + row_color_start_index <= 20:
-            row_colors = type_20_colors[row_color_start_index:_num_ + row_color_start_index]
-        else:
-            row_colors = type_50_colors[row_color_start_index:_num_ + row_color_start_index]
+        if row_colors is None:
+            if _num_ + row_color_start_index <= 20:
+                row_colors = type_20_colors[row_color_start_index:_num_ + row_color_start_index]
+            else:
+                row_colors = type_50_colors[row_color_start_index:_num_ + row_color_start_index]
     else:
-        row_colors = plot_color_types["set"]
+        if row_colors is None:
+            row_colors = plot_color_types["set"]
 
     if col_name is not None:
         _num_ = len(list(set(col_anno[col_name])))
 
-        if _num_ + col_color_start_index <= 20:
-            col_colors = type_20_colors[col_color_start_index:_num_ + col_color_start_index]
-        else:
-            col_colors = type_50_colors[col_color_start_index:_num_ + col_color_start_index]
+        if col_colors is None:
+            if _num_ + col_color_start_index <= 20:
+                col_colors = type_20_colors[col_color_start_index:_num_ + col_color_start_index]
+            else:
+                col_colors = type_50_colors[col_color_start_index:_num_ + col_color_start_index]
     else:
-        col_colors = plot_color_types["Set2"]
+        if col_colors is None:
+            col_colors = plot_color_types["Set2"]
 
     df_rows = None
     if anno_specific_labels is not None:
@@ -299,7 +306,7 @@ def heatmap_annotation(
     It is worth noting here that, `row_cluster_metric="correlation"`, When the default parameter 
     `row_cluster_metric` in method `ClusterMapPlotter` is passed into method `distance.pdist`, 
     that is `metric='correlation'`, and this method derives from this 
-    `https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.pdist.html`,
+    `https://docs.scipy.org/doc/scipy-1.15.3/reference/generated/scipy.spatial.distance.pdist.html`,
     it can be inferred that there is a division formula in one step, which may result in the possibility of `NA`.
     
     For example, in this scATAC-seq data, if there are two or more traits without any intersection, 
