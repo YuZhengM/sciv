@@ -211,9 +211,7 @@ def poisson_vi(
         adata.obs["clusters_x"] = adata.obs["clusters"]
 
     ul.log(__name__).info(f"Perform kNN and Leiden clustering.")
-    # compute the k-nearest-neighbor graph that is used in both clustering and umap algorithms
     sc.pp.neighbors(adata, use_rep=latent_name)
-    # cluster the space (we use a lower resolution to get fewer clusters than the default)
     sc.tl.leiden(adata, key_added="clusters", resolution=resolution)
     adata.obs["clusters"] = adata.obs["clusters"].astype(str)
 
