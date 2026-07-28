@@ -44,6 +44,7 @@ def _process_sc_atac_(
     min_num_fragments: int = 200,
     sorted_by_barcode: bool = False,
     bin_size: int = 500,
+    min_counts: int = 1000,
     min_tsse: float = 5.0,
     counting_strategy: Literal['fragment', 'insertion', 'paired-insertion'] = 'paired-insertion',
     is_filter_doublets: bool = True,
@@ -66,6 +67,9 @@ def _process_sc_atac_(
         Whether to sort by barcode.
     bin_size : int, optional
         Bin size to use.
+    min_counts : int, optional
+        Minimum data.obs["n_fragment"] value required for a cell to pass filtering.
+        Use None to disable the lower fragment-count bound.
     min_tsse : float, optional
         Minimum TSSE to use.
     counting_strategy : Literal['fragment', 'insertion', 'paired-insertion'], optional
@@ -103,7 +107,7 @@ def _process_sc_atac_(
         ul.log(__name__).info(f"Shape: {data.shape}")
 
     ul.log(__name__).info(f"Filter cells through TSSE ({min_tsse})")
-    snap.pp.filter_cells(data, min_tsse=min_tsse)
+    snap.pp.filter_cells(data, min_counts=min_counts, min_tsse=min_tsse)
 
     if isinstance(fragment_file, path):
         ul.log(__name__).info(f"Shape: {data.shape}")
@@ -163,6 +167,7 @@ def get_sc_atac(
     min_num_fragments: int = 200,
     sorted_by_barcode: bool = False,
     bin_size: int = 500,
+    min_counts: int = 1000,
     min_tsse: float = 5.0,
     counting_strategy: Literal['fragment', 'insertion', 'paired-insertion'] = 'paired-insertion',
     need_features: Optional[Union[int | float]] = None,
@@ -189,6 +194,9 @@ def get_sc_atac(
         Whether the input fragment file is sorted by barcode.
     bin_size : int, optional
         Size of consecutive genomic regions used to record the counts.
+    min_counts : int, optional
+        Minimum data.obs["n_fragment"] value required for a cell to pass filtering.
+        Use None to disable the lower fragment-count bound.
     min_tsse : float, optional
         Minimum TSS enrichment score required for a cell to pass filtering.
     counting_strategy : Literal['fragment', 'insertion', 'paired-insertion'], optional
@@ -236,6 +244,7 @@ def get_sc_atac(
             min_num_fragments=min_num_fragments,
             sorted_by_barcode=sorted_by_barcode,
             bin_size=bin_size,
+            min_counts=min_counts,
             min_tsse=min_tsse,
             counting_strategy=counting_strategy,
             is_filter_doublets=is_filter_doublets,
@@ -267,6 +276,7 @@ def get_sc_atac(
         "min_num_fragments": min_num_fragments,
         "sorted_by_barcode": sorted_by_barcode,
         "bin_size": bin_size,
+        "min_counts": min_counts,
         "min_tsse": min_tsse,
         "counting_strategy": counting_strategy,
         "is_filter_doublets": is_filter_doublets,
@@ -286,6 +296,7 @@ def merge_sc_atac(
     min_num_fragments: int = 200,
     sorted_by_barcode: bool = False,
     bin_size: int = 500,
+    min_counts: int = 1000,
     min_tsse: float = 5.0,
     counting_strategy: Literal['fragment', 'insertion', 'paired-insertion'] = 'paired-insertion',
     max_iter_harmony: int = 20,
@@ -319,6 +330,9 @@ def merge_sc_atac(
         Whether the input fragment file is sorted by barcode. Default is False.
     bin_size : int, optional
         Size of consecutive genomic regions used to record counts. Default is 500.
+    min_counts : int, optional
+        Minimum data.obs["n_fragment"] value required for a cell to pass filtering.
+        Use None to disable the lower fragment-count bound.
     min_tsse : float, optional
         Minimum TSS enrichment score required for a cell to pass filtering.
         Default is 5.0.
@@ -380,6 +394,7 @@ def merge_sc_atac(
             min_num_fragments=min_num_fragments,
             sorted_by_barcode=sorted_by_barcode,
             bin_size=bin_size,
+            min_counts=min_counts,
             min_tsse=min_tsse,
             counting_strategy=counting_strategy,
             need_features=need_features
@@ -449,10 +464,12 @@ def merge_sc_atac(
         "min_num_fragments": min_num_fragments,
         "sorted_by_barcode": sorted_by_barcode,
         "bin_size": bin_size,
+        "min_counts": min_counts,
         "min_tsse": min_tsse,
         "max_iter_harmony": max_iter_harmony,
         "harmony_groupby": harmony_groupby,
         "is_selected": is_selected,
+        "is_batch": is_batch,
         "need_features": need_features,
         "output_path": output_path
     }

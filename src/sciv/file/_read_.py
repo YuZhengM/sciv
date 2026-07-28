@@ -644,22 +644,22 @@ def read_sc_atac(
             features, _, _, _ = _process_peaks_(data.columns, peak_split_character)
             sc_atac = AnnData(to_sparse(data.values), var=features, obs=cell_annot)
 
-    # Add project
-    sc_atac.uns["project_name"] = project_name
-    sc_atac.uns["project_version"] = project_version
-    # save params information
-    sc_atac.uns["params"] = {
-        "resource": resource,
-        "is_transpose": is_transpose,
-        "barcode_split_character": barcode_split_character,
-        "on_barcode_split_character": on_barcode_split_character,
-        "annotation_file": annotation_file,
-        "peak_split_character": {
-            "chr_start_split_symbal": peak_split_character[0],
-            "start_end_split_symbal": peak_split_character[1]
-        },
-        "is_metadata": is_metadata
-    }
+    if not str(resource).endswith(".h5ad"):
+        sc_atac.uns["project_name"] = project_name
+        sc_atac.uns["project_version"] = project_version
+        # save params information
+        sc_atac.uns["params"] = {
+            "resource": resource,
+            "is_transpose": is_transpose,
+            "barcode_split_character": barcode_split_character,
+            "on_barcode_split_character": on_barcode_split_character,
+            "annotation_file": annotation_file,
+            "peak_split_character": {
+                "chr_start_split_symbal": peak_split_character[0],
+                "start_end_split_symbal": peak_split_character[1]
+            },
+            "is_metadata": is_metadata
+        }
 
     return sc_atac
 
