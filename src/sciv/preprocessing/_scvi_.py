@@ -78,6 +78,9 @@ def poisson_vi(
     import scvi
     import scanpy as sc
 
+    import multiprocessing
+    multiprocessing.set_start_method('spawn', force=True)
+
     if resolution <= 0:
         ul.log(__name__).error("The parameter `resolution` must be greater than zero.")
         raise ValueError("The parameter `resolution` must be greater than zero.")
