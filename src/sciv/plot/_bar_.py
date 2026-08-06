@@ -76,13 +76,12 @@ def bar(
 
     if direction == 'vertical':
         ax.bar(ax_x, ax_y, **kwargs)
+        ax.set_xticklabels(labels=list(ax_x), rotation=rotation)
     elif direction == 'horizontal':
         ax.barh(ax_x, ax_y, **kwargs)
     else:
         log.error("The `direction` must be 'vertical' or 'horizontal'.")
         raise ValueError("The `direction` must be 'vertical' or 'horizontal'.")
-
-    ax.set_xticklabels(labels=list(ax_x), rotation=rotation)
 
     if is_text:
         # Draw numerical values
