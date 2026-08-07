@@ -514,8 +514,8 @@ def pearsonr(
     axis: Literal[0, 1] = 0,
 ) -> np.ndarray:
 
-    x = np.asarray(x).ravel()
-    y = np.asarray(y)
+    x = to_dense(x, is_array=True).ravel()
+    y = to_dense(y, is_array=True)
 
     if axis == 0:
 
@@ -554,8 +554,8 @@ def spearmanr(
     axis: Literal[0, 1] = 0,
 ) -> np.ndarray:
 
-    x = np.asarray(x).ravel()
-    y = np.asarray(y)
+    x = to_dense(x, is_array=True).ravel()
+    y = to_dense(y, is_array=True)
 
     if axis == 0:
 

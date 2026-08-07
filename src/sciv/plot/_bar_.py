@@ -559,6 +559,7 @@ def bar_correlation(
     y_name: str = None,
     title: str = None,
     label: str = "Normalized score",
+    text_labels: list = None,
     norm_limit: tuple[float, float] = None,
     y_limit: tuple[float, float] = None,
     text_count: int = 5,
@@ -613,24 +614,29 @@ def bar_correlation(
     cbar.set_label(label, rotation=0, labelpad=labelpad, ha='center', va='bottom', fontsize=6)
 
     size = df[x].size
-    selected_data = pd.concat([df[[x, y]].head(text_count), df[[x, y]].tail(text_count)])
 
-    for i, (index, row) in enumerate(selected_data.iterrows()):
-        name = row[x]
-        corr = row[y]
+    if text_labels is None:
+        text_labels = pd.concat([df.head(text_count), df.tail(text_count)])[x].values.tolist()
 
-        if corr > 0:
-            x_start = ax.get_xticklabels()[i].get_position()[0]
-            x_pos = x_start + i * 50
-            y_pos = corr - (corr / 5.1) * (i - 1)
-        else:
-            x_start = ax.get_xticklabels()[size - (10 - i)].get_position()[0]
-            x_pos = x_start - (10 - i) * 50
-            y_pos = corr - (corr / 5.1) * (9 - i)
+    for i, (index, row) in enumerate(df.iterrows()):
+        for x_name in text_labels:
+            name = row[x]
 
-        ax.plot([x_start, x_pos], [corr, y_pos], 'k-', linewidth=0.5)
-        ax.text(x_pos, y_pos, name, fontsize=6, ha='center', va='center',
-                bbox=dict(boxstyle='round,pad=0.2', facecolor='white', edgecolor='black', alpha=0.8))
+            if name == x_name:
+                corr = row[y]
+
+                if corr > 0:
+                    x_start = ax.get_xticklabels()[i].get_position()[0]
+                    x_pos = x_start + i * 50
+                    y_pos = corr - (corr / 5.1) * (i - 1)
+                else:
+                    x_start = ax.get_xticklabels()[size - (10 - i)].get_position()[0]
+                    x_pos = x_start - (10 - i) * 50
+                    y_pos = corr - (corr / 5.1) * (9 - i)
+
+                ax.plot([x_start, x_pos], [corr, y_pos], 'k-', linewidth=0.5)
+                ax.text(x_pos, y_pos, name, fontsize=6, ha='center', va='center',
+                        bbox=dict(boxstyle='round,pad=0.2', facecolor='white', edgecolor='black', alpha=0.8))
 
     ax.yaxis.grid(True, linestyle='--', alpha=0.9)
     ax.set_axisbelow(True)
