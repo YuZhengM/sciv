@@ -300,11 +300,12 @@ def symmetric_scale(
     y_data = special.log1p(y_data)
     del x_data
 
-    # Return symbols and make changes and sigmoid mapped data
+    # Return symbols and make changes
     z_data = np.multiply(y_data, symbol)
 
     if is_verbose:
         ul.log(__name__).info("End symmetric scale function")
+
     return z_data
 
 
