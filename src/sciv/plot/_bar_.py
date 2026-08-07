@@ -613,26 +613,26 @@ def bar_correlation(
     cbar.outline.set_linewidth(0.5)
     cbar.set_label(label, rotation=0, labelpad=labelpad, ha='center', va='bottom', fontsize=6)
 
-    size = df[x].size
+    label_size = len(text_labels)
 
     if text_labels is None:
         text_labels = pd.concat([df.head(text_count), df.tail(text_count)])[x].values.tolist()
 
     for i, (index, row) in enumerate(df.iterrows()):
-        for x_name in text_labels:
-            name = row[x]
+        name = row[x]
 
+        for x_name in text_labels:
             if name == x_name:
                 corr = row[y]
+                x_start = ax.get_xticklabels()[i].get_position()[0]
+                _index_ = text_labels.index(x_name)
 
                 if corr > 0:
-                    x_start = ax.get_xticklabels()[i].get_position()[0]
-                    x_pos = x_start + i * 50
-                    y_pos = corr - (corr / 5.1) * (i - 1)
+                    x_pos = x_start + _index_ * 50
+                    y_pos = corr - (corr / label_size / 2) * (_index_ - 1)
                 else:
-                    x_start = ax.get_xticklabels()[size - (10 - i)].get_position()[0]
-                    x_pos = x_start - (10 - i) * 50
-                    y_pos = corr - (corr / 5.1) * (9 - i)
+                    x_pos = x_start - _index_ * 50
+                    y_pos = corr - (corr / label_size / 2) * (label_size - 1 - _index_)
 
                 ax.plot([x_start, x_pos], [corr, y_pos], 'k-', linewidth=0.5)
                 ax.text(x_pos, y_pos, name, fontsize=6, ha='center', va='center',
