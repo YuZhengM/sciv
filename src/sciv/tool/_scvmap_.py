@@ -3,6 +3,8 @@
 import requests
 from requests import Response
 
+from ..util import scvmap_url
+
 
 def get_result_data(resp: Response):
     json_data = resp.json()
@@ -13,11 +15,11 @@ def get_result_data(resp: Response):
     raise ValueError(json_data["message"])
 
 
-def request_get_data(url: str, **kwargs):
-    response = requests.get(url, **kwargs)
+def request_get_data(path: str, **kwargs):
+    response = requests.get(f"{scvmap_url}/{path}", **kwargs)
     return get_result_data(response)
 
 
-def request_post_data(url: str, json: dict = None, **kwargs):
-    response = requests.post(url, json=json, **kwargs)
+def request_post_data(path: str, json: dict = None, **kwargs):
+    response = requests.post(f"{scvmap_url}/{path}", json=json, **kwargs)
     return get_result_data(response)

@@ -35,6 +35,8 @@ project_version = "0.0.1"
 # Project name
 project_name = "SCIV"
 
+scvmap_url: str = "https://bio.liclab.net/scvmap_service"
+
 # User path
 user_path = os.path.expanduser("~")
 # Project cache path
