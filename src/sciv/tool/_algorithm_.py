@@ -566,7 +566,7 @@ def spearmanr(
                 f"When axis=0, the length of x ({x.size}) must equal the number of rows of y ({y.shape[0]})"
             )
 
-        x = np.zeros(y.shape) + x[:, np.newaxis]
+        x = x[:, np.newaxis]
 
     elif axis == 1:
 
@@ -577,14 +577,13 @@ def spearmanr(
             raise ValueError(
                 f"When axis=1, the length of x ({x.size}) must equal the number of columns of y ({y.shape[1]})"
             )
-        x = np.zeros(y.shape) + x
 
     else:
         ul.log(__name__).info("axis must be 0 or 1")
         raise ValueError("axis must be 0 or 1")
 
     corr, p = stats.spearmanr(x, y, axis=axis)
-    return corr
+    return corr[0, 1:].ravel()
 
 
 def spectral_eigenmaps(
