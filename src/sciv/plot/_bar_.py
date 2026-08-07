@@ -559,6 +559,7 @@ def bar_correlation(
     y_name: str = None,
     title: str = None,
     label: str = "Normalized score",
+    norm_limit: tuple[float, float] = (-1, 1),
     text_count: int = 5,
     labelpad: float = -20,
     position: tuple[float, float, float, float] = (0.7, 0.75, 0.15, 0.05),
@@ -579,7 +580,7 @@ def bar_correlation(
     colors = list(colors)
 
     cmap = LinearSegmentedColormap.from_list('customize_colors', colors, N=256)
-    norm = Normalize(vmin=-1, vmax=1)
+    norm = Normalize(vmin=norm_limit[0], vmax=norm_limit[1])
     color_values = cmap(norm(df[y]))
 
     ax = bar(df[x], df[y], color=color_values, close=False, **kwargs)
