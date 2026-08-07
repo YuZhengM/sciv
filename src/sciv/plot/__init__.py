@@ -16,7 +16,7 @@ from ._violin_ import violin, violin_significance
 from ._box_ import box
 from ._kde_ import kde
 from ._line_ import line, roc_prc
-from ._bar_ import bar_class, bar, bar_two, bar_significance
+from ._bar_ import bar_class, bar, bar_two, bar_significance, bar_correlation
 from ._barcode_ import barcode
 from ._pie_ import pie_label, pie
 from ._bubble_ import bubble
@@ -40,6 +40,7 @@ __all__ = [
     "box",
     "bar_significance",
     "bar",
+    "bar_correlation",
     "pie_label",
     "bar_two",
     "kde",

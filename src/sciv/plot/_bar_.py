@@ -4,6 +4,7 @@ from typing import Tuple, Union, Optional, Any, Literal
 
 import numpy as np
 import pandas as pd
+from matplotlib.colors import LinearSegmentedColormap, Normalize
 from pandas import DataFrame
 
 import seaborn as sns
@@ -543,5 +544,91 @@ def bar_significance(
     plt.legend(loc='upper left', bbox_to_anchor=(0.0, legend_gap), ncol=2)
 
     plot_end(title, x_name, y_name, output, show, close)
+
+    return ax
+
+
+def bar_correlation(
+    df: DataFrame,
+    x: str,
+    y: str,
+    width: float = 4,
+    height: float = 2,
+    is_sort: bool = True,
+    x_name: str = None,
+    y_name: str = None,
+    title: str = None,
+    label: str = "Normalized score",
+    text_count: int = 5,
+    labelpad: float = -20,
+    position: tuple[float, float, float, float] = (0.7, 0.75, 0.15, 0.05),
+    colors: collection = None,
+    output: path = None,
+    show: bool = False,
+    close: bool = True,
+    **kwargs: Any
+):
+    ul.fig, ul.ax = plt.subplots(figsize=(width, height))
+
+    if is_sort:
+        df.sort_values(by=y, ascending=False, inplace=True)
+
+    if colors is None:
+        colors = ["#2b79ab", "#dbdbdb", "#e2a237"]
+
+    colors = list(colors)
+
+    cmap = LinearSegmentedColormap.from_list('customize_colors', colors, N=256)
+    norm = Normalize(vmin=-1, vmax=1)
+    color_values = cmap(norm(df[y]))
+
+    ax = bar(df[x], df[y], color=color_values, close=False, **kwargs)
+
+    ax.set_xticklabels(labels=[])
+    ax.tick_params(axis='x', length=0)
+
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+
+    ax.spines['left'].set_position(('data', -14))
+    ax.spines['left'].set_color('#333333')
+    ax.spines['left'].set_linewidth(0.5)
+    ax.tick_params(axis='y', colors='#333333', labelcolor='black')
+
+    ax.set_ylim((-1, 1))
+
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+    sm.set_array([])
+    cbar = plt.colorbar(sm, ax=ax, orientation='horizontal', pad=0.05, aspect=10)
+    cbar.ax.set_position(position)  # left, bottom, width, height
+    cbar.ax.tick_params(length=2, width=0.5, colors='#333333', labelcolor='black')
+    cbar.outline.set_linewidth(0.5)
+    cbar.set_label(label, rotation=0, labelpad=labelpad, ha='center', va='bottom', fontsize=6)
+
+    size = df[x].size
+    selected_data = pd.concat([df[[x, y]].head(text_count), df[[x, y]].tail(text_count)])
+
+    for i, (index, row) in enumerate(selected_data.iterrows()):
+        name = row[x]
+        corr = row[y]
+
+        if corr > 0:
+            x_start = ax.get_xticklabels()[i].get_position()[0]
+            x_pos = x_start + i * 50
+            y_pos = corr - (corr / 5.1) * (i - 1)
+        else:
+            x_start = ax.get_xticklabels()[size - (10 - i)].get_position()[0]
+            x_pos = x_start - (10 - i) * 50
+            y_pos = corr - (corr / 5.1) * (9 - i)
+
+        ax.plot([x_start, x_pos], [corr, y_pos], 'k-', linewidth=0.5)
+        ax.text(x_pos, y_pos, name, fontsize=6, ha='center', va='center',
+                bbox=dict(boxstyle='round,pad=0.2', facecolor='white', edgecolor='black', alpha=0.8))
+
+    ax.yaxis.grid(True, linestyle='--', alpha=0.9)
+    ax.set_axisbelow(True)
+
+    plot_end(title=title, x_name=x_name, y_name=y_name, show=show, close=close, output=output)
 
     return ax
