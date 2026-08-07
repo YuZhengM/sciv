@@ -584,7 +584,7 @@ def spearmanr(
         raise ValueError("axis must be 0 or 1")
 
     corr, p = stats.spearmanr(x, y, axis=axis)
-    return corr[0, 1:].ravel()
+    return corr if isinstance(corr, float) else corr[0, 1:]
 
 
 def spectral_eigenmaps(

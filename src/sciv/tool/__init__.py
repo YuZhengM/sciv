@@ -62,6 +62,12 @@ from ._matrix_ import (
     matrix_callback_block_storage
 )
 
+from ._scvmap_ import (
+    get_result_data,
+    request_get_data,
+    request_post_data
+)
+
 __all__ = [
     "sigmoid",
     "tf_idf",
@@ -115,5 +121,8 @@ __all__ = [
     "matrix_operation_memory_efficient",
     "vector_multiply_block_storage",
     "matrix_division_block_storage",
-    "matrix_callback_block_storage"
+    "matrix_callback_block_storage",
+    "get_result_data",
+    "request_get_data",
+    "request_post_data"
 ]
