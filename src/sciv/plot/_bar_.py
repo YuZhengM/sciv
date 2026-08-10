@@ -613,10 +613,11 @@ def bar_correlation(
     cbar.outline.set_linewidth(0.5)
     cbar.set_label(label, rotation=0, labelpad=labelpad, ha='center', va='bottom', fontsize=6)
 
-    label_size = len(text_labels)
-
     if text_labels is None:
         text_labels = pd.concat([df.head(text_count), df.tail(text_count)])[x].values.tolist()
+
+    label_size = len(text_labels)
+    size = df.shape[0]
 
     for i, (index, row) in enumerate(df.iterrows()):
         name = row[x]
@@ -624,19 +625,19 @@ def bar_correlation(
         for x_name in text_labels:
             if name == x_name:
                 corr = row[y]
-                x_start = ax.get_xticklabels()[i].get_position()[0]
+                x_start = ax.get_xticklabels()[i].get_position()[0] + 1
                 _index_ = text_labels.index(x_name)
 
                 if corr > 0:
-                    x_pos = x_start + _index_ * 50
+                    x_pos = x_start + _index_ * (size / label_size / 2)
                     y_pos = corr - (corr / label_size / 2) * (_index_ - 1)
                 else:
-                    x_pos = x_start - _index_ * 50
+                    x_pos = x_start - (label_size - _index_) * (size / label_size / 2)
                     y_pos = corr - (corr / label_size / 2) * (label_size - 1 - _index_)
 
                 ax.plot([x_start, x_pos], [corr, y_pos], 'k-', linewidth=0.5)
-                ax.text(x_pos, y_pos, name, fontsize=6, ha='center', va='center',
-                        bbox=dict(boxstyle='round,pad=0.2', facecolor='white', edgecolor='black', alpha=0.8))
+                ax.text(x_pos, y_pos, name, fontsize=4, ha='center', va='center',
+                        bbox=dict(boxstyle='round,pad=0.2', facecolor='white', edgecolor='black', alpha=0.5))
 
     ax.yaxis.grid(True, linestyle='--', alpha=0.9)
     ax.set_axisbelow(True)
