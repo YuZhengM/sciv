@@ -622,16 +622,18 @@ def bar_correlation(
     for i, (index, row) in enumerate(df.iterrows()):
         name = row[x]
 
-        for x_name in text_labels:
-            if name == x_name:
+        for x_element in text_labels:
+            if name == x_element:
                 corr = row[y]
-                x_start = ax.get_xticklabels()[i].get_position()[0] + 1
-                _index_ = text_labels.index(x_name)
+                x_start = ax.get_xticklabels()[i].get_position()[0]
+                _index_ = text_labels.index(x_element)
 
                 if corr > 0:
+                    x_start +=1
                     x_pos = x_start + _index_ * (size / label_size / 2)
                     y_pos = corr - (corr / label_size / 2) * (_index_ - 1)
                 else:
+                    x_start -=1
                     x_pos = x_start - (label_size - _index_) * (size / label_size / 2)
                     y_pos = corr - (corr / label_size / 2) * (label_size - 1 - _index_)
 
