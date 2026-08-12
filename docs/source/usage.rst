@@ -45,7 +45,7 @@ Download the fine-mapping results for monocytes, red blood cells, CD4+ and CD8+ 
 1.1.3 Run SCIV
 *****************
 
-Obtain TRS results by executing the SCIV process using the sciv.ml.core function.
+Obtain TRS results by executing the SCIV process using the ``sciv.ml.trs`` function.
 
 (1) Create Python file:
 
@@ -70,7 +70,7 @@ Obtain TRS results by executing the SCIV process using the sciv.ml.core function
         variants, trait_info = sciv.dl.read_trait_file()
 
         # run
-        trs = sciv.ml.core(
+        trs = sciv.ml.trs(
             adata=adata,
             variants=variants,
             trait_info=trait_info,
@@ -160,7 +160,7 @@ When reading an H5AD file, ensure that the ``.var_name`` attribute of the file c
         overlap_adata=overlap_adata
     )
 
-1.2.6 Cell cell similarity network
+1.2.6 Cell-cell similarity network
 *****************************
 
 .. code-block:: python

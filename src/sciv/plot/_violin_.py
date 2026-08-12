@@ -166,10 +166,10 @@ def violin(
 
 def violin_significance(
     df: DataFrame,
-    value: str = "value",
+    value: str,
+    groupby: str,
     x_name: str = None,
-    y_name: str = "value",
-    groupby: str = "clusters",
+    y_name: str = None,
     palette: Union[Tuple, list, str, dict] = None,
     hue: str = None,
     order_names: list = None,
@@ -261,6 +261,7 @@ def violin_significance(
     new_df: DataFrame = df.groupby(group_columns, as_index=False)[value].median()
 
     colors: list = []
+
     if "color" in df_columns:
         new_df_color: DataFrame = df.groupby(group_columns, as_index=False)["color"].first()
         new_df = new_df.merge(new_df_color, how="left", on=groupby)
@@ -282,7 +283,7 @@ def violin_significance(
                     c_val = new_df.loc[i, "color"]
                     colors.append(c_val.iloc[0] if isinstance(c_val, (list, np.ndarray, pd.Series)) else c_val)
 
-    final_palette = palette if palette is not None else (colors if len(colors) > 0 else None)
+    final_palette = palette if palette is not None else (colors if len(colors) > 0 else "Set2")
 
     # --- 4. Plotting Layers ---
 

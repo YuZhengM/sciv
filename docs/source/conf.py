@@ -9,7 +9,7 @@ sys.path[:0] = [str(HERE.parent / "src"), str(HERE.parent), str(HERE / "extensio
 # -- Project information
 
 project = 'SCIV'
-copyright = '2025, Zheng-Min Yu'
+copyright = '2026, Zheng-Min Yu'
 author = 'Zheng-Min Yu'
 repository_url = "https://github.com/YuZhengM/sciv"
 
