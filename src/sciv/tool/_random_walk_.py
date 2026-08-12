@@ -239,7 +239,7 @@ class RandomWalkModel(nn.Module):
         return vt.flatten() if vt.shape[1] == 1 else vt
 
 
-class WalkRandomDataParallel(nn.DataParallel):
+class RandomWalkDataParallel(nn.DataParallel):
     """
     Data parallel module for trait analysis.
     """
@@ -379,7 +379,7 @@ def _random_walk_gpu_(
             weight = weight.to_sparse()
 
     if device == 'cuda' and 1 < torch.cuda.device_count() < init_prob.shape[1]:
-        model = WalkRandomDataParallel(model)
+        model = RandomWalkDataParallel(model)
 
     with torch.no_grad():
         result = model(init_prob, weight)

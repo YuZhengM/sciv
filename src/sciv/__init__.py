@@ -8,6 +8,7 @@ os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 os.environ["LOKY_DEFAULT_TIMEOUT"] = "3600"
+
 sys.setrecursionlimit(1000)
 
 if hdf5plugin.version > '6.0.0':

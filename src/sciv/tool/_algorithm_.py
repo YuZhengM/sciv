@@ -920,7 +920,7 @@ def umap(
     return embedding
 
 
-def safe_kl_divergence(p: collection, q: collection, epsilon: float = 1e-10) -> float:
+def _safe_kl_divergence_(p: collection, q: collection, epsilon: float = 1e-10) -> float:
     """
     Safe KL divergence calculation to avoid division by zero.
 
@@ -977,7 +977,7 @@ def kl_divergence(data1: matrix_data, data2: matrix_data) -> float:
     entropy = stats.entropy(data1, data2)
 
     if np.isnan(entropy) or np.isinf(entropy):
-        entropy = safe_kl_divergence(data1, data2)
+        entropy = _safe_kl_divergence_(data1, data2)
 
     return entropy
 

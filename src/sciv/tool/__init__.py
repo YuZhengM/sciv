@@ -5,6 +5,7 @@ from ._algorithm_ import (
     tf_idf,
     z_score_normalize,
     z_score_marginal,
+    z_score_to_p_value,
     marginal_normalize,
     min_max_norm,
     symmetric_scale,
@@ -23,7 +24,6 @@ from ._algorithm_ import (
     tsne,
     umap,
     kl_divergence,
-    safe_kl_divergence,
     calinski_harabasz,
     silhouette,
     davies_bouldin,
@@ -31,23 +31,16 @@ from ._algorithm_ import (
     ami,
     evaluate_probability_metrics,
     evaluate_classification_metrics,
-    z_score_to_p_value,
     euclidean_distances,
     overlap,
     overlap_sum,
     calculate_fragment_weighted_accessibility,
     calculate_init_score_weight,
+    adaptive_gamma_knn,
     obtain_cell_cell_network,
     perturb_data,
     add_bernoulli_fluctuation_noise,
     get_stat_result
-)
-
-from ._random_walk_ import (
-    scale_normalize,
-    WalkRandomDataParallel,
-    random_walk,
-    RandomWalk,
 )
 
 from ._matrix_ import (
@@ -62,6 +55,14 @@ from ._matrix_ import (
     matrix_callback_block_storage
 )
 
+from ._random_walk_ import (
+    RandomWalkModel,
+    RandomWalkDataParallel,
+    random_walk,
+    scale_normalize,
+    RandomWalk,
+)
+
 from ._scvmap_ import (
     get_result_data,
     request_get_data,
@@ -73,6 +74,7 @@ __all__ = [
     "tf_idf",
     "z_score_normalize",
     "z_score_marginal",
+    "z_score_to_p_value",
     "marginal_normalize",
     "min_max_norm",
     "symmetric_scale",
@@ -91,7 +93,6 @@ __all__ = [
     "tsne",
     "umap",
     "kl_divergence",
-    "safe_kl_divergence",
     "calinski_harabasz",
     "silhouette",
     "davies_bouldin",
@@ -99,16 +100,12 @@ __all__ = [
     "ami",
     "evaluate_probability_metrics",
     "evaluate_classification_metrics",
-    "z_score_to_p_value",
-    "scale_normalize",
-    "WalkRandomDataParallel",
-    "random_walk",
-    "RandomWalk",
     "euclidean_distances",
     "overlap",
     "overlap_sum",
     "calculate_fragment_weighted_accessibility",
     "calculate_init_score_weight",
+    "adaptive_gamma_knn",
     "obtain_cell_cell_network",
     "perturb_data",
     "add_bernoulli_fluctuation_noise",
@@ -122,6 +119,11 @@ __all__ = [
     "vector_multiply_block_storage",
     "matrix_division_block_storage",
     "matrix_callback_block_storage",
+    "RandomWalkModel",
+    "RandomWalkDataParallel",
+    "random_walk",
+    "scale_normalize",
+    "RandomWalk",
     "get_result_data",
     "request_get_data",
     "request_post_data"

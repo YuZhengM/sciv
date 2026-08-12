@@ -407,7 +407,7 @@ def collect_datasets(dsets: dict, group: h5py.Group):
             collect_datasets(dsets, v)
 
 
-def read_v3_10x_h5(filename: path) -> AnnData:
+def _read_v3_10x_h5_(filename: path) -> AnnData:
     """
     Read hdf5 file from Cell Ranger v3 or later versions.
     
@@ -484,7 +484,7 @@ def read_sc_atac_10x_h5(
         scATAC-seq data.
     """
     ul.log(__name__).info("Reading scATAC-seq 10x data")
-    sc_atac: AnnData = read_v3_10x_h5(file)
+    sc_atac: AnnData = _read_v3_10x_h5_(file)
     # cell information
     cells = sc_atac.obs.copy()
     barcodes = list(cells.index)

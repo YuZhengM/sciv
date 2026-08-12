@@ -18,6 +18,94 @@ __name__: str = "plot_heat_map"
 log = ul.log(__name__, "ERROR")
 
 
+def heatmap(
+    adata: AnnData,
+    layer: str = None,
+    title: Optional[str] = None,
+    annot: bool = False,
+    square: bool = True,
+    is_cluster: bool = False,
+    cmap: str = "Oranges",
+    line_widths: float = 1,
+    fmt: str = ".2f",
+    rotation: float = 65,
+    x_name: str = None,
+    y_name: str = None,
+    output: path = None,
+    show: bool = False,
+    close: bool = True,
+    **kwargs: Any
+):
+    """
+    Generate a simple heatmap using seaborn.
+
+    Parameters
+    ----------
+    adata : AnnData
+        Input AnnData object containing the data matrix.
+    layer : str, default None
+        Layer name in adata.layers to use for plotting. If None, uses adata.X.
+    title : Optional[str], default None
+        Title of the figure.
+    annot : bool, default False
+        Whether to annotate each cell with its numeric value.
+    square : bool, default True
+        Whether to make cells square-shaped.
+    is_cluster : bool, default False
+        Whether to perform hierarchical clustering (uses clustermap instead of heatmap).
+    cmap : str, default "Oranges"
+        Colormap for the heatmap.
+    line_widths : float, default 1
+        Width of the lines that divide cells.
+    fmt : str, default ".2f"
+        String formatting code for annotations.
+    rotation : float, default 65
+        Rotation angle for x-axis labels.
+    x_name : str, default None
+        Label for the x-axis.
+    y_name : str, default None
+        Label for the y-axis.
+    output : path, default None
+        File path to save the figure. If None, figure is not saved.
+    show : bool, default True
+        Whether to display the figure.
+    close : bool, default False
+        Whether to close the figure after saving.
+    **kwargs : Any
+        Additional keyword arguments passed to seaborn heatmap or clustermap.
+    """
+    fig, ax = plot_start()
+
+    data = adata.copy()
+
+    # judge layers
+    if layer is not None:
+
+        if layer not in list(data.layers):
+            log.error("The value of the `layer` parameter must be one of the keys in `adata.layers`.")
+            raise ValueError("The value of the `layer` parameter must be one of the keys in `adata.layers`.")
+
+        data.X = data.layers[layer]
+
+    # DataFrame
+    log.info(f"to DataFrame")
+    df: DataFrame = data.to_df()
+    # seaborn
+    heat_map: Axes = sns.clustermap(data=df, square=square, annot=annot, cmap=cmap, fmt=fmt, **kwargs) \
+        if is_cluster else \
+        sns.heatmap(data=df, square=square, annot=annot, cmap=cmap, linewidths=line_widths, fmt=fmt, **kwargs)
+
+    if not is_cluster:
+        plt.setp(heat_map.get_xticklabels(), rotation=rotation, ha="right", rotation_mode="anchor")
+    else:
+        # noinspection PyUnresolvedReferences
+        plt.setp(heat_map.ax_heatmap.get_xticklabels(), rotation=rotation)
+
+    plot_end(title, x_name, y_name, output, show, close)
+
+    return ax
+
+
 def heatmap_annotation(
     adata: AnnData,
     layer: Optional[str] = None,
@@ -352,93 +440,5 @@ def heatmap_annotation(
     )
 
     plot_end(title, None, None, output, show, close)
-
-    return ax
-
-
-def heatmap(
-    adata: AnnData,
-    layer: str = None,
-    title: Optional[str] = None,
-    annot: bool = False,
-    square: bool = True,
-    is_cluster: bool = False,
-    cmap: str = "Oranges",
-    line_widths: float = 1,
-    fmt: str = ".2f",
-    rotation: float = 65,
-    x_name: str = None,
-    y_name: str = None,
-    output: path = None,
-    show: bool = False,
-    close: bool = True,
-    **kwargs: Any
-):
-    """
-    Generate a simple heatmap using seaborn.
-
-    Parameters
-    ----------
-    adata : AnnData
-        Input AnnData object containing the data matrix.
-    layer : str, default None
-        Layer name in adata.layers to use for plotting. If None, uses adata.X.
-    title : Optional[str], default None
-        Title of the figure.
-    annot : bool, default False
-        Whether to annotate each cell with its numeric value.
-    square : bool, default True
-        Whether to make cells square-shaped.
-    is_cluster : bool, default False
-        Whether to perform hierarchical clustering (uses clustermap instead of heatmap).
-    cmap : str, default "Oranges"
-        Colormap for the heatmap.
-    line_widths : float, default 1
-        Width of the lines that divide cells.
-    fmt : str, default ".2f"
-        String formatting code for annotations.
-    rotation : float, default 65
-        Rotation angle for x-axis labels.
-    x_name : str, default None
-        Label for the x-axis.
-    y_name : str, default None
-        Label for the y-axis.
-    output : path, default None
-        File path to save the figure. If None, figure is not saved.
-    show : bool, default True
-        Whether to display the figure.
-    close : bool, default False
-        Whether to close the figure after saving.
-    **kwargs : Any
-        Additional keyword arguments passed to seaborn heatmap or clustermap.
-    """
-    fig, ax = plot_start()
-
-    data = adata.copy()
-
-    # judge layers
-    if layer is not None:
-
-        if layer not in list(data.layers):
-            log.error("The value of the `layer` parameter must be one of the keys in `adata.layers`.")
-            raise ValueError("The value of the `layer` parameter must be one of the keys in `adata.layers`.")
-
-        data.X = data.layers[layer]
-
-    # DataFrame
-    log.info(f"to DataFrame")
-    df: DataFrame = data.to_df()
-    # seaborn
-    heat_map: Axes = sns.clustermap(data=df, square=square, annot=annot, cmap=cmap, fmt=fmt, **kwargs) \
-        if is_cluster else \
-        sns.heatmap(data=df, square=square, annot=annot, cmap=cmap, linewidths=line_widths, fmt=fmt, **kwargs)
-
-    if not is_cluster:
-        plt.setp(heat_map.get_xticklabels(), rotation=rotation, ha="right", rotation_mode="anchor")
-    else:
-        # noinspection PyUnresolvedReferences
-        plt.setp(heat_map.ax_heatmap.get_xticklabels(), rotation=rotation)
-
-    plot_end(title, x_name, y_name, output, show, close)
 
     return ax

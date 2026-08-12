@@ -38,9 +38,9 @@ project_name = "SCIV"
 scvmap_url: str = "https://bio.liclab.net/scvmap_service"
 
 # User path
-user_path = os.path.expanduser("~")
+_user_path_ = os.path.expanduser("~")
 # Project cache path
-project_cache_path: str = os.path.join(user_path, ".cache", project_name)
+project_cache_path: str = os.path.join(_user_path_, ".cache", project_name)
 # Whether to form log file
 is_form_log_file: bool = False
 # Log file path
@@ -74,6 +74,9 @@ test_method_type = Literal[
     "Wilcoxon", "Kruskal", "Brunner-Munzel"
 ]
 
+fig = None
+ax = None
+
 # set matplotlib log level to error
 matplotlib.set_loglevel("error")
 
@@ -90,8 +93,6 @@ plot_rc_config = {
     "ytick.labelsize": 7
 }
 plt.rcParams.update(plot_rc_config)
-
-fig, ax = plt.subplots(figsize=(2, 2))
 
 # Set colors cmap
 type_set_colors = [
