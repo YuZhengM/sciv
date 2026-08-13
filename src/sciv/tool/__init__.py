@@ -66,7 +66,12 @@ from ._random_walk_ import (
 from ._scvmap_ import (
     get_result_data,
     request_get_data,
-    request_post_data
+    request_post_data,
+    list_trait_info_data,
+    list_magma_gene_by_trait_id,
+    list_magma_variant_info_data_by_trait_id,
+    list_homer_tf_by_trait_id,
+    list_trait_gene_enrichment_data
 )
 
 __all__ = [
@@ -126,5 +131,10 @@ __all__ = [
     "RandomWalk",
     "get_result_data",
     "request_get_data",
-    "request_post_data"
+    "request_post_data",
+    "list_trait_info_data",
+    "list_magma_gene_by_trait_id",
+    "list_magma_variant_info_data_by_trait_id",
+    "list_homer_tf_by_trait_id",
+    "list_trait_gene_enrichment_data"
 ]
