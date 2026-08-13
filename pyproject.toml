@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "sciv"
-version = "0.0.192"
+version = "0.0.193"
 authors = [
     { name = "Zheng-Min Yu", email = "yuzmbio@163.com" },
     { name = "Zheng-Min Yu", email = "3236170161@qq.com" }
