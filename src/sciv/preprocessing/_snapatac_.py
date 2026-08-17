@@ -693,7 +693,7 @@ def motif_enrichment(
         )
 
     have_cluster_list: list = list(motifs.keys())
-    ul.log(__name__).info(f"Merge motif result for `{have_cluster_list}`")
+    ul.log(__name__).info(f"Merge motif result for `{len(have_cluster_list)}` {groupby}.")
 
     motif_list: list = []
     columns: list = ['id', 'name', 'family', 'log2_fold_change', 'p_value', 'adjusted_p_value']
