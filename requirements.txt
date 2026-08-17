@@ -32,5 +32,3 @@ numba==0.62.0
 pynndescent==0.5.13
 fa2-modified==0.4
 psutil==7.2.1
-Bio==1.8.3
-gimmemotifs==0.18.4
