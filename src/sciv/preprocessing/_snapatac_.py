@@ -57,8 +57,9 @@ def _process_sc_atac_(
     ----------
     fragment_file : path | List[path]
         scATAC-seq data.
-    genome_anno : DataFrame
-        Genome annotation.
+    genome_anno : snapatac2.genome.Genome
+        A class that encapsulates information about a genome, including its FASTA sequence, its annotation, and
+        chromosome sizes.
     h5ad_file : Optional[path | List[path]], optional
         H5AD file.
     min_num_fragments : int, optional
