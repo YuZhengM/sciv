@@ -178,9 +178,9 @@ def trs(
     resolution : float, default 0.5
         Resolution of the Leiden Cluster. The recommended values are any one of 0.4, 0.9, 1.3, 1.5.
     k : int, default 30
-        When building an mKNN network, the number of nodes connected by each node (and operation).
+        When building an SM-kNN network, the number of nodes connected by each node (and operation).
     or_k : int, default 10
-        When building an mKNN network, the number of nodes connected by each node (or operation).
+        When building an SM-kNN network, the number of nodes connected by each node (or operation).
     weight : float, default 0.5
         The weight of interactions or operations.
     kernel : Literal["laplacian", "gaussian"], default "gaussian"
