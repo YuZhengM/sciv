@@ -10,6 +10,7 @@ from ._snapatac_ import (
     merge_sc_atac,
     get_gene_expression,
     get_peak_matrix,
+    motif_enrichment,
     get_tf_data,
     get_difference_peaks
 )
@@ -27,6 +28,7 @@ __all__ = [
     "merge_sc_atac",
     "get_gene_expression",
     "get_peak_matrix",
+    "motif_enrichment",
     "get_tf_data",
     "get_difference_peaks"
 ]

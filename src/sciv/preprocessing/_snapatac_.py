@@ -674,6 +674,38 @@ def _process_info_to_adata_(
     return info_adata
 
 
+def motif_enrichment(
+    regions: dict[str, list[str]],
+    genome_fasta,
+    groupby: str = "set_cluster",
+) -> DataFrame:
+
+    ul.log(__name__).info("Motif enrichment.")
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        motifs = snap.tl.motif_enrichment(
+            motifs=snap.datasets.cis_bp(unique=True),
+            regions=regions,
+            genome_fasta=genome_fasta,
+        )
+
+    have_cluster_list: list = list(motifs.keys())
+    ul.log(__name__).info(f"Merge motif result for `{have_cluster_list}`")
+
+    motif_list: list = []
+    columns: list = ['id', 'name', 'family', 'log2_fold_change', 'p_value', 'adjusted_p_value']
+
+    # Add motif
+    for have_cluster in have_cluster_list:
+        motif_data: DataFrame = pd.DataFrame(motifs[have_cluster], columns=columns)
+        motif_data[groupby] = have_cluster
+        motif_list.append(motif_data)
+
+    # obtain all motif data
+    return pd.concat(motif_list, axis=0)
+
+
 def get_tf_data(
     adata: AnnData,
     genome_anno,
@@ -732,30 +764,7 @@ def get_tf_data(
         ul.log(__name__).error(f"No marker regions for `p_value` = {p_value}, you can try to increase the `p_value`.")
         raise ValueError(f"No marker regions for `p_value` = {p_value}, you can try to increase the `p_value`.")
 
-    ul.log(__name__).info("Motif enrichment.")
-
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        motifs = snap.tl.motif_enrichment(
-            motifs=snap.datasets.cis_bp(unique=True),
-            regions=marker_peaks,
-            genome_fasta=genome_anno,
-        )
-
-    have_cluster_list: list = list(motifs.keys())
-    ul.log(__name__).info(f"Merge motif result for `{have_cluster_list}`")
-
-    motif_list: list = []
-    columns: list = ['id', 'name', 'family', 'log2_fold_change', 'p_value', 'adjusted_p_value']
-
-    # Add motif
-    for cell_type in have_cluster_list:
-        motif_data: DataFrame = pd.DataFrame(motifs[cell_type], columns=columns)
-        motif_data[groupby] = cell_type
-        motif_list.append(motif_data)
-
-    # obtain all motif data
-    tf_data: DataFrame = pd.concat(motif_list, axis=0)
+    tf_data: DataFrame = motif_enrichment(regions=marker_peaks, genome_fasta=genome_anno, groupby=groupby)
     tf_data.drop(columns=["family"], inplace=True)
 
     # obs
