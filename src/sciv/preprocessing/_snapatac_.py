@@ -680,6 +680,8 @@ def motif_enrichment(
     groupby: str = "set_cluster",
 ) -> DataFrame:
 
+    import snapatac2 as snap
+
     ul.log(__name__).info("Motif enrichment.")
 
     with warnings.catch_warnings():
