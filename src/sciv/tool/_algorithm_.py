@@ -512,7 +512,7 @@ def pearsonr(
     x: Union[list, np.ndarray],
     y: matrix_data,
     axis: Literal[0, 1] = 0,
-) -> np.ndarray:
+) -> tuple[np.ndarray, np.ndarray]:
 
     x = to_dense(x, is_array=True).ravel()
     y = to_dense(y, is_array=True)
@@ -545,14 +545,14 @@ def pearsonr(
         raise ValueError("axis must be 0 or 1")
 
     corr, p = stats.pearsonr(x, y, axis=axis)
-    return corr
+    return corr, p
 
 
 def spearmanr(
     x: Union[list, np.ndarray],
     y: matrix_data,
     axis: Literal[0, 1] = 0,
-) -> np.ndarray:
+) -> tuple[np.ndarray, np.ndarray]:
 
     x = to_dense(x, is_array=True).ravel()
     y = to_dense(y, is_array=True)
@@ -584,7 +584,9 @@ def spearmanr(
         raise ValueError("axis must be 0 or 1")
 
     corr, p = stats.spearmanr(x, y, axis=axis)
-    return corr if isinstance(corr, float) else corr[0, 1:]
+    corr_r = corr if isinstance(corr, float) else corr[0, 1:]
+    p_r = p if isinstance(p, float) else p[0, 1:]
+    return corr_r, p_r
 
 
 def spectral_eigenmaps(

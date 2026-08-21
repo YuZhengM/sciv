@@ -20,8 +20,6 @@ def venn_three(
     name2: str = "Set2",
     name3: str = "Set3",
     colors: list = None,
-    x_name: str = None,
-    y_name: str = None,
     title: str = None,
     output: path = None,
     show: bool = False,
@@ -47,10 +45,6 @@ def venn_three(
         Name of the third set.
     colors : list, optional
         Colors for the sets.
-    x_name : str, optional
-        X name.
-    y_name : str, optional
-        Y name.
     title : str, optional
         Title of the diagram.
     output : path, optional
@@ -99,8 +93,6 @@ def venn_two(
     name1: str = "Set1",
     name2: str = "Set2",
     colors: list = None,
-    x_name: str = None,
-    y_name: str = None,
     title: str = None,
     output: path = None,
     show: bool = False,
@@ -122,10 +114,6 @@ def venn_two(
         Name of the second set.
     colors : list, optional
         Colors for the sets.
-    x_name : str, optional
-        X name.
-    y_name : str, optional
-        Y name.
     title : str, optional
         Title of the diagram.
     output : path, optional
