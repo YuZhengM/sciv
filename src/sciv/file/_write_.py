@@ -195,7 +195,7 @@ def to_meta(
         )
 
 
-def to_fragments(
+def to_pseudo_fragments(
     adata: AnnData,
     fragments: str,
     layer: str = None,

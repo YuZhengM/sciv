@@ -382,6 +382,12 @@ def bar_significance(
         Statistical test for pairwise comparisons. Options include:
         {"t-test_ind", "t-test_welch", "t-test_paired", "Mann-Whitney", "Mann-Whitney-gt",
          "Mann-Whitney-ls", "Levene", "Wilcoxon", "Kruskal", "Brunner-Munzel"}.
+         p-value annotation legend:
+              ns: 5.00e-02 < p <= 1.00e+00
+               *: 1.00e-02 < p <= 5.00e-02
+              **: 1.00e-03 < p <= 1.00e-02
+             ***: 1.00e-04 < p <= 1.00e-03
+            ****: p <= 1.00e-04
     ci : Union[str, float], default "sd"
         Confidence interval type or value for error bars. Can be "sd" for standard deviation
         or a float for confidence interval percentage.

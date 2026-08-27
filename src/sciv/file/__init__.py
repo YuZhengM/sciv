@@ -11,7 +11,7 @@ from ._read_ import (
     read_variants
 )
 
-from ._write_ import save_h5ad, save_h5, save_pkl, to_meta, to_fragments
+from ._write_ import save_h5ad, save_h5, save_pkl, to_meta, to_pseudo_fragments
 
 __all__ = [
     "read_h5ad",
@@ -26,5 +26,5 @@ __all__ = [
     "save_h5",
     "save_pkl",
     "to_meta",
-    "to_fragments"
+    "to_pseudo_fragments"
 ]

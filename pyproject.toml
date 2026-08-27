@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "sciv"
-version = "0.0.194"
+version = "0.0.195"
 authors = [
     { name = "Zheng-Min Yu", email = "yuzmbio@163.com" },
     { name = "Zheng-Min Yu", email = "3236170161@qq.com" }
@@ -55,7 +55,8 @@ dependencies = [
     "numba==0.62.0",
     "pynndescent==0.5.13",
     "fa2-modified==0.4",
-    "psutil==7.2.1"
+    "psutil==7.2.1",
+    "zarr<3"
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
