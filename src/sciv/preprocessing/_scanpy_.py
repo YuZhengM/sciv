@@ -26,7 +26,8 @@ def filter_data(
     peak_rate: Optional[float] = None,
     is_copy: bool = False,
     is_min_cell: bool = True,
-    is_min_peak: bool = False
+    is_min_peak: bool = False,
+    is_verbose: bool = True
 ) -> AnnData:
     """
     Filter scATAC-seq data.
@@ -55,6 +56,8 @@ def filter_data(
         Whether to screen cells
     is_min_peak : bool, optional
         Whether to screen peaks
+    is_verbose : bool, default=True
+        If True, print log information. Default is True.
     Returns
     -------
     AnnData
@@ -66,7 +69,8 @@ def filter_data(
 
     import scanpy as sc
 
-    ul.log(__name__).info("Filter scATAC-seq data")
+    if is_verbose:
+        ul.log(__name__).info("Filter scATAC-seq data")
 
     if adata.shape[0] == 0:
         ul.log(__name__).error("The scATAC data is empty")
@@ -97,7 +101,9 @@ def filter_data(
         if _min_peaks_ > 1:
             min_peaks = _min_peaks_
 
-    ul.log(__name__).info(f"min cells: {min_cells}, min peaks: {min_peaks}")
+    if is_verbose:
+        ul.log(__name__).info(f"min cells: {min_cells}, min peaks: {min_peaks}")
+
     sc.pp.filter_genes(filter_adata, min_cells=min_cells)
     sc.pp.filter_cells(filter_adata, min_genes=min_peaks)
 
@@ -118,11 +124,13 @@ def filter_data(
         )
         return filter_adata
 
-    ul.log(__name__).info(
-        f"Filtered out cells {cells_count - filter_adata.shape[0]}, "
-        f"Filtered out peaks {peaks_count - filter_adata.shape[1]}"
-    )
-    ul.log(__name__).info(f"Size of filtered scATAC-seq data: {filter_adata.shape}")
+    if is_verbose:
+        ul.log(__name__).info(
+            f"Filtered out cells {cells_count - filter_adata.shape[0]}, "
+            f"Filtered out peaks {peaks_count - filter_adata.shape[1]}"
+        )
+        ul.log(__name__).info(f"Size of filtered scATAC-seq data: {filter_adata.shape}")
+
     filter_adata.uns["step"] = 0
     filter_adata.uns["elapsed_time"] = time.perf_counter() - start_time
 

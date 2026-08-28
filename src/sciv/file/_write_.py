@@ -197,12 +197,16 @@ def to_meta(
 
 def to_pseudo_fragments(
     adata: AnnData,
-    fragments: str,
+    groupby: str = None,
+    output: str = "./",
     layer: str = None,
+    export_key: str = "scATAC",
     batch_size: int = 100000,
     is_sort: bool = True,
     is_gz: bool = True,
-    is_keep: bool = False
+    is_keep: bool = False,
+    n_jobs: int = 4,
+    backend: str = "threading"
 ) -> None:
     """
     Convert AnnData format data into fragments format file.
@@ -211,12 +215,16 @@ def to_pseudo_fragments(
     ----------
     adata : AnnData
         Input AnnData object containing single-cell data.
-    fragments : str
-        Output file path for the fragments file.
+    output : str
+        Output path for the fragments file.
+    groupby : str, optional
+        Export files by grouping them according to a certain column.
     layer : str, optional
         The layer of data to use for generating fragments file.
         If None, uses the main data matrix (adata.X).
-    batch_size : int, default=50000
+    export_key : str, optional
+        The prefix of the output file name.
+    batch_size : int, default=100000
         Batch size for processing data. Larger values reduce memory consumption.
     is_sort : bool, default=True
         Whether to sort the output by chromosome and start position.
@@ -228,6 +236,12 @@ def to_pseudo_fragments(
         Whether to keep the uncompressed fragments file after compression.
         Only effective when is_gz is True. If False, the uncompressed
         file is deleted after successful compression.
+    n_jobs : int, default=4
+        Number of parallel jobs when `groupby` is specified.
+        Only used for multi-group export.
+    backend : str, default="threading"
+        The joblib backend: "threading" (low memory, shared data) or "loky"
+        (separate processes, better CPU parallelism but copies data per worker).
 
     Returns
     -------
@@ -240,7 +254,7 @@ def to_pseudo_fragments(
     is not recommended.
     """
 
-    output_path = os.path.dirname(fragments)
+    output_path = output if output != "./" else os.getcwd()
 
     if output_path != '':
         ul.file_method(__name__).makedirs(output_path)
@@ -261,88 +275,145 @@ def to_pseudo_fragments(
     data_var: DataFrame = data.var.copy()
 
     if "chr" not in data_obs.columns or "start" not in data_obs.columns or "end" not in data_obs.columns:
-        ul.log(__name__).error("`chr` or `start`or  `end` not in obs column")
-        raise ValueError("`chr` or `start` or `end` not in obs column")
+        ul.log(__name__).error("`chr` or `start`or  `end` not in var column")
+        raise ValueError("`chr` or `start` or `end` not in var column")
 
     if "barcodes" not in data_var.columns:
         ul.log(__name__).error(f"`barcodes` not in obs column")
         raise ValueError(f"`barcodes` not in obs column")
 
-    if is_sort:
+    if groupby is not None and groupby not in data_var.columns:
+        ul.log(__name__).error(f"`{groupby}` not in obs column")
+        raise ValueError(f"`{groupby}` not in obs column")
+
+    def _core_(_adata_: AnnData, output_file: str):
+
+        matrix = to_sparse(_adata_.X, is_matrix=False)
+
+        row_size, col_size = _adata_.shape
+        row_range, col_range = range(row_size), range(col_size)
+
+        _adata_obs_ = _adata_.obs
+
+        # Convert to dictionary
+        barcodes_dict: dict = dict(zip(list(col_range), data_var.index))
+        peaks_dict: dict = dict(zip(list(row_range), zip(_adata_obs_["chr"], _adata_obs_["start"], _adata_obs_["end"])))
+
+        nonzero = matrix.nonzero()
+        nonzero_size = nonzero[0].size
+        ul.log(__name__).info(f"Get size {row_size, col_size} ===> nonzero size: {nonzero_size}")
+        ul.log(__name__).info(f"Generate the `fragments` file {output_file}.")
+
+        # Pre-allocate string list to avoid frequent I/O operations
+        lines = [
+            f"# output_file = {output_file}\n",
+            f"# layer = {layer}\n",
+            f"# features: {row_size}, barcodes: {col_size}, nonzero: {nonzero_size}\n"
+        ]
+
+        # Use vectorized approach to generate data rows in batches
+        rows = nonzero[0]
+        cols = nonzero[1]
+
+        # Stream write to file to avoid storing all strings in memory
+        with open(output_file, mode="w", encoding="utf-8", newline="\n") as f:
+            # Write header information first
+            f.writelines(lines)
+
+            # Process in batches to reduce memory consumption
+            total_batches = (nonzero_size + batch_size - 1) // batch_size
+
+            for batch_idx in tqdm(range(total_batches), desc="Writing fragments"):
+                start_idx = batch_idx * batch_size
+                end_idx = min((batch_idx + 1) * batch_size, nonzero_size)
+
+                # Get data for current batch
+                batch_rows = rows[start_idx:end_idx]
+                batch_cols = cols[start_idx:end_idx]
+
+                # Batch get peaks and barcodes
+                batch_peaks = [peaks_dict[r] for r in batch_rows]
+                batch_barcodes = [barcodes_dict[c] for c in batch_cols]
+                batch_values = to_dense(matrix[batch_rows, batch_cols], is_array=True).ravel()
+
+                # Batch build output lines and write directly
+                batch_lines = [
+                    f"{p[0]}\t{p[1]}\t{p[2]}\t{b}\t{v}\n" for p, b, v in zip(batch_peaks, batch_barcodes, batch_values)
+                ]
+                f.writelines(batch_lines)
+
+        if is_gz:
+            is_success: bool = True
+
+            try:
+                ul.log(__name__).info(f"Generate the `fragments` file {output_file}.gz.")
+                import pysam
+                pysam.tabix_compress(output_file, f"{output_file}.gz", force=True)
+            except Exception as e:
+                is_success: bool = False
+                ul.log(__name__).error(f"Compression of {output_file} file failed. \n {e}")
+
+            if is_success and not is_keep:
+                os.remove(output_file)
+
+    def _prepare_sort_(_adata_obs_: DataFrame) -> DataFrame:
+        """Sort the obs by chromosome (natural order) and start position."""
         ul.log(__name__).info("Sort chromatin")
-        data_obs["chr"] = data_obs["chr"].astype(chrtype)
-        data_obs.sort_values(["chr", "start"], inplace=True)
-        source_row_size = data_obs.shape[0]
-        data_obs.dropna(subset=['chr'], inplace=True)
+        _adata_obs_["chr"] = _adata_obs_["chr"].astype(chrtype)
+        _adata_obs_.sort_values(["chr", "start"], inplace=True)
+        source_row_size = _adata_obs_.shape[0]
+        _adata_obs_.dropna(subset=['chr'], inplace=True)
 
-        if source_row_size > data_obs.shape[0]:
+        if source_row_size > _adata_obs_.shape[0]:
             chrs_str = ",".join(list(chrtype.categories))
-            ul.log(__name__).warning(f"The chromatin in column `chr` that is not in `{chrs_str}` has been deleted here.")
+            ul.log(__name__).warning(
+                f"The chromatin in column `chr` that is not in `{chrs_str}` has been deleted here."
+            )
 
-        data = data[data_obs.index, :]
+        return _adata_obs_
 
-    matrix = to_sparse(data.X, is_matrix=False)
+    if is_sort:
+        data_obs = _prepare_sort_(data_obs)
 
-    row_size, col_size = data.shape
-    row_range, col_range = range(row_size), range(col_size)
+    def _export_one_group_(group_value: str) -> None:
+        """Export a single group (thread-safe: only reads shared `data`, writes independent files)."""
+        import scanpy as sc
 
-    # Convert to dictionary
-    barcodes_dict: dict = dict(zip(list(col_range), data_var.index))
-    peaks_dict: dict = dict(zip(list(row_range), zip(data_obs["chr"], data_obs["start"], data_obs["end"])))
+        groupby_data_var = data_var[data_var[groupby] == group_value].copy()
 
-    nonzero = matrix.nonzero()
-    nonzero_size = nonzero[0].size
-    ul.log(__name__).info(f"Get size {row_size, col_size} ===> nonzero size: {nonzero_size}")
-    ul.log(__name__).info(f"Generate the `fragments` file {fragments}.")
+        if is_sort:
+            groupby_data = data[data_obs.index, groupby_data_var.index]
+        else:
+            groupby_data = data[:, groupby_data_var.index]
 
-    # Pre-allocate string list to avoid frequent I/O operations
-    lines = [
-        f"# output_file = {fragments}\n",
-        f"# layer = {layer}\n",
-        f"# features: {row_size}, barcodes: {col_size}, nonzero: {nonzero_size}\n"
-    ]
+        sc.pp.filter_genes(groupby_data, min_cells=1)
 
-    # Use vectorized approach to generate data rows in batches
-    rows = nonzero[0]
-    cols = nonzero[1]
+        _core_(groupby_data, os.path.join(output_path, f"{export_key}_{group_value}.tsv"))
 
-    # Stream write to file to avoid storing all strings in memory
-    with open(fragments, mode="w", encoding="utf-8", newline="\n") as f:
-        # Write header information first
-        f.writelines(lines)
+    if groupby is not None:
 
-        # Process in batches to reduce memory consumption
-        total_batches = (nonzero_size + batch_size - 1) // batch_size
+        groupby_list = data_var[groupby].unique().tolist()
 
-        for batch_idx in tqdm(range(total_batches), desc="Writing fragments"):
-            start_idx = batch_idx * batch_size
-            end_idx = min((batch_idx + 1) * batch_size, nonzero_size)
+        if n_jobs == 1:
+            # Sequential execution
+            for g in groupby_list:
+                _export_one_group_(g)
+        else:
+            # Parallel execution with joblib.
+            # "threading" backend shares `data` in memory (low memory overhead, suitable for I/O bound work),
+            # "loky" (processes) provides real CPU parallelism but pickles `data` to every worker.
+            from joblib import Parallel, delayed
 
-            # Get data for current batch
-            batch_rows = rows[start_idx:end_idx]
-            batch_cols = cols[start_idx:end_idx]
+            ul.log(__name__).info(f"Parallel export {len(groupby_list)} groups with n_jobs={n_jobs}, backend={backend}.")
 
-            # Batch get peaks and barcodes
-            batch_peaks = [peaks_dict[r] for r in batch_rows]
-            batch_barcodes = [barcodes_dict[c] for c in batch_cols]
-            batch_values = to_dense(matrix[batch_rows, batch_cols], is_array=True).ravel()
+            Parallel(n_jobs=n_jobs, backend=backend)(
+                delayed(_export_one_group_)(g) for g in groupby_list
+            )
 
-            # Batch build output lines and write directly
-            batch_lines = [
-                f"{p[0]}\t{p[1]}\t{p[2]}\t{b}\t{v}\n" for p, b, v in zip(batch_peaks, batch_barcodes, batch_values)
-            ]
-            f.writelines(batch_lines)
+    else:
 
-    if is_gz:
-        is_success: bool = True
+        if is_sort:
+            data_obs = _prepare_sort_(data_obs)
+            data = data[data_obs.index, :]
 
-        try:
-            ul.log(__name__).info(f"Generate the `fragments` file {fragments}.gz.")
-            import pysam
-            pysam.tabix_compress(fragments, f"{fragments}.gz", force=True)
-        except Exception as e:
-            is_success: bool = False
-            ul.log(__name__).error(f"Compression of {fragments} file failed. \n {e}")
-
-        if is_success and not is_keep:
-            os.remove(fragments)
+        _core_(data, os.path.join(output_path, f"{export_key}.tsv"))

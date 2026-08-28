@@ -177,7 +177,11 @@ def poisson_vi(
             ul.log(__name__).info(f"Due to the existence of file `model.pt`, it is loaded by default.")
 
             try:
-                model = scvi.external.POISSONVI.load(model_dir, adata=adata)
+                model = scvi.external.POISSONVI.load(
+                    model_dir,
+                    adata=adata,
+                    accelerator="gpu" if check_gpu_availability() else "auto"
+                )
             except OutOfMemoryError as ome:
                 ul.log(__name__).warning(f"GPU failed to run, try to switch to CPU running.\n {ome}")
 
@@ -200,6 +204,7 @@ def poisson_vi(
         model = __train__()
 
     # latent space
+    ul.log(__name__).info("Obtain latent representation matrix.")
     latent = model.get_latent_representation()
     adata.obsm[latent_name] = latent
 
@@ -215,8 +220,8 @@ def poisson_vi(
     sc.tl.leiden(adata, key_added="clusters", resolution=resolution)
     adata.obs["clusters"] = adata.obs["clusters"].astype(str)
 
-    # umap
     try:
+        ul.log(__name__).info(f"UMAP")
         data_umap = umap(adata.obsm[latent_name])
         adata.obsm["umap"] = data_umap
         adata.obs["latent_umap1"] = data_umap[:, 0]
@@ -227,8 +232,8 @@ def poisson_vi(
              Continue with execution: {e}"
         )
 
-    # tsne
     try:
+        ul.log(__name__).info(f"t-SNE")
         data_tsne = tsne(adata.obsm[latent_name])
         adata.obsm["tsne"] = data_tsne
         adata.obs["latent_tsne1"] = data_tsne[:, 0]
@@ -243,7 +248,15 @@ def poisson_vi(
     clusters_list.sort()
 
     adata.uns["poisson_vi"] = {
+        "max_epochs": max_epochs,
+        "lr": lr,
+        "batch_size": batch_size,
+        "eps": eps,
         "model_dir": model_dir,
+        "early_stopping_patience": early_stopping_patience,
+        "strategy": strategy,
+        "batch_key": batch_key,
+        "resolution": resolution,
         "cluster_size": len(clusters_list),
         "dp_delta": dp_delta,
         "latent_name": latent_name
