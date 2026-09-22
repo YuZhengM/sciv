@@ -30,6 +30,7 @@ def scatter(
     title: str = None,
     cmap: str = "Oranges",
     text_fontsize: float = 7,
+    xytext: tuple[float, float] = (0, 0),
     text_lw: float = 1,
     start_color_index: int = 0,
     color_step_size: int = 0,
@@ -68,7 +69,10 @@ def scatter(
         Plot title
     cmap : str, default "Oranges"
         Colormap for continuous coloring
+    xytext : tuple[float, float], default (0, 0)
+        xytext is interpreted as an offset in points relative to xy
     text_lw : float, default 1
+        Line width of the text box border
     text_fontsize : float, default 7
         Font size for annotation text
     start_color_index : int, default 0
@@ -187,7 +191,7 @@ def scatter(
                 plt.annotate(
                     txt,
                     xy=(i, j),
-                    xytext=(-10, 0),
+                    xytext=xytext,
                     textcoords="offset points",
                     bbox=dict(
                         boxstyle="round,pad=0.2",
