@@ -413,7 +413,6 @@ def to_pseudo_fragments(
     else:
 
         if is_sort:
-            data_obs = _prepare_sort_(data_obs)
             data = data[data_obs.index, :]
 
         _core_(data, os.path.join(output_path, f"{export_key}.tsv"))

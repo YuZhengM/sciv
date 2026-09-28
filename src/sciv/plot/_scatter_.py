@@ -686,6 +686,9 @@ def manhattan(
 
     fig, ax = plot_start()
 
+    # add grid
+    ax.grid(axis="y", linestyle="--", linewidth=line_width, color="gray", alpha=0.3, zorder=0)
+
     x_labels = []
     x_labels_pos = []
     # Track the last index to draw lines between chromosomes
@@ -698,14 +701,14 @@ def manhattan(
         if name not in groupby_unique:
             continue
 
-        group.plot(kind='scatter', x='ind', y=y, color=colors[num], s=size, ax=ax)
-        x_labels.append(name)
-        x_labels_pos.append((group['ind'].iloc[-1] - (group['ind'].iloc[-1] - group['ind'].iloc[0]) / 2))
-
         # Draw a vertical line between chromosomes
         if num > 0:
             # Skip the first chromosome
-            ax.axvline(x=last_ind + 0.5, color='gray', linestyle='--', linewidth=line_width, **kwargs)
+            ax.axvline(x=last_ind + 0.5, linestyle='--', linewidth=line_width, color='gray', alpha=0.3, zorder=0)
+
+        group.plot(kind='scatter', x='ind', y=y, color=colors[num], s=size, ax=ax, **kwargs)
+        x_labels.append(name)
+        x_labels_pos.append((group['ind'].iloc[-1] - (group['ind'].iloc[-1] - group['ind'].iloc[0]) / 2))
 
         # Label specific mutations
         if label and labels:
@@ -716,8 +719,6 @@ def manhattan(
 
         last_ind = group['ind'].iloc[-1]
 
-    # add grid
-    ax.grid(axis="y", linestyle="--", linewidth=line_width, color="gray", zorder=0)
     ax.set_xticks(x_labels_pos)
     ax.set_xticklabels(x_labels)
 

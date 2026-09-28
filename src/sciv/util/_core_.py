@@ -830,7 +830,7 @@ def plot_end(
     if output is not None:
 
         if output.endswith(".pdf"):
-            plt.savefig(output, bbox_inches='tight', pad_inches=0.1)
+            plt.savefig(output, dpi=dpi, bbox_inches='tight', pad_inches=0.1)
         elif output.endswith(".png") or output.endswith(".jpg") or output.endswith(".svg"):
             plt.savefig(output, dpi=dpi, bbox_inches='tight', pad_inches=0.1)
         else:
