@@ -553,6 +553,11 @@ def get_real_predict_label(
     else:
         cluster_list = list(map_groupby)
 
+    for c in cluster_list:
+        if c not in df[groupby].unique():
+            log(__name__).error(f"`{c}` is not in `{groupby}`.")
+            raise ValueError(f"`{c}` is not in `{groupby}`.")
+
     # total label size
     total_size = df.shape[0]
 

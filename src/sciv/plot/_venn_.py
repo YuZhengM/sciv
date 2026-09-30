@@ -82,7 +82,7 @@ def venn_three(
 
     ax.axis('off')
 
-    plot_end(title, x_name, y_name, output, show, close)
+    plot_end(title, None, None, output, show, close)
 
     return ax
 
@@ -148,6 +148,6 @@ def venn_two(
 
     ax.axis('off')
 
-    plot_end(title, x_name, y_name, output, show, close)
+    plot_end(title, None, None, output, show, close)
 
     return ax
