@@ -1169,8 +1169,8 @@ class RandomWalk:
         """
         self._simple_error_()
 
-        ul.log(__name__).info(f"Calculate {len(self.trait_list)} traits/diseases for process `run_benchmark` \
-                                (Count: {self.benchmark_count}). (Randomly perturb seed cells. ===> `benchmark`)")
+        ul.log(__name__).info(f"Calculate {len(self.trait_list)} traits/diseases for process `run_benchmark` "
+                              f"(Count: {self.benchmark_count}). (Randomly perturb seed cells. ===> `benchmark`)")
 
         total_steps = len(self.trait_list) * self.benchmark_count
         with tqdm(total=total_steps) as pbar:
