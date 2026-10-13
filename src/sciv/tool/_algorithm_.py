@@ -1260,6 +1260,7 @@ def _overlap_(regions_sort: DataFrame, variants: DataFrame) -> DataFrame:
         ul.log(__name__).warning("Data is empty.")
         return pd.DataFrame(columns=columns)
 
+    variants["position"] = variants["position"].astype(int)
     variants_sort = variants.sort_values(["chr", "position"])[["variant_id", "chr", "position", "rsId"]]
 
     # Intersect and Sort
@@ -1464,6 +1465,9 @@ def overlap_sum(regions: AnnData, variants: dict, trait_info: DataFrame, n_jobs:
         regions.var.rename(columns={"index": "index_x"}, inplace=True)
 
     regions.var.rename_axis("index", inplace=True)
+
+    regions.var["start"] = regions.var["start"].astype(int)
+    regions.var["end"] = regions.var["end"].astype(int)
 
     regions_df = (
         regions.var
