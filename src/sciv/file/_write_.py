@@ -296,7 +296,7 @@ def to_pseudo_fragments(
         _adata_obs_ = _adata_.obs
 
         # Convert to dictionary
-        barcodes_dict: dict = dict(zip(list(col_range), data_var.index))
+        barcodes_dict: dict = dict(zip(list(col_range), _adata_.var.index))
         peaks_dict: dict = dict(zip(list(row_range), zip(_adata_obs_["chr"], _adata_obs_["start"], _adata_obs_["end"])))
 
         nonzero = matrix.nonzero()
