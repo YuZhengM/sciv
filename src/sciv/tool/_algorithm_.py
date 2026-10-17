@@ -1043,16 +1043,16 @@ def davies_bouldin(data: matrix_data, labels: collection) -> float:
     return davies_bouldin_score(to_dense(data, is_array=True), labels)
 
 
-def ari(labels_pred: collection, labels_true: collection) -> float:
+def ari(labels_true: collection, labels_pred: collection) -> float:
     """
     ARI (-1, 1)
 
     Parameters
     ----------
-    labels_pred : collection
-        Predictive labels for clustering;
     labels_true : collection
         Real labels for clustering.
+    labels_pred : collection
+        Predictive labels for clustering;
     Returns
     -------
     float
@@ -1062,16 +1062,16 @@ def ari(labels_pred: collection, labels_true: collection) -> float:
     return adjusted_rand_score(labels_true, labels_pred)
 
 
-def ami(labels_pred: collection, labels_true: collection) -> float:
+def ami(labels_true: collection, labels_pred: collection) -> float:
     """
     AMI (0, 1)
 
     Parameters
     ----------
-    labels_pred : collection
-        Predictive labels for clustering;
     labels_true : collection
         Real labels for clustering.
+    labels_pred : collection
+        Predictive labels for clustering;
     Returns
     -------
     float
