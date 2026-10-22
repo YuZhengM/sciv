@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
 
-from typing import Tuple, Union, Literal, Any, List
+from typing import Tuple, Union, Literal, Any, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -184,6 +184,8 @@ def violin_significance(
     text_font_size: float = 6,
     top_offset: float = 0,
     title: str = None,
+    is_show_test: bool = True,
+    test_format: Literal["text", "symbol"] = "symbol",
     output: path = None,
     show: bool = False,
     close: bool = True,
@@ -219,6 +221,11 @@ def violin_significance(
         Statistical test for pairwise comparisons. Options include:
         {"t-test_ind", "t-test_welch", "t-test_paired", "Mann-Whitney", "Mann-Whitney-gt",
          "Mann-Whitney-ls", "Levene", "Wilcoxon", "Kruskal", "Brunner-Munzel"}.
+           ns: 5.00e-02 < p <= 1.00e+00
+            *: 1.00e-02 < p <= 5.00e-02
+           **: 1.00e-03 < p <= 1.00e-02
+          ***: 1.00e-04 < p <= 1.00e-03
+         ****: p <= 1.00e-04
     rotation : float, optional
         Rotation.
     marker_size : float, optional
@@ -230,6 +237,8 @@ def violin_significance(
     top_offset : float, optional
     text_line_width : float, optional
     strip_line_width : float, optional
+    is_show_test: bool, True
+    test_format: Literal, True
     title : str, optional
         Title.
     output : path, optional
@@ -294,7 +303,6 @@ def violin_significance(
         y=value,
         hue=hue,
         order=y_names,
-        inner='box',
         palette=final_palette,
         linewidth=line_width,
         ax=ax,
@@ -320,7 +328,7 @@ def violin_significance(
     )
 
     # --- 5. Significance Annotation ---
-    if hue:
+    if hue and is_show_test:
         if pairs is None:
             hue_values = df[hue].unique()
             pairs = [(hue_values[i], hue_values[i + 1]) for i in range(len(hue_values) - 1)]
@@ -362,13 +370,16 @@ def violin_significance(
                         [curr_h, curr_h + 0.02 * y_range, curr_h + 0.02 * y_range, curr_h],
                         lw=text_line_width, color='black')
 
-                # Format P-value text
-                if p_val < 0.001:
-                    p_text = f'P={p_val:.2e}'  # 科学计数法，保留两位小数
+                if p_val < 0.0001:
+                    p_text = f'P={p_val:.2e}' if test_format == "text" else "****"
+                elif p_val < 0.001:
+                    p_text = f'P={p_val:.2e}' if test_format == "text" else "***"
+                elif p_val < 0.01:
+                    p_text = f'P={p_val:.3e}' if test_format == "text" else "**"
                 elif p_val < 0.05:
-                    p_text = f'P={p_val:.3f}'  # 3 位小数
+                    p_text = f'P={p_val:.3f}' if test_format == "text" else "*"
                 else:
-                    p_text = f'P={p_val:.2f}'  # 2 位小数
+                    p_text = f'P={p_val:.2f}' if test_format == "text" else "ns"
 
                 ax.text((x_pos1 + x_pos2) * 0.5, curr_h + 0.025 * y_range, p_text,
                         ha='center', va='bottom', fontsize=text_font_size)
