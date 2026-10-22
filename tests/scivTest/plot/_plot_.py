@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 
 import sciv
 
-from sciv.plot import violin, violin_significance
+from sciv.plot import violin, violin_significance, box_group
 
 
 def generate_test_data(n=200):
@@ -156,3 +156,20 @@ class Test(TestCase):
             output="violin_mann_whitney.png"
         )
         print("场景 2 (Mann-Whitney) 完成，图片已保存。")
+
+    def test_box_group(self):
+        df = generate_test_data()
+        box_group(
+            df,
+            x="clusters",
+            y="value",
+            hue="hue_col",
+            x_name="Cluster",
+            y_name="Value",
+            legend="Type",
+            title="Box Group Test",
+            rotation=15,
+            output="test_box_group.png",
+            show=False,
+        )
+        print("测试通过，图片已保存: test_box_group.png")

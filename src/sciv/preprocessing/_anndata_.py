@@ -58,8 +58,8 @@ def adata_group(
     if layer is not None:
 
         if layer not in list(adata.layers):
-            ul.log(__name__).error("The value of the `layer` parameter must be one of the keys in `adata.layers`.")
-            raise ValueError("The value of the `layer` parameter must be one of the keys in `adata.layers`.")
+            ul.log(__name__).error(f"The value of the `layer`({layer}) parameter must be one of the keys in `adata.layers`.")
+            raise ValueError(f"The value of the `layer`({layer}) parameter must be one of the keys in `adata.layers`.")
 
         if axis == 1:
             data: AnnData = AnnData(adata.layers[layer], obs=adata.obs, var=adata.var)

@@ -327,8 +327,8 @@ def paga_trajectory(
         else:
 
             if layer not in adata.layers:
-                ul.log(__name__).error("The value of the `layer` parameter must be one of the keys in `adata.layers`.")
-                raise ValueError("The value of the `layer` parameter must be one of the keys in `adata.layers`.")
+                ul.log(__name__).error(f"The value of the `layer`({layer}) parameter must be one of the keys in `adata.layers`.")
+                raise ValueError(f"The value of the `layer`({layer}) parameter must be one of the keys in `adata.layers`.")
 
             counts = adata.layers[layer]
 

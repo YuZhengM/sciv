@@ -82,8 +82,8 @@ def heatmap(
     if layer is not None:
 
         if layer not in list(data.layers):
-            log.error("The value of the `layer` parameter must be one of the keys in `adata.layers`.")
-            raise ValueError("The value of the `layer` parameter must be one of the keys in `adata.layers`.")
+            log.error(f"The value of the `layer`({layer}) parameter must be one of the keys in `adata.layers`.")
+            raise ValueError(f"The value of the `layer`({layer}) parameter must be one of the keys in `adata.layers`.")
 
         data.X = data.layers[layer]
 
@@ -265,7 +265,7 @@ def heatmap_annotation(
     if layer is not None:
 
         if layer not in list(data.layers):
-            log.error("The value of the `layer` parameter must be one of the keys in `adata.layers`.")
+            log.error(f"The value of the `layer`({layer}) parameter must be one of the keys in `adata.layers`.")
             raise ValueError(f"The `{layer}` parameter needs to include in `adata.layers`")
 
         data.X = data.layers[layer]

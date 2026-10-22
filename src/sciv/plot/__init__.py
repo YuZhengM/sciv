@@ -2,7 +2,7 @@
 
 from ._bar_ import bar, bar_two, bar_class, bar_significance, bar_correlation
 from ._barcode_ import barcode
-from ._box_ import box
+from ._box_ import box, box_group
 from ._bubble_ import bubble
 from ._graph_ import graph, communities_graph, network_two_types
 from ._heat_map_ import heatmap, heatmap_annotation
@@ -31,6 +31,7 @@ __all__ = [
     "bar_correlation",
     "barcode",
     "box",
+    "box_group",
     "bubble",
     "graph",
     "communities_graph",

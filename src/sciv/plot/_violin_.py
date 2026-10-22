@@ -25,7 +25,7 @@ def violin(
     y_name: str = "value",
     kind: _Kind = "violin",
     groupby: str = "clusters",
-    palette: Union[Tuple, list] = None,
+    palette: Union[Tuple, list, dict] = None,
     hue: str = None,
     rotation: float = 65,
     line_width: float = 0.5,

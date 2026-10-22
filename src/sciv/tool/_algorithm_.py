@@ -513,7 +513,6 @@ def pearsonr(
     y: matrix_data,
     axis: Literal[0, 1] = 0,
 ) -> tuple[np.ndarray, np.ndarray]:
-
     x = to_dense(x, is_array=True).ravel()
     y = to_dense(y, is_array=True)
 
@@ -553,7 +552,6 @@ def spearmanr(
     y: matrix_data,
     axis: Literal[0, 1] = 0,
 ) -> tuple[np.ndarray, np.ndarray]:
-
     x = to_dense(x, is_array=True).ravel()
     y = to_dense(y, is_array=True)
 
@@ -809,6 +807,23 @@ def k_means(data: matrix_data, n_clusters: int = 8, is_to_dense: bool = False) -
     labels = model.labels_
     ul.log(__name__).info("End K-means cluster")
     return labels
+
+
+def leiden(
+    adata: AnnData,
+    n_neighbors: int = 15,
+    latent_name: Optional[str] = None,
+    key_added: str = "leiden",
+    resolution: float = 0.5
+) -> None:
+    import scanpy as sc
+
+    if latent_name is not None and latent_name not in adata.obsm:
+        ul.log(__name__).error(f"Latent name `{latent_name}` not found.")
+        raise ValueError(f"Latent name `{latent_name}` not found.")
+
+    sc.pp.neighbors(adata, n_neighbors=n_neighbors, use_rep=latent_name)
+    sc.tl.leiden(adata, key_added=key_added, resolution=resolution)
 
 
 def spectral_clustering(
@@ -1368,7 +1383,6 @@ def overlap(regions: DataFrame, variants: DataFrame) -> DataFrame:
 
 
 def _process_trait_(col_idx: int, variant: AnnData, regions_df: DataFrame, label2idx: dict):
-
     local_data_vals = []
     local_row_indices = []
     local_col_indices = []

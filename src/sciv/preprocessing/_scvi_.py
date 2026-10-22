@@ -12,7 +12,7 @@ from anndata import AnnData
 from torch.cuda import OutOfMemoryError
 
 from .. import util as ul
-from ..tool import umap, tsne
+from ..tool import umap, tsne, leiden
 from ..util import path, check_gpu_availability
 
 __name__: str = "preprocessing_scvi"
@@ -216,8 +216,7 @@ def poisson_vi(
         adata.obs["clusters_x"] = adata.obs["clusters"]
 
     ul.log(__name__).info(f"Perform kNN and Leiden clustering.")
-    sc.pp.neighbors(adata, use_rep=latent_name)
-    sc.tl.leiden(adata, key_added="clusters", resolution=resolution)
+    leiden(adata, latent_name=latent_name, key_added="clusters", resolution=resolution)
     adata.obs["clusters"] = adata.obs["clusters"].astype(str)
 
     try:

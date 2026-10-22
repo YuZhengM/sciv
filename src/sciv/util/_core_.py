@@ -675,8 +675,8 @@ def check_adata_get(adata: AnnData, layer: str = None, is_dense: bool = True, is
     # judge layers
     if layer is not None:
         if layer not in list(data.layers):
-            log(__name__).error("The value of the `layer` parameter must be one of the keys in `adata.layers`.")
-            raise ValueError("The value of the `layer` parameter must be one of the keys in `adata.layers`.")
+            log(__name__).error(f"The value of the `layer`({layer}) parameter must be one of the keys in `adata.layers`.")
+            raise ValueError(f"The value of the `layer`({layer}) parameter must be one of the keys in `adata.layers`.")
 
         data.X = to_dense(data.layers[layer], is_array=True) if is_dense \
             else to_sparse(data.layers[layer], is_matrix=is_matrix)
