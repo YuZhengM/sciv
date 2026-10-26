@@ -212,6 +212,8 @@ def get_sc_atac(
     AnnData
         Processed scATAC-seq data.
     """
+    import snapatac2 as snap
+
     # Initialize features variable to track feature selection status
     features: Optional[str] = None
 
@@ -281,7 +283,8 @@ def get_sc_atac(
         "min_tsse": min_tsse,
         "counting_strategy": counting_strategy,
         "is_filter_doublets": is_filter_doublets,
-        "need_features": need_features
+        "need_features": need_features,
+        "genome": str(genome_anno.annotation) if isinstance(genome_anno, snap.genome.Genome) else genome_anno
     }
 
     if h5ad_file is not None:
@@ -320,7 +323,7 @@ def merge_sc_atac(
     files : dict
         Dictionary mapping sample names to file paths of scATAC-seq data.
         Format: {file_key: file_path, ...}
-    genome_anno : DataFrame
+    genome_anno : Genome
         Genome annotation. Commonly `snap.genome.hg38` or `snap.genome.hg19`.
     merge_key : str, optional
         Key used to form the final H5AD file name. Default is "merge_sc_atac".
@@ -472,6 +475,7 @@ def merge_sc_atac(
         "is_selected": is_selected,
         "is_batch": is_batch,
         "need_features": need_features,
+        "genome": str(genome_anno.annotation) if isinstance(genome_anno, snap.genome.Genome) else genome_anno,
         "output_path": output_path
     }
 

@@ -4,6 +4,7 @@ from typing import Tuple, Union, Literal, Any, List, Optional
 
 import numpy as np
 import pandas as pd
+from matplotlib.collections import PolyCollection
 from pandas import DataFrame
 import seaborn as sns
 
@@ -168,11 +169,11 @@ def violin_significance(
     df: DataFrame,
     value: str,
     groupby: str,
-    x_name: str = None,
-    y_name: str = None,
+    x_name: Optional[str] = None,
+    y_name: Optional[str] = None,
     palette: Union[Tuple, list, str, dict] = None,
-    hue: str = None,
-    order_names: list = None,
+    hue: Optional[str] = None,
+    order_names: Optional[list] = None,
     pairs: List[tuple] = None,
     test: test_method_type = "Mann-Whitney",
     rotation: float = 65,
@@ -180,76 +181,82 @@ def violin_significance(
     strip_alpha: float = 0.8,
     line_width: float = 0.5,
     strip_line_width: float = 0.2,
+    strip_jitter: Union[float, Literal[True]] = True,
     text_line_width: float = 0.5,
     text_font_size: float = 6,
     top_offset: float = 0,
-    title: str = None,
+    title: Optional[str] = None,
     is_show_test: bool = True,
     test_format: Literal["text", "symbol"] = "symbol",
-    output: path = None,
+    output: Optional[path] = None,
     show: bool = False,
     close: bool = True,
     **kwargs: Any
 ):
     """
-    Plot violin plot with scatter overlay and significance bars.
-
-    Combines violin (distribution), and stripplot (raw data).
-    Performs statistical test and annotates p-values.
-
-    Parameters
-    ----------
-    df : DataFrame
-        Input data.
-    value : str, optional
-        Value column.
-    x_name : str, optional
-        X name.
-    y_name : str, optional
-        Y name.
-    groupby : str, optional
-        Clusters column.
-    palette : Union[Tuple, list], optional
-        Palette.
-    hue : str, optional
-        Hue column.
-    order_names : list, optional
-        Order names.
-    pairs : List[tuple], optional
-        List of tuple pairs to compare. If None, compares all sequential pairs.
-    test : str, default "t-test_ind"
-        Statistical test for pairwise comparisons. Options include:
-        {"t-test_ind", "t-test_welch", "t-test_paired", "Mann-Whitney", "Mann-Whitney-gt",
-         "Mann-Whitney-ls", "Levene", "Wilcoxon", "Kruskal", "Brunner-Munzel"}.
-           ns: 5.00e-02 < p <= 1.00e+00
-            *: 1.00e-02 < p <= 5.00e-02
-           **: 1.00e-03 < p <= 1.00e-02
-          ***: 1.00e-04 < p <= 1.00e-03
-         ****: p <= 1.00e-04
-    rotation : float, optional
-        Rotation.
-    marker_size : float, optional
-        marker size.
-    strip_alpha : float, optional
-    line_width : float, optional
-        Line width.
-    text_font_size : float, optional
-    top_offset : float, optional
-    text_line_width : float, optional
-    strip_line_width : float, optional
-    is_show_test: bool, True
-    test_format: Literal, True
-    title : str, optional
-        Title.
-    output : path, optional
-        Output path.
-    show : bool, optional
-        Whether to show.
-    close : bool, optional
-        Whether to close.
-    kwargs : Any, optional
-        Keyword arguments passed to sns.violinplot.
+    Violin plot + stripplot + significance bars.
+    显著性横线端点直接从绘制结果中反推真实小提琴中心,不依赖 dodge 公式。
     """
+
+    def _p_to_text(p_val_: float) -> str:
+        if p_val_ < 1e-4:
+            return f'P={p_val_:.2e}' if test_format == "text" else "****"
+        elif p_val_ < 1e-3:
+            return f'P={p_val_:.2e}' if test_format == "text" else "***"
+        elif p_val_ < 1e-2:
+            return f'P={p_val_:.3e}' if test_format == "text" else "**"
+        elif p_val_ < 0.05:
+            return f'P={p_val_:.3f}' if test_format == "text" else "*"
+        else:
+            return f'P={p_val_:.2f}' if test_format == "text" else "ns"
+
+    def _extract_violin_centers(ax_) -> list:
+        """从绘制结果提取每个小提琴体的真实 x 中心(每个 Path 对应一个半小提琴)。"""
+        centers = []
+        for coll in ax_.collections:
+            # PolyCollection 只会来自 violinplot; stripplot 的是 PathCollection,不会被误捕
+            if isinstance(coll, PolyCollection):
+                for p in coll.get_paths():
+                    centers.append(float(p.vertices[:, 0].mean()))
+        return centers
+
+    def _build_center_lookup(ax_) -> dict:
+        """
+        构建 (group, hue) -> 真实 x 中心 的查找表。
+        步骤:
+          1. 每个小提琴中心归属到最近的 x 刻度 -> group;
+          2. 组内按中心 x 排序,与该组"实际有数据的 hue 水平"(按 seaborn 左->右顺序)一一对应。
+        """
+        centers = _extract_violin_centers(ax_)
+        ticks = np.arange(len(y_names))
+
+        by_group: dict = {g: [] for g in y_names}
+        for c in centers:
+            gi = int(np.argmin(np.abs(ticks - c)))
+            by_group[y_names[gi]].append(c)
+
+        lookup: dict = {}
+
+        if hue is None:
+            # 无 hue:每组最多一个小提琴
+            for g in y_names:
+                if len(by_group[g]) == 1:
+                    lookup[(g, None)] = by_group[g][0]
+            return lookup
+
+        # 有 hue:组内按 hue 左->右顺序对应
+        hue_order_vals = kwargs.get("hue_order", None) or list(df[hue].unique())
+        for g in y_names:
+            cs = sorted(by_group[g])
+            hues_present = [
+                h for h in hue_order_vals
+                if df.loc[(df[groupby] == g) & (df[hue] == h), value].notna().any()
+            ]
+            # 数量对得上才做对应,避免错位
+            if cs and len(cs) == len(hues_present):
+                for h, c in zip(hues_present, cs):
+                    lookup[(g, h)] = c
+        return lookup
 
     # --- 1. Parameter Validation ---
     df_columns = list(df.columns)
@@ -266,13 +273,12 @@ def violin_significance(
     fig, ax = plot_start()
 
     # --- 3. Handling Order and Colors ---
-    group_columns = [groupby]
-    new_df: DataFrame = df.groupby(group_columns, as_index=False)[value].median()
+    new_df: DataFrame = df.groupby([groupby], as_index=False)[value].median()
 
     colors: list = []
 
     if "color" in df_columns:
-        new_df_color: DataFrame = df.groupby(group_columns, as_index=False)["color"].first()
+        new_df_color: DataFrame = df.groupby([groupby], as_index=False)["color"].first()
         new_df = new_df.merge(new_df_color, how="left", on=groupby)
 
     if order_names is None:
@@ -294,9 +300,10 @@ def violin_significance(
 
     final_palette = palette if palette is not None else (colors if len(colors) > 0 else "Set2")
 
-    # --- 4. Plotting Layers ---
+    # 允许用户覆盖 dodge,同时保证判断与实际绘制一致
+    do_dodge = kwargs.pop("dodge", True if hue else False)
 
-    # Layer 1: Violin (Distribution)
+    # --- 4. Plot violin & strip ---
     sns.violinplot(
         data=df,
         x=groupby,
@@ -306,11 +313,13 @@ def violin_significance(
         palette=final_palette,
         linewidth=line_width,
         ax=ax,
-        dodge=True if hue else False,
+        dodge=do_dodge,
         **kwargs
     )
 
-    # Layer 3: Stripplot (Raw Data)
+    # !!! 关键:在 stripplot 之前立即捕获小提琴真实中心
+    center_lookup: dict = _build_center_lookup(ax)
+
     sns.stripplot(
         data=df,
         x=groupby,
@@ -322,76 +331,69 @@ def violin_significance(
         edgecolor='black',
         linewidth=strip_line_width,
         alpha=strip_alpha,
-        jitter=True,
+        jitter=strip_jitter,
         ax=ax,
-        dodge=True if hue else False
+        dodge=do_dodge
     )
 
     # --- 5. Significance Annotation ---
-    if hue and is_show_test:
-        if pairs is None:
-            hue_values = df[hue].unique()
-            pairs = [(hue_values[i], hue_values[i + 1]) for i in range(len(hue_values) - 1)]
+    if is_show_test:
+        y_min, y_max = df[value].min(), df[value].max()
+        y_range = (y_max - y_min) or 1.0
 
-        y_max = df[value].max()
-        y_range = df[value].max() - df[value].min()
-        # Start annotation slightly above the max data point
-        h = y_max + 0.05 * y_range
+        if hue:
+            hue_order_vals = kwargs.get("hue_order", None) or list(df[hue].unique())
+            if pairs is None:
+                pairs = [(hue_order_vals[i], hue_order_vals[i + 1])
+                         for i in range(len(hue_order_vals) - 1)]
+        else:
+            if pairs is None:
+                pairs = [(y_names[i], y_names[i + 1]) for i in range(len(y_names) - 1)]
 
-        # x_tick_map = {name: i for i, name in enumerate(y_names)}  # 不再需要这个
+        level_counter: dict = {}
 
-        # 只定义一次 hue_values 和 hue_positions
-        hue_values = df[hue].unique()
-        hue_positions = {hue_val: i for i, hue_val in enumerate(hue_values)}
-
-        for i, (hue_val1, hue_val2) in enumerate(pairs):
-
+        for hue_val1, hue_val2 in pairs:
             for group_name in y_names:
-                data1 = df[(df[groupby] == group_name) & (df[hue] == hue_val1)][value]
-                data2 = df[(df[groupby] == group_name) & (df[hue] == hue_val2)][value]
 
-                if len(data1) == 0 or len(data2) == 0:
+                # 取数据
+                if hue:
+                    data1 = df.loc[(df[groupby] == group_name) & (df[hue] == hue_val1), value].dropna()
+                    data2 = df.loc[(df[groupby] == group_name) & (df[hue] == hue_val2), value].dropna()
+                else:
+                    data1 = df.loc[df[groupby] == hue_val1, value].dropna()
+                    data2 = df.loc[df[groupby] == hue_val2, value].dropna()
+
+                if data1.empty or data2.empty:
                     continue
 
-                # Calculate P-value
+                # x 位置:直接查真实中心表,查不到(该组合没画出来)就跳过
+                x_pos1 = center_lookup.get((group_name, hue_val1) if hue else (hue_val1, None))
+                x_pos2 = center_lookup.get((group_name, hue_val2) if hue else (hue_val2, None))
+                if x_pos1 is None or x_pos2 is None:
+                    continue
+
                 p_val = get_stat_result(data1, data2, test).pvalue
 
-                # Draw connectors - 现在在同一个 group 内部比较
-                x_pos = y_names.index(group_name)  # 获取 group 的位置
-
-                # 计算 hue 在 group 内部的相对位置
-                x_pos1 = x_pos + (hue_positions[hue_val1] - (len(hue_values) - 1) / 2) / (len(hue_values) + 1)
-                x_pos2 = x_pos + (hue_positions[hue_val2] - (len(hue_values) - 1) / 2) / (len(hue_values) + 1)
-
-                level = i + 1
-                curr_h = h + (0.1 * y_range * (level - 1))
+                # y 位置:基于该比较对的局部最大值,按 group 独立递增
+                level = level_counter.get(group_name, 0) + 1
+                level_counter[group_name] = level
+                curr_h = max(data1.max(), data2.max()) + (0.05 + 0.08 * (level - 1)) * y_range
 
                 ax.plot([x_pos1, x_pos1, x_pos2, x_pos2],
-                        [curr_h, curr_h + 0.02 * y_range, curr_h + 0.02 * y_range, curr_h],
+                        [curr_h, curr_h + 0.02 * y_range,
+                         curr_h + 0.02 * y_range, curr_h],
                         lw=text_line_width, color='black')
 
-                if p_val < 0.0001:
-                    p_text = f'P={p_val:.2e}' if test_format == "text" else "****"
-                elif p_val < 0.001:
-                    p_text = f'P={p_val:.2e}' if test_format == "text" else "***"
-                elif p_val < 0.01:
-                    p_text = f'P={p_val:.3e}' if test_format == "text" else "**"
-                elif p_val < 0.05:
-                    p_text = f'P={p_val:.3f}' if test_format == "text" else "*"
-                else:
-                    p_text = f'P={p_val:.2f}' if test_format == "text" else "ns"
-
-                ax.text((x_pos1 + x_pos2) * 0.5, curr_h + 0.025 * y_range, p_text,
+                ax.text((x_pos1 + x_pos2) * 0.5, curr_h + 0.025 * y_range,
+                        _p_to_text(p_val),
                         ha='center', va='bottom', fontsize=text_font_size)
 
     # --- 6. Aesthetics Adjustments ---
-    ax.spines['top'].set_linewidth(line_width)
-    ax.spines['right'].set_linewidth(line_width)
-    ax.spines['bottom'].set_linewidth(line_width)
-    ax.spines['left'].set_linewidth(line_width)
-    ax.tick_params(axis='x', rotation=rotation)
+    for spine in ax.spines.values():
+        spine.set_linewidth(line_width)
 
     ax.spines['top'].set_position(('outward', top_offset))
+    ax.tick_params(axis='x', rotation=rotation)
 
     if hue:
         handles, labels = ax.get_legend_handles_labels()
