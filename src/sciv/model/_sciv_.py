@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 from anndata import AnnData
 from pandas import DataFrame
+from lightning.pytorch.strategies import DDPStrategy
 
 from .. import util as ul
 from ..tool import RandomWalk, overlap_sum, obtain_cell_cell_network, calculate_init_score_weight, scale_normalize
@@ -103,7 +104,7 @@ def trs(
     eps: float = 1e-08,
     early_stopping: bool = True,
     early_stopping_patience: int = 50,
-    strategy: str = "ddp_notebook_find_unused_parameters_true",
+    strategy: Union[str, DDPStrategy] = DDPStrategy(start_method="spawn", find_unused_parameters=True),
     batch_key: Optional[str] = None,
     resolution: float = 0.5,
     k: int = 30,

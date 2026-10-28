@@ -320,21 +320,22 @@ def violin_significance(
     # !!! 关键:在 stripplot 之前立即捕获小提琴真实中心
     center_lookup: dict = _build_center_lookup(ax)
 
-    sns.stripplot(
-        data=df,
-        x=groupby,
-        y=value,
-        hue=hue,
-        order=y_names,
-        palette=final_palette,
-        size=marker_size,
-        edgecolor='black',
-        linewidth=strip_line_width,
-        alpha=strip_alpha,
-        jitter=strip_jitter,
-        ax=ax,
-        dodge=do_dodge
-    )
+    if marker_size > 0:
+        sns.stripplot(
+            data=df,
+            x=groupby,
+            y=value,
+            hue=hue,
+            order=y_names,
+            palette=final_palette,
+            size=marker_size,
+            edgecolor='black',
+            linewidth=strip_line_width,
+            alpha=strip_alpha,
+            jitter=strip_jitter,
+            ax=ax,
+            dodge=do_dodge
+        )
 
     # --- 5. Significance Annotation ---
     if is_show_test:
@@ -380,12 +381,10 @@ def violin_significance(
                 curr_h = max(data1.max(), data2.max()) + (0.05 + 0.08 * (level - 1)) * y_range
 
                 ax.plot([x_pos1, x_pos1, x_pos2, x_pos2],
-                        [curr_h, curr_h + 0.02 * y_range,
-                         curr_h + 0.02 * y_range, curr_h],
+                        [curr_h, curr_h + 0.02 * y_range, curr_h + 0.02 * y_range, curr_h],
                         lw=text_line_width, color='black')
 
-                ax.text((x_pos1 + x_pos2) * 0.5, curr_h + 0.025 * y_range,
-                        _p_to_text(p_val),
+                ax.text((x_pos1 + x_pos2) * 0.5, curr_h + 0.025 * y_range, _p_to_text(p_val),
                         ha='center', va='bottom', fontsize=text_font_size)
 
     # --- 6. Aesthetics Adjustments ---

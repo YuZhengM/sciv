@@ -3,13 +3,14 @@
 import os
 import time
 import warnings
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 import pandas as pd
 
 from anndata import AnnData
 from torch.cuda import OutOfMemoryError
+from lightning.pytorch.strategies import DDPStrategy
 
 from .. import util as ul
 from ..tool import umap, tsne, leiden
@@ -26,7 +27,7 @@ def poisson_vi(
     eps: float = 1e-08,
     early_stopping: bool = True,
     early_stopping_patience: int = 50,
-    strategy: str = "ddp_notebook_find_unused_parameters_true",
+    strategy: Union[str, DDPStrategy] = DDPStrategy(start_method="spawn", find_unused_parameters=True),
     batch_key: Optional[str] = None,
     resolution: float = 0.5,
     dp_delta: float = 0.05,
@@ -76,7 +77,6 @@ def poisson_vi(
     start_time = time.perf_counter()
 
     import scvi
-    import scanpy as sc
 
     if resolution <= 0:
         ul.log(__name__).error("The parameter `resolution` must be greater than zero.")
@@ -199,7 +199,9 @@ def poisson_vi(
         else:
             ul.file_method(__name__).makedirs(model_dir)
             model = __train__()
-            model.save(model_dir, overwrite=True)
+
+            if int(os.environ.get("LOCAL_RANK", 0)) == 0:
+                model.save(model_dir, overwrite=True)
     else:
         model = __train__()
 
