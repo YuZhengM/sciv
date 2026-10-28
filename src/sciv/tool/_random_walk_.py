@@ -1233,7 +1233,7 @@ class RandomWalk:
         elif label == "run_ablation_ncw" or label == "run_en_ablation_ncw":
             return "Removed cell cluster type weights in initial scores.", "trs_ncw"
         elif label == "run_ablation_m_knn" or label == "run_en_ablation_m_knn":
-            return "Using the M-KNN method during the execution of weighted random walks.", "trs_m_knn"
+            return "Using the M-kNN method during the execution of weighted random walks.", "trs_m_knn"
         else:
             raise ValueError(f"{label} is not a valid information.")
 
@@ -1293,7 +1293,7 @@ class RandomWalk:
 
     def run_ablation_m_knn(self) -> None:
         """
-        Using M-KNN fully connected cellular network.
+        Using M-kNN fully connected cellular network.
         """
         self._simple_error_()
         self.trs_m_knn_source = self._run_(self.seed_cell_weight, "run_ablation_m_knn", self.weight_m_knn)
@@ -1470,7 +1470,7 @@ class RandomWalk:
 
     def run_en_ablation_m_knn(self) -> None:
         """
-        Using M-KNN fully connected cellular network (Enrichment analysis)
+        Using M-kNN fully connected cellular network (Enrichment analysis)
         """
         self._simple_error_()
         self._run_enrichment_(self.seed_cell_weight_en, "run_en_ablation_m_knn")

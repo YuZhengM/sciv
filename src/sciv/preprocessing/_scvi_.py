@@ -102,6 +102,17 @@ def poisson_vi(
     ul.log(__name__).info("Calculate fragment counts matrix.")
     scvi.data.reads_to_fragments(adata)
 
+    if train_kwargs is not None and isinstance(train_kwargs, dict):
+
+        if "check_val_every_n_epoch" not in diff_peak_kwargs:
+            diff_peak_kwargs["check_val_every_n_epoch"] = 1
+
+        if "accelerator" not in diff_peak_kwargs:
+            diff_peak_kwargs["accelerator"] = "gpu"
+
+        if "devices" not in diff_peak_kwargs:
+            diff_peak_kwargs["devices"] = -1
+
     def __train__():
 
         # PoissonVI
@@ -112,13 +123,11 @@ def poisson_vi(
 
             try:
                 data_splitter_kwargs = {"drop_dataset_tail": True, "drop_last": False}
+
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore")
                     _model_.train(
                         max_epochs=int(max_epochs),
-                        check_val_every_n_epoch=1,
-                        accelerator="gpu",
-                        devices=-1,
                         datasplitter_kwargs=data_splitter_kwargs,
                         strategy=strategy,
                         lr=lr,
@@ -133,11 +142,12 @@ def poisson_vi(
                 try:
                     ul.log(__name__).warning(f"Multiple GPUs failed to run, attempting to run program with parameter "
                                              f"devices='auto'.\n {ex}")
+                    train_kwargs.update({"device": "auto"})
+
                     with warnings.catch_warnings():
                         warnings.simplefilter("ignore")
                         _model_.train(
                             max_epochs=int(max_epochs),
-                            check_val_every_n_epoch=1,
                             lr=lr,
                             batch_size=int(batch_size),
                             eps=eps,
@@ -147,33 +157,34 @@ def poisson_vi(
                         )
                 except Exception as exc:
                     ul.log(__name__).warning(f"GPU failed to run, try to switch to CPU running.\n {exc}")
+                    train_kwargs.update({"accelerator": "cpu"})
+
                     with warnings.catch_warnings():
                         warnings.simplefilter("ignore")
                         _model_.to_device('cpu')
                         _model_.train(
                             max_epochs=int(max_epochs),
-                            check_val_every_n_epoch=1,
                             lr=lr,
                             batch_size=int(batch_size),
                             eps=eps,
                             early_stopping=early_stopping,
                             early_stopping_patience=int(early_stopping_patience),
-                            accelerator="cpu"
+                            **train_kwargs
                         )
         else:
+
+            train_kwargs.update({"device": "auto", "accelerator": "cpu"})
 
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 _model_.to_device('cpu')
                 _model_.train(
                     max_epochs=int(max_epochs),
-                    check_val_every_n_epoch=1,
                     lr=lr,
                     batch_size=int(batch_size),
                     eps=eps,
                     early_stopping=early_stopping,
                     early_stopping_patience=int(early_stopping_patience),
-                    accelerator="cpu",
                     **train_kwargs
                 )
 
@@ -224,7 +235,7 @@ def poisson_vi(
         )
         adata.obs["clusters_x"] = adata.obs["clusters"]
 
-    ul.log(__name__).info(f"Perform kNN and Leiden clustering.")
+    ul.log(__name__).info(f"Perform KNN and leiden clustering.")
     leiden(adata, latent_name=latent_name, key_added="clusters", resolution=resolution)
     adata.obs["clusters"] = adata.obs["clusters"].astype(str)
 
@@ -255,11 +266,13 @@ def poisson_vi(
     clusters_list = list(set(adata.obs["clusters"]))
     clusters_list.sort()
 
-    if "mode" not in diff_peak_kwargs:
-        diff_peak_kwargs["mode"] = "vanilla"
+    if diff_peak_kwargs is not None and isinstance(diff_peak_kwargs, dict):
 
-    if "two_sided" not in diff_peak_kwargs:
-        diff_peak_kwargs["two_sided"] = False
+        if "mode" not in diff_peak_kwargs:
+            diff_peak_kwargs["mode"] = "vanilla"
+
+        if "two_sided" not in diff_peak_kwargs:
+            diff_peak_kwargs["two_sided"] = False
 
     params = {
         "max_epochs": max_epochs,

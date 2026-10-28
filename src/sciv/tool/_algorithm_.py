@@ -671,10 +671,10 @@ def semi_mutual_knn_weight(
         Obtain the nearest neighbors of each node from each row of the for loop matrix;
         Setting it to True is very suitable for situations with large samples and insufficient memory.
     is_mknn_fully_connected : bool, optional
-        Is the network of MKNN an all connected graph?
+        Is the network of M-kNN an all connected graph?
         If the value is True, it ensures that a node is connected to at least the node that is not closest to itself.
-        This parameter does not affect the result of SM-KNN (the first result), but only affects the result of
-        traditional M-KNN (the second result).
+        This parameter does not affect the result of SM-kNN (the first result), but only affects the result of
+        traditional M-kNN (the second result).
     Returns
     -------
     matrix_data
@@ -1860,9 +1860,9 @@ def obtain_cell_cell_network(
     adata : AnnData
         scATAC-seq data;
     k : int
-        When building an M-KNN network, the number of nodes connected by each node (and);
+        When building an M-kNN network, the number of nodes connected by each node (and);
     or_k : int
-        When building an M-KNN network, the number of nodes connected by each node (or);
+        When building an M-kNN network, the number of nodes connected by each node (or);
     weight : float
         The weight of interactions or operations;
     local_k : int

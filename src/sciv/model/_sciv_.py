@@ -460,7 +460,9 @@ def trs(
         "is_save_random_walk_model": is_save_random_walk_model,
         "is_file_exist_loading": is_file_exist_loading,
         "filename_dict": filename_dict,
-        "block_size": block_size
+        "block_size": block_size,
+        "train_kwargs": train_kwargs,
+        "diff_peak_kwargs": diff_peak_kwargs
     }
 
     """
@@ -531,7 +533,9 @@ def trs(
                 strategy=strategy,
                 batch_key=batch_key,
                 resolution=resolution,
-                model_dir=model_dir
+                model_dir=model_dir,
+                train_kwargs=train_kwargs,
+                diff_peak_kwargs=diff_peak_kwargs
             )
 
     else:
@@ -548,7 +552,9 @@ def trs(
             strategy=strategy,
             batch_key=batch_key,
             resolution=resolution,
-            model_dir=model_dir
+            model_dir=model_dir,
+            train_kwargs=train_kwargs,
+            diff_peak_kwargs=diff_peak_kwargs
         )
 
     poisson_vi_time = adata.uns["elapsed_time"] + da_peaks.uns["elapsed_time"]
