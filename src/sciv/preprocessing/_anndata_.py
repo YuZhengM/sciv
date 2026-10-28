@@ -82,7 +82,8 @@ def adata_group(
 
     if extra_column is not None and extra_column not in data_obs.columns:
         ul.log(__name__).error(
-            f"The grouped extra-column {extra_column} are not in the corresponding columns {data_obs.columns}")
+            f"The grouped extra-column {extra_column} are not in the corresponding columns {data_obs.columns}"
+        )
         raise ValueError(
             f"The grouped extra-column {extra_column} are not in the corresponding columns {data_obs.columns}"
         )

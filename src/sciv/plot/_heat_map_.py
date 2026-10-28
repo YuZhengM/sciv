@@ -98,7 +98,6 @@ def heatmap(
     if not is_cluster:
         plt.setp(heat_map.get_xticklabels(), rotation=rotation, ha="right", rotation_mode="anchor")
     else:
-        # noinspection PyUnresolvedReferences
         plt.setp(heat_map.ax_heatmap.get_xticklabels(), rotation=rotation)
 
     plot_end(title, x_name, y_name, output, show, close)

@@ -32,7 +32,9 @@ def poisson_vi(
     resolution: float = 0.5,
     dp_delta: float = 0.05,
     latent_name: str = "latent",
-    model_dir: Optional[path] = None
+    model_dir: Optional[path] = None,
+    train_kwargs: Optional[dict] = None,
+    diff_peak_kwargs: Optional[dict] = None
 ) -> AnnData:
     """
     PoissonVI processing of the data results in the current sample representation 
@@ -66,6 +68,8 @@ def poisson_vi(
         The name of latent representation.
     model_dir : str, optional
         The folder name for saving the trained model.
+    train_kwargs : dict, optional
+    diff_peak_kwargs : dict, optional
 
     Returns
     -------
@@ -121,7 +125,8 @@ def poisson_vi(
                         batch_size=int(batch_size),
                         eps=eps,
                         early_stopping=early_stopping,
-                        early_stopping_patience=int(early_stopping_patience)
+                        early_stopping_patience=int(early_stopping_patience),
+                        **train_kwargs
                     )
             except Exception as ex:
 
@@ -137,7 +142,8 @@ def poisson_vi(
                             batch_size=int(batch_size),
                             eps=eps,
                             early_stopping=early_stopping,
-                            early_stopping_patience=int(early_stopping_patience)
+                            early_stopping_patience=int(early_stopping_patience),
+                            **train_kwargs
                         )
                 except Exception as exc:
                     ul.log(__name__).warning(f"GPU failed to run, try to switch to CPU running.\n {exc}")
@@ -167,7 +173,8 @@ def poisson_vi(
                     eps=eps,
                     early_stopping=early_stopping,
                     early_stopping_patience=int(early_stopping_patience),
-                    accelerator="cpu"
+                    accelerator="cpu",
+                    **train_kwargs
                 )
 
         return _model_
@@ -212,8 +219,8 @@ def poisson_vi(
 
     if "clusters" in adata.obs.columns:
         ul.log(__name__).warning(
-            "Due to the original inclusion of the `clusters` column, the original `clusters` column name has \
-             been changed to `clusters_x`."
+            "Due to the original inclusion of the `clusters` column, the original `clusters` column name has "
+            "been changed to `clusters_x`."
         )
         adata.obs["clusters_x"] = adata.obs["clusters"]
 
@@ -229,8 +236,8 @@ def poisson_vi(
         adata.obs["latent_umap2"] = data_umap[:, 1]
     except Exception as e:
         ul.log(__name__).warning(
-            f"UMAP error, your system does not support it, but it does not affect the process. \
-             Continue with execution: {e}"
+            f"UMAP error, your system does not support it, but it does not affect the process. "
+            f"Continue with execution: {e}"
         )
 
     try:
@@ -241,27 +248,41 @@ def poisson_vi(
         adata.obs["latent_tsne2"] = data_tsne[:, 1]
     except Exception as e:
         ul.log(__name__).warning(
-            f"TSNE error, your system does not support it, but it does not affect the process. \
-             Continue with execution: {e}"
+            f"TSNE error, your system does not support it, but it does not affect the process. "
+            f"Continue with execution: {e}"
         )
 
     clusters_list = list(set(adata.obs["clusters"]))
     clusters_list.sort()
 
-    adata.uns["poisson_vi"] = {
+    if "mode" not in diff_peak_kwargs:
+        diff_peak_kwargs["mode"] = "vanilla"
+
+    if "two_sided" not in diff_peak_kwargs:
+        diff_peak_kwargs["two_sided"] = False
+
+    params = {
         "max_epochs": max_epochs,
         "lr": lr,
         "batch_size": batch_size,
         "eps": eps,
         "model_dir": model_dir,
         "early_stopping_patience": early_stopping_patience,
-        "strategy": strategy,
+        "strategy": strategy if isinstance(strategy, str) else {
+            "_ddp_kwargs": strategy._ddp_kwargs,
+            "_start_method": strategy._start_method,
+            "_timeout": strategy._timeout.seconds
+        },
         "batch_key": batch_key,
         "resolution": resolution,
         "cluster_size": len(clusters_list),
         "dp_delta": dp_delta,
-        "latent_name": latent_name
+        "latent_name": latent_name,
+        "train_kwargs": train_kwargs,
+        "diff_peak_kwargs": diff_peak_kwargs
     }
+
+    adata.uns["poisson_vi"] = params
     peaks_info = adata.var.copy()
     peaks_info["index"] = peaks_info.index
     peaks_info.rename_axis("peak_index", inplace=True)
@@ -272,8 +293,8 @@ def poisson_vi(
 
     if len(clusters_list) == 1:
         ul.log(__name__).warning(
-            f"The number of clusters is one, ignoring cluster type correction. It is recommended to increase the \
-             `resolution` value to make it effective."
+            f"The number of clusters is one, ignoring cluster type correction. It is recommended to increase the "
+            f"`resolution` value to make it effective."
         )
     else:
         # differential peak
@@ -287,14 +308,14 @@ def poisson_vi(
             # differential peak
             try:
                 da_peaks = model.differential_accessibility(
-                    adata, groupby="clusters", delta=dp_delta, group1=cluster, mode="vanilla", two_sided=False
+                    adata, groupby="clusters", delta=dp_delta, group1=cluster, **diff_peak_kwargs
                 )
             except Exception as e:
                 ul.log(__name__).warning(f"GPU failed to run, try to switch to CPU running.\n {e}")
                 # PyTorch uses CPU
                 model.to_device('cpu')
                 da_peaks = model.differential_accessibility(
-                    adata, groupby="clusters", delta=dp_delta, group1=cluster, mode="vanilla", two_sided=False
+                    adata, groupby="clusters", delta=dp_delta, group1=cluster, **diff_peak_kwargs
                 )
 
             da_peaks_all.update({cluster: da_peaks})
@@ -320,6 +341,7 @@ def poisson_vi(
     da_peaks_adata.layers["emp_prob1"] = matrix_ep1
     da_peaks_adata.uns["latent_name"] = latent_name
     da_peaks_adata.uns["dp_delta"] = dp_delta
+    da_peaks_adata.uns["params"] = params
     da_peaks_adata.uns["elapsed_time"] = time.perf_counter() - start_time
 
     adata.uns["step"] = 1

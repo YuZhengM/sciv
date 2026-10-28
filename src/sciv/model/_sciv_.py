@@ -131,7 +131,9 @@ def trs(
     is_save_random_walk_model: bool = False,
     is_file_exist_loading: bool = False,
     filename_dict: Optional[dict] = None,
-    block_size: int = -1
+    block_size: int = -1,
+    train_kwargs: Optional[dict] = None,
+    diff_peak_kwargs: Optional[dict] = None
 ) -> AnnData:
     """
     The core algorithm of sciv includes the flow of all algorithms, as well as drawing and saving data.
@@ -253,6 +255,10 @@ def trs(
         The size of the segmentation stored in block wise matrix multiplication.
         By sacrificing time and space to reduce memory consumption to a certain extent.
         If the value is less than or equal to zero, no block operation will be performed.
+    train_kwargs : dict, optional
+        Parameters in Poisson VI training
+    diff_peak_kwargs : dict, optional
+        Parameters during the differential peak process
     
     Returns
     -------
@@ -423,7 +429,11 @@ def trs(
         "eps": eps,
         "early_stopping": early_stopping,
         "early_stopping_patience": early_stopping_patience,
-        "strategy": strategy,
+        "strategy": strategy if isinstance(strategy, str) else {
+            "_ddp_kwargs": strategy._ddp_kwargs,
+            "_start_method": strategy._start_method,
+            "_timeout": strategy._timeout.seconds
+        },
         "batch_key": batch_key,
         "resolution": resolution,
         "k": k,
@@ -545,11 +555,11 @@ def trs(
 
     if save_path is not None:
 
-        if not adata_is_read:
-            save_h5ad(adata, file=adata_save_file)
-
         if not da_peaks_is_read:
             save_h5ad(da_peaks, file=da_peaks_save_file)
+
+        if not adata_is_read:
+            save_h5ad(adata, file=adata_save_file)
 
     """
     2. Overlap regional data and mutation data and sum the PP values of all mutations
@@ -650,7 +660,6 @@ def trs(
         random_walk: RandomWalk = read_pkl(random_walk_save_file)
     else:
         # random walk
-        # noinspection DuplicatedCode
         random_walk: RandomWalk = RandomWalk(
             cc_adata=cc_data,
             init_status=init_score,

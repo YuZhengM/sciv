@@ -144,7 +144,6 @@ def line(
         hue_types = df[legend].unique().tolist()
         new_data_columns = list(df.columns)
 
-        # noinspection DuplicatedCode
         if colors is not None:
             palette = colors
         else:

@@ -75,7 +75,6 @@ def venn_three(
 
     venn3(subsets=subsets, set_labels=(name1, name2, name3), ax=ax, set_colors=colors, **kwargs)
 
-    # noinspection PyTypeChecker
     venn3_circles(subsets=subsets, linestyle='dashed', linewidth=1, color="grey", ax=ax)
 
     ax.legend(loc='upper right')
@@ -141,7 +140,6 @@ def venn_two(
 
     venn2((set1, set2), set_labels=(name1, name2), ax=ax, set_colors=colors, **kwargs)
 
-    # noinspection PyTypeChecker
     venn2_circles(subsets=(set1, set2), linestyle='dashed', linewidth=1, color="grey", ax=ax)
 
     ax.legend(loc='upper right')

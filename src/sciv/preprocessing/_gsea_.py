@@ -53,7 +53,6 @@ def gsea_enrichr(
 
     import gseapy as gp
 
-    # noinspection PyTypeChecker
     names = gp.get_library_name(organism)
 
     if not set(gene_sets).issubset(set(names)):
@@ -66,7 +65,6 @@ def gsea_enrichr(
     if is_verbose:
         ul.log(__name__).info("GSEA enrichr.")
 
-    # noinspection PyTypeChecker
     gsea = gp.enrichr(gene_list=gene_list, gene_sets=list(gene_sets), organism=organism, outdir=output_dir)
     return gsea.results
 
