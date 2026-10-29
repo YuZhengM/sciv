@@ -102,16 +102,17 @@ def poisson_vi(
     ul.log(__name__).info("Calculate fragment counts matrix.")
     scvi.data.reads_to_fragments(adata)
 
-    if train_kwargs is not None and isinstance(train_kwargs, dict):
+    if train_kwargs is None:
+        train_kwargs = {}
 
-        if "check_val_every_n_epoch" not in diff_peak_kwargs:
-            diff_peak_kwargs["check_val_every_n_epoch"] = 1
+    if "check_val_every_n_epoch" not in train_kwargs:
+        train_kwargs["check_val_every_n_epoch"] = 1
 
-        if "accelerator" not in diff_peak_kwargs:
-            diff_peak_kwargs["accelerator"] = "gpu"
+    if "accelerator" not in train_kwargs:
+        train_kwargs["accelerator"] = "gpu"
 
-        if "devices" not in diff_peak_kwargs:
-            diff_peak_kwargs["devices"] = -1
+    if "devices" not in train_kwargs:
+        train_kwargs["devices"] = -1
 
     def __train__():
 
@@ -207,12 +208,12 @@ def poisson_vi(
                     model = scvi.external.POISSONVI.load(model_dir, adata=adata, accelerator="cpu")
                 except Exception as e:
                     ul.log(__name__).error(
-                        f"File `model.pt` failed to load, you can execute `Poisson VI` again by deleting file \
-                         `model.pt` ({model_dir}/model.pt).\n {e}"
+                        f"File `model.pt` failed to load, you can execute `Poisson VI` again by deleting file "
+                        f"`model.pt` ({model_dir}/model.pt).\n {e}"
                     )
                     raise ValueError(
-                        f"File `model.pt` failed to load, you can execute `Poisson VI` again by deleting file \
-                         `model.pt` ({model_dir}/model.pt)."
+                        f"File `model.pt` failed to load, you can execute `Poisson VI` again by deleting file "
+                        f"`model.pt` ({model_dir}/model.pt)."
                     )
         else:
             ul.file_method(__name__).makedirs(model_dir)
@@ -266,13 +267,14 @@ def poisson_vi(
     clusters_list = list(set(adata.obs["clusters"]))
     clusters_list.sort()
 
-    if diff_peak_kwargs is not None and isinstance(diff_peak_kwargs, dict):
+    if diff_peak_kwargs is None:
+        diff_peak_kwargs = {}
 
-        if "mode" not in diff_peak_kwargs:
-            diff_peak_kwargs["mode"] = "vanilla"
+    if "mode" not in diff_peak_kwargs:
+        diff_peak_kwargs["mode"] = "vanilla"
 
-        if "two_sided" not in diff_peak_kwargs:
-            diff_peak_kwargs["two_sided"] = False
+    if "two_sided" not in diff_peak_kwargs:
+        diff_peak_kwargs["two_sided"] = False
 
     params = {
         "max_epochs": max_epochs,

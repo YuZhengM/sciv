@@ -1711,12 +1711,12 @@ def calculate_init_score_weight(
         del _cluster_weight1_, _cluster_weight2_, _cluster_weight3_
     else:
         ul.log(__name__).error(
-            "The `diff_peak_value` parameter only supports one of the {'emp_effect', 'bayes_factor', 'emp_prob1', "
-            "'all'} values."
+            f"The `diff_peak_value` parameter (={diff_peak_value}) only supports one of the {{'emp_effect', "
+            f"'bayes_factor', 'emp_prob1', 'all'}} values."
         )
         raise ValueError(
-            "The `diff_peak_value` parameter only supports one of the {'emp_effect', 'bayes_factor', 'emp_prob1', "
-            "'all'} values."
+            f"The `diff_peak_value` parameter (={diff_peak_value}) only supports one of the {{'emp_effect', "
+            f"'bayes_factor', 'emp_prob1', 'all'}} values."
         )
 
     overlap_matrix = to_sparse(overlap_matrix.astype(np.float32))

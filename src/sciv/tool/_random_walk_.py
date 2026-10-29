@@ -4,6 +4,7 @@ import math
 import time
 from typing import Union, Tuple, Literal, Dict, Any, List
 
+import scipy.sparse as sp
 import torch
 import torch.nn as nn
 
@@ -847,10 +848,12 @@ class RandomWalk:
             Assign different weight matrices to seed cells.
         """
         ul.log(__name__).info("Obtain transition probability matrix.")
-        data_weight = to_dense(cell_cell_matrix, is_array=True)
-        cell_sum_weight = data_weight.sum(axis=1)[:, np.newaxis]
-        cell_sum_weight[cell_sum_weight == 0] = 1
-        return to_sparse(data_weight / cell_sum_weight)
+        cell_cell_matrix = to_sparse(cell_cell_matrix)
+        row_sums = np.asarray(cell_cell_matrix.sum(axis=1)).ravel()
+        row_sums[row_sums == 0] = 1
+        inv_diag = sp.diags(1.0 / row_sums)
+        transition_matrix = inv_diag @ cell_cell_matrix
+        return to_sparse(transition_matrix)
 
     def _get_cell_weight_(self, seed_cell_size: int) -> matrix_data:
         """
