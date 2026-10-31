@@ -108,9 +108,6 @@ def poisson_vi(
     if "check_val_every_n_epoch" not in train_kwargs:
         train_kwargs["check_val_every_n_epoch"] = 1
 
-    if "accelerator" not in train_kwargs:
-        train_kwargs["accelerator"] = "gpu"
-
     if "devices" not in train_kwargs:
         train_kwargs["devices"] = -1
 
@@ -143,7 +140,7 @@ def poisson_vi(
                 try:
                     ul.log(__name__).warning(f"Multiple GPUs failed to run, attempting to run program with parameter "
                                              f"devices='auto'.\n {ex}")
-                    train_kwargs.update({"device": "auto"})
+                    train_kwargs.update({"devices": "auto"})
 
                     with warnings.catch_warnings():
                         warnings.simplefilter("ignore")
@@ -174,7 +171,7 @@ def poisson_vi(
                         )
         else:
 
-            train_kwargs.update({"device": "auto", "accelerator": "cpu"})
+            train_kwargs.update({"devices": "auto", "accelerator": "cpu"})
 
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
