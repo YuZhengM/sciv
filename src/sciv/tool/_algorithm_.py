@@ -763,7 +763,7 @@ def semi_mutual_knn_weight(
     adj_weight = (1 - weight) * adj_and.astype(np.float32) + weight * adj_or.astype(np.float32)
 
     # Ensure full connectivity if required
-    if is_mknn_fully_connected:
+    if (or_k <= 1 or weight <= 0) and is_mknn_fully_connected:
         adj_1nn = _knn(new_data, 1, "ONE")
 
         if sparse.issparse(adj_1nn):

@@ -104,7 +104,7 @@ def trs(
     eps: float = 1e-08,
     early_stopping: bool = True,
     early_stopping_patience: int = 50,
-    strategy: Union[str, DDPStrategy] = DDPStrategy(start_method="spawn", find_unused_parameters=True),
+    strategy: Union[str, DDPStrategy] = DDPStrategy(start_method="popen", find_unused_parameters=True),
     batch_key: Optional[str] = None,
     resolution: float = 0.5,
     k: int = 30,
