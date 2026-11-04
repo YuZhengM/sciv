@@ -9,33 +9,35 @@ build:
   number: 0
   noarch: python
   script: |
-    python -m pip install --no-deps --ignore-installed -vv .
-    python -m pip install --no-deps numpy==2.2.6 pandas>=2.2.0
-    python -m pip install --no-deps anndata==0.11.0
-    python -m pip install --no-deps colormap==1.0.4 easydev==0.13.2
     python -m pip install --no-deps fa2-modified==0.4
-    python -m pip install --no-deps scipy==1.15.3
     python -m pip install --no-deps yzm_file==0.0.3 yzm_log==0.0.2
+    python -m pip install --no-deps --ignore-installed -vv .
 
 requirements:
-  build:
+  host:
     - python >=3.10
     - pip
     - setuptools
   run:
     - python >=3.10
-    - matplotlib==3.9.2
-    - matplotlib-venn==1.1.2
-    - seaborn==0.13.2
-    - scanpy==1.11.5
-    - scikit-learn==1.5.2
-    - networkx==3.3
-    - palettable==3.3.3
-    - h5py>=3.11.0,<3.16.0
-    - hdf5plugin==6.0.0
-    - mudata==0.3.2
-    - PyComplexHeatmap==1.8.5
-    - statannotations==0.7.2
+    - numpy >=2.0,<2.3
+    - pandas >=2.2
+    - scipy >=1.14
+    - anndata >=0.11
+    - colormap
+    - easydev
+    - matplotlib >=3.9.3
+    - matplotlib-venn
+    - seaborn
+    - scanpy >=1.11
+    - scikit-learn >=1.5
+    - networkx >=3.3
+    - palettable
+    - h5py >=3.11,<3.16
+    - hdf5plugin
+    - mudata
+    - pycomplexheatmap
+    - statannotations
     - magic-impute
     - leidenalg
     - scvi-tools
@@ -48,7 +50,7 @@ requirements:
     - numba
     - pynndescent
     - psutil
-    - zarr<3
+    - zarr <3
 
 test:
   imports:
