@@ -27,7 +27,7 @@ def poisson_vi(
     eps: float = 1e-08,
     early_stopping: bool = True,
     early_stopping_patience: int = 50,
-    strategy: Union[str, DDPStrategy] = DDPStrategy(start_method="popen", find_unused_parameters=True),
+    strategy: Union[str, DDPStrategy] = "ddp_notebook_find_unused_parameters_true",
     batch_key: Optional[str] = None,
     resolution: float = 0.5,
     dp_delta: float = 0.05,
@@ -110,9 +110,6 @@ def poisson_vi(
 
     if "devices" not in train_kwargs:
         train_kwargs["devices"] = -1
-
-    if isinstance(strategy, DDPStrategy):
-        strategy.accelerator = None
 
     def __train__():
 
