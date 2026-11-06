@@ -10,7 +10,7 @@ from ._kde_ import kde
 from ._line_ import line, roc_prc
 from ._pie_ import pie, pie_label
 from ._radar_ import radar, radar_base
-from ._mosaic_ import odd
+from ._mosaic_ import odds_ratio
 
 from ._scatter_ import (
     scatter,
@@ -56,5 +56,5 @@ __all__ = [
     "venn_three",
     "violin",
     "violin_significance",
-    "odd"
+    "odds_ratio"
 ]

@@ -14,14 +14,14 @@ __name__: str = "plot_line"
 log = ul.log(__name__, "ERROR")
 
 
-def odd(
+def odds_ratio(
     data: Union[list, matrix_data],
     row_labels: Union[list, tuple[str, str]] = ('Anchor', 'HD'),
     col_labels: Union[list, tuple[str, str]] = ('Present', 'Absent'),
     title: Optional[str] = None,
     colors: Union[list, tuple[str, str]] = ('#4878B0', '#F2F2F2'),
     font_size: float = 5,
-    gap_value: float = 0.01,
+    gap_value: float = 0.015,
     output: Optional[path] = None,
     show: bool = False,
     close: bool = True,
@@ -56,6 +56,8 @@ def odd(
 
     fig, ax = plot_start()
 
+    kwargs.setdefault("edgecolor", "black")
+    kwargs.setdefault("linewidth", 0.5)
 
     y_top = 1.0
 
@@ -67,8 +69,7 @@ def odd(
             w = cf
             color = colors[0] if j == 0 else colors[1]
             ax.add_patch(plt.Rectangle(
-                (x_left, y_bottom), w, rf - gap_value * (i < len(row_fracs) - 1),
-                facecolor=color, edgecolor='black', linewidth=1, **kwargs)
+                (x_left, y_bottom), w, rf - gap_value * (i < len(row_fracs) - 1), facecolor=color, **kwargs)
             )
             ax.text(
                 x_left + w / 2, y_bottom + (rf - gap_value) / 2, f'{data[i, j]:,}',
