@@ -5,11 +5,12 @@ from typing import Union, Tuple, Optional, Any
 
 import numpy as np
 import pandas as pd
+import seaborn as sns
 from anndata import AnnData
 from matplotlib import pyplot as plt
 from matplotlib.colors import ListedColormap
 from pandas import DataFrame
-import seaborn as sns
+from adjustText import adjust_text
 
 from .. import util as ul
 from ..util import path, collection, type_50_colors, type_20_colors, type_set_colors, plot_end, plot_start
@@ -533,77 +534,78 @@ def scatter_element(
 
 def volcano(
     df: DataFrame,
-    x: str = "Log2(Fold change)",
-    y: str = "-Log10(P value)",
-    hue: str = "type",
+    x: str,
+    y: str,
     size: int = 3,
     palette: Optional[list] = None,
-    y_min: float = 0,
-    axh_value: float = -np.log10(1e-3),
-    axv_left_value: float = -1,
-    axv_right_value: float = 1,
+    labels: Optional[list] = None,
+    label_texts: Optional[list] = None,
+    label_text_col: Optional[str] = None,
+    axh_value: float = -np.log10(1e-2),
+    axv_value: float = 1,
+    lw: float = 0.8,
+    ceil_value: Optional[float] = None,
     title: str = None,
     x_name: Optional[str] = None,
     y_name: Optional[str] = None,
+    ceil_text: Optional[str] = None,
+    seed: int = 24,
     output: path = None,
     show: bool = False,
     close: bool = True,
     **kwargs: Any
 ):
-    """
-    Plot volcano plot.
 
-    Parameters
-    ----------
-    df : DataFrame
-        Data frame.
-    x : str, optional
-        X-axis.
-    y : str, optional
-        Y-axis.
-    hue : str, optional
-        Hue.
-    size : int, optional
-        Size.
-    palette : Optional[list], optional
-        Palette.
-    y_min : float, optional
-        Y-min.
-    axh_value : float, optional
-        Axh-value.
-    axv_left_value : float, optional
-        Axv-left-value.
-    axv_right_value : float, optional
-        Axv-right-value.
-    title : str, optional
-        Title.
-    x_name : Optional[str], optional
-        X-name.
-    y_name : Optional[str], optional
-        Y-name.
-    output : path, optional
-        Output.
-    show : bool, optional
-        Show to display the plot.
-    close : bool, optional
-        Close to close the figure after saving.
-    kwargs : Any, optional
-        Additional keyword arguments passed to sns.scatterplot.
-    """
+    if palette is None:
+        palette = ["#686d76", "#01c5c4", "#ff414d"]
+
+    if labels is None:
+        labels = ["NS", "Negative", "Positive"]
+
+    df_plot = df.copy()
+
+    if ceil_value is not None:
+        is_ceil = df[y] >= ceil_value
+
+        rng = np.random.default_rng(seed)
+        df_plot.loc[is_ceil, y] += rng.uniform(2, 10, is_ceil.sum())
+
+    sig_pos = (df_plot[y] > axh_value) & (df_plot[x] > axv_value)
+    sig_neg = (df_plot[y] > axh_value) & (df_plot[x] < -axv_value)
+    ns = ~(sig_pos | sig_neg)
 
     fig, ax = plot_start()
 
-    if palette is None:
-        palette = ["#01c5c4", "#686d76", "#ff414d"]
+    ax.scatter(df_plot.loc[ns, x], df_plot.loc[ns, y], c=palette[0], s=size, label=labels[0], alpha=0.6, **kwargs)
+    ax.scatter(df_plot.loc[sig_neg, x], df_plot.loc[sig_neg, y], c=palette[1], s=size, label=labels[1], **kwargs)
+    ax.scatter(df_plot.loc[sig_pos, x], df_plot.loc[sig_pos, y], c=palette[2], s=size, label=labels[2], **kwargs)
 
-    sns.set_theme(style="ticks")
-    sns.set_palette(sns.color_palette(palette))
-    sns.scatterplot(data=df, x=x, y=y, hue=hue, s=size, ax=ax, **kwargs)
-    ax.set_ylim(y_min, max(df[y]) * 1.1)
+    if label_texts is not None:
 
-    plt.axhline(axh_value, color='grey', linestyle='--')
-    plt.axvline(axv_left_value, color='grey', linestyle='--')
-    plt.axvline(axv_right_value, color='grey', linestyle='--')
+        if label_text_col is None or label_text_col not in df_plot.columns:
+            log.error(
+                f"label_text_col must be a non-empty string and must exist in df_plot. "
+                f"Got: {label_text_col!r}. Available columns: {list(df_plot.columns)}"
+            )
+            raise ValueError(
+                f"label_text_col must be a non-empty string and must exist in df_plot. "
+                f"Got: {label_text_col!r}. Available columns: {list(df_plot.columns)}"
+            )
+
+        sub = df_plot[df_plot[label_text_col].isin(label_texts)].copy()
+        texts = [ax.text(r[x], r[y], r[label_text_col].split("_")[0], fontsize=6) for _, r in sub.iterrows()]
+        adjust_text(texts, ax=ax, arrowprops=dict(arrowstyle="-", color="grey", lw=lw))
+
+    ax.axhline(axh_value, ls="--", c="grey", lw=lw)
+    ax.axvline(0, ls="--", c="grey", alpha=0.5, lw=lw)
+    ax.axvline(axv_value, ls="--", c="grey", lw=lw)
+    ax.axvline(-axv_value, ls="--", c="grey", lw=lw)
+
+    if ceil_value is not None and is_ceil.sum() > 0:
+        ax.axhline(ceil_value, ls=":", c="grey", lw=lw)
+
+        if ceil_text is not None:
+            ax.text(0, ceil_value - 12, ceil_text, fontsize=6, color="grey", ha="center")
 
     plot_end(title, x_name, y_name, output, show, close)
 

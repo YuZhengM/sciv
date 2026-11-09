@@ -33,3 +33,4 @@ pynndescent==0.5.13
 fa2-modified==0.4
 psutil==7.2.1
 zarr<3
+adjustText==1.4.0
