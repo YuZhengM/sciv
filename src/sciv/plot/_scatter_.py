@@ -15,7 +15,7 @@ from adjustText import adjust_text
 from .. import util as ul
 from ..util import path, collection, type_50_colors, type_20_colors, type_set_colors, plot_end, plot_start
 
-__name__: str = "plot_pie"
+__name__: str = "plot_scatter"
 
 log = ul.log(__name__, "ERROR")
 
@@ -35,7 +35,7 @@ def scatter(
     text_lw: float = 1,
     start_color_index: int = 0,
     color_step_size: int = 0,
-    type_colors: collection = None,
+    type_colors: Union[dict, collection] = None,
     bar_title: str = None,
     edge_color: str = None,
     size: Union[float, collection] = 1.0,
@@ -130,41 +130,44 @@ def scatter(
         if bar_title is not None:
             cbar.set_label(bar_title, ha='center', va='top')
     else:
-        # Get unique hue categories and sort them
-        __hue_order__ = list(np.sort(list(set(df[hue]))))
+        # Get unique hue categories
+        __hue_order__ = df[hue].unique().tolist()
 
         # Select appropriate default color palette based on number of categories
         if type_colors is None:
             type_colors = type_20_colors if len(__hue_order__) <= 20 else type_50_colors
 
-        colors = {}
+        if isinstance(type_colors, dict):
+            colors = type_colors
+        else:
+            colors = {}
 
-        # Create a copy of hue column for legend renaming if needed
-        if legend is not None:
-            df.loc[:, "__hue__"] = df[hue].copy()
-
-        # Assign colors to each category
-        i = 0
-
-        for elem in __hue_order__:
+            # Create a copy of hue column for legend renaming if needed
             if legend is not None:
-                # Rename categories according to legend mapping
-                df.loc[df[df["__hue__"] == elem].index, "__hue__"] = legend[elem]
-                colors.update(
-                    {legend[elem]: type_colors[start_color_index + i * color_step_size + __hue_order__.index(elem)]}
-                )
-            else:
-                colors.update(
-                    {
-                        elem: type_colors[start_color_index + i * color_step_size + __hue_order__.index(elem)]
-                    }
-                )
-            i += 1
+                df.loc[:, "__hue__"] = df[hue].copy()
+
+            # Assign colors to each category
+            i = 0
+
+            for elem in __hue_order__:
+                if legend is not None:
+                    # Rename categories according to legend mapping
+                    df.loc[df[df["__hue__"] == elem].index, "__hue__"] = legend[elem]
+                    colors.update(
+                        {legend[elem]: type_colors[start_color_index + i * color_step_size + __hue_order__.index(elem)]}
+                    )
+                else:
+                    colors.update(
+                        {
+                            elem: type_colors[start_color_index + i * color_step_size + __hue_order__.index(elem)]
+                        }
+                    )
+                i += 1
 
         # Determine hue order for plotting
         if legend is not None:
             if hue_order is None:
-                hue_order = list(np.sort(list(set(df["__hue__"]))))
+                hue_order = df["__hue__"].unique().tolist()
         else:
             if hue_order is None:
                 hue_order = __hue_order__
@@ -614,8 +617,8 @@ def volcano(
 
 def manhattan(
     df: DataFrame,
-    y: str = "pp",
-    groupby: str = "chr",
+    y: str,
+    groupby: str,
     size: int = 20,
     label: Optional[str] = None,
     labels: Optional[list] = None,
@@ -624,9 +627,9 @@ def manhattan(
     is_sort: bool = True,
     line_width: float = 0.5,
     y_round: int = 3,
-    x_name: Optional[str] = "Chromosome",
-    y_name: Optional[str] = "pp",
-    y_limit: Tuple[float, float] = (0, 1),
+    x_name: Optional[str] = None,
+    y_name: Optional[str] = None,
+    y_limit: Tuple[float, float] = None,
     output: path = None,
     show: bool = False,
     close: bool = True,
@@ -634,7 +637,7 @@ def manhattan(
 ):
     """
     Create a Manhattan plot for causal variant visualization across chromosomes.
-    
+
     Parameters
     ----------
     df : DataFrame
@@ -729,7 +732,9 @@ def manhattan(
     ax.spines['right'].set_visible(False)
 
     ax.set_xlim([0, len(df)])
-    ax.set_ylim(y_limit)
+
+    if y_limit is not None:
+        ax.set_ylim(y_limit)
 
     plot_end(title, x_name, y_name, output, show, close)
 
